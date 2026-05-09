@@ -1,0 +1,4 @@
+data/CDS/*fna
+data/genome/*fna
+data/genome/*fai
+data/Main_Dataset.tsv
