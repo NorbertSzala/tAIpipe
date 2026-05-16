@@ -1,4 +1,7 @@
 data/CDS/*fna
 data/genome/*fna
 data/genome/*fai
-data/Main_Dataset.tsv
+data/metadata/Main_Dataset.tsv
+data/downsampled/*
+results/*
+.snakemake*
