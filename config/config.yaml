@@ -1,0 +1,68 @@
+# ---------------------
+# --- Project Paths ---
+# ---------------------
+
+paths:
+  data_cds: "data/CDS"
+  data_genome: "data/genome"
+  data_downsampled: "data/downsampled/first_contig"
+
+  samples: "data/metadata/samples.tsv"
+  main_dataset: "data/metadata/Main_Dataset.tsv"
+
+  results: "results"
+  per_genome: "results/per_genome"
+  aggregated: "results/aggregated"
+
+
+  plots: "results/aggregated/plots"
+  tables: "results/aggregated/tables"
+  reports: "results/aggregated/reports"
+
+  logs: "results/logs"
+
+
+# ---------------------------
+# --- Analysis Parameters ---
+# ---------------------------
+
+params:
+
+params:
+  kingdom_filter: "Fungi"
+
+  allowed_phyla:
+    - "Ascomycota"
+    - "Basidiobolomycota"
+    - "Basidiomycota"
+    - "Blastocladiomycota"
+    - "Chytridiomycota"
+    - "Entomophthoromycota"
+    - "Glomeromycota"
+    - "Kickxellomycota"
+    - "Microsporidia"
+    - "Monoblepharomycota"
+    - "Mortierellomycota"
+    - "Mucoromycota"
+    - "Neocallimastigomycota"
+    - "Olpidiomycota"
+    - "Rozellomycota"
+    - "Zoopagomycota"
+
+  allowed_lifestyles:
+    - "unspecified_saprotroph"
+    - "nectar_tap_saprotroph"
+    - "wood_saprotroph"
+    - "animal_parasite"
+    - "plant_pathogen"
+    - "soil_saprotroph"
+    - "ectomycorrhizal"
+    - "mycoparasite"
+    - "pollen_saprotroph"
+    - "arbuscular_mycorrhizal"
+    - "litter_saprotroph"
+    - "dung_saprotroph"
+    - "protistan_parasite"
+    - "animal_endosymbiont"
+    - "algal_parasite"
+    - "lichenized"

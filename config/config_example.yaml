@@ -1,0 +1,57 @@
+# --- Project Paths ---
+paths:
+  # Base directories for raw data
+  data_pdb: "data/pdb"
+  data_uniprot_species: "data/uniprot/species"
+  data_uniprot_kingdoms: "data/uniprot/kingdoms"
+  # Directories for outputs
+  plots: "results/plots"
+  tables: "results/tables"
+  # Final report name
+  report_file: "report.md"
+
+# --- Analysis Parameters ---
+params:
+  # methods for pdb analysis 
+  pdb_class_mapping:
+    'X-RAY DIFFRACTION': ['X-RAY']
+    'ELECTRON MICROSCOPY': ['ELECTRON MICROSCOPY', 'ELECTRON CRYSTALLOGRAPHY', 'CRYO-ELECTRON MICROSCOPY']
+    'NMR': ['NMR']
+    # 'NEUTRON DIFFRACTION': ['NEUTRON DIFFRACTION']
+  # List of species for targeted analysis
+  species: 
+    - "E_coli"
+    - "Human"
+    - "Yeast"
+    - "A_thaliana"
+    - "D_melanogaster"
+    - "C_elegans"
+    - "Mouse"
+    - "Zebrafish"
+    - "B_subtilis"
+  
+  # mapping to obtain species classes
+  taxonomy_mapping:
+    E_coli: "Bacteria"
+    B_subtilis: "Bacteria"
+    Human: "Animalia"
+    Mouse: "Animalia"
+    Zebrafish: "Animalia"
+    D_melanogaster: "Animalia"
+    C_elegans: "Animalia"
+    A_thaliana: "Plants"
+    Yeast: "Fungi"
+
+  # Kingdoms for random sampling
+  kingdoms: 
+    - "Bacteria"
+    - "Viruses"
+    - "Archaea"
+    - "Eukaryota"
+
+  # aa comparison for certain species
+  aa_comparison_species: ["E_coli", "Human", "Yeast"]
+    
+  # Number of random sequences to download per kingdom
+  random_sample_size: 100
+  
