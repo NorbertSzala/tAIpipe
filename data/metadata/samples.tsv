@@ -1,9 +1,9 @@
-sample	species	accession	kingdom	phylum	lifestyle	genome	cds	bed	downsampled_fasta	first_contig
-Ztritici	Zymoseptoria_tritici	GCA_000219625.1	Fungi	Ascomycota	plant_pathogen	GCA_000219625.1*.fna	GCA_000219625.1*.fna	GCA_000219625.1.bed	GCA_000219625.1_regions.fasta	GCA_000219625.1_first_contig.fna
-Pplacenta	Postia_placenta	GCA_000006255.1	Fungi	Basidiomycota	wood_saprotroph	GCA_000006255.1*.fna	GCA_000006255.1*.fna	GCA_000006255.1.bed	GCA_000006255.1_regions.fasta	GCA_000006255.1_first_contig.fna
-Spombe	Schizosaccharomyces_pombe	GCA_000002945.2	Fungi	Ascomycota	nectar_tap_saprotroph	GCA_000002945.2*.fna	GCA_000002945.2*.fna	GCA_000002945.2.bed	GCA_000002945.2_regions.fasta	GCA_000002945.2_first_contig.fna
-Anidulans	Aspergillus_nidulans_FGSC_A4	GCA_000149205.2	Fungi	Ascomycota	unspecified_saprotroph	GCA_000149205.2*.fna	GCA_000149205.2*.fna	GCA_000149205.2.bed	GCA_000149205.2_regions.fasta	GCA_000149205.2_first_contig.fna
-Mglobosa	Malassezia_globosa_CBS_7966	GCA_000181695.1	Fungi	Basidiomycota	soil_saprotroph	GCA_000181695.1*.fna	GCA_000181695.1*.fna	GCA_000181695.1.bed	GCA_000181695.1_regions.fasta	GCA_000181695.1_first_contig.fna
-Pfinnis	Piromyces_finnis	GCA_002104945.1	Fungi	Neocallimastigomycota	animal_endosymbiont	GCA_002104945.1*.fna	GCA_002104945.1*.fna	GCA_002104945.1.bed	GCA_002104945.1_regions.fasta	GCA_002104945.1_first_contig.fna
-Rsolani	Rhizoctonia_solani	GCA_016906535.1	Fungi	Basidiomycota	plant_pathogen	GCA_016906535.1*.fna	GCA_016906535.1*.fna	GCA_016906535.1.bed	GCA_016906535.1_regions.fasta	GCA_016906535.1_first_contig.fna
-Bgraminis	Blumeria_graminis_f_sp_triticale	GCA_905067625.1	Fungi	Ascomycota	plant_pathogen	GCA_905067625.1*.fna	GCA_905067625.1*.fna	GCA_905067625.1.bed	GCA_905067625.1_regions.fasta	GCA_905067625.1_first_contig.fna
+sample	species	genetic_code	accession	kingdom	phylum	lifestyle	genome	cds	bed	downsampled_fasta	first_contig
+Ztritici	Zymoseptoria_tritici	1	GCA_000219625.1	Fungi	Ascomycota	plant_pathogen	GCA_000219625.1*.fna	GCA_000219625.1*.fna	GCA_000219625.1.bed	GCA_000219625.1_regions.fasta	GCA_000219625.1_first_contig.fna
+Pplacenta	Postia_placenta	1	GCA_000006255.1	Fungi	Basidiomycota	wood_saprotroph	GCA_000006255.1*.fna	GCA_000006255.1*.fna	GCA_000006255.1.bed	GCA_000006255.1_regions.fasta	GCA_000006255.1_first_contig.fna
+Spombe	Schizosaccharomyces_pombe	3	GCA_000002945.2	Fungi	Ascomycota	nectar_tap_saprotroph	GCA_000002945.2*.fna	GCA_000002945.2*.fna	GCA_000002945.2.bed	GCA_000002945.2_regions.fasta	GCA_000002945.2_first_contig.fna
+Anidulans	Aspergillus_nidulans_FGSC_A4	1	GCA_000149205.2	Fungi	Ascomycota	unspecified_saprotroph	GCA_000149205.2*.fna	GCA_000149205.2*.fna	GCA_000149205.2.bed	GCA_000149205.2_regions.fasta	GCA_000149205.2_first_contig.fna
+Mglobosa	Malassezia_globosa_CBS_7966	1	GCA_000181695.1	Fungi	Basidiomycota	soil_saprotroph	GCA_000181695.1*.fna	GCA_000181695.1*.fna	GCA_000181695.1.bed	GCA_000181695.1_regions.fasta	GCA_000181695.1_first_contig.fna
+Pfinnis	Piromyces_finnis	1	GCA_002104945.1	Fungi	Neocallimastigomycota	animal_endosymbiont	GCA_002104945.1*.fna	GCA_002104945.1*.fna	GCA_002104945.1.bed	GCA_002104945.1_regions.fasta	GCA_002104945.1_first_contig.fna
+Rsolani	Rhizoctonia_solani	1	GCA_016906535.1	Fungi	Basidiomycota	plant_pathogen	GCA_016906535.1*.fna	GCA_016906535.1*.fna	GCA_016906535.1.bed	GCA_016906535.1_regions.fasta	GCA_016906535.1_first_contig.fna
+Bgraminis	Blumeria_graminis_f_sp_triticale	1	GCA_905067625.1	Fungi	Ascomycota	plant_pathogen	GCA_905067625.1*.fna	GCA_905067625.1*.fna	GCA_905067625.1.bed	GCA_905067625.1_regions.fasta	GCA_905067625.1_first_contig.fna

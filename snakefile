@@ -1,4 +1,9 @@
 # Load config file from yaml file
+
+# TODO: Add ption to select genetic code for S. pombe (3) and C. albicans (12)
+
+#TODO: Consider if change tRNAscan-SE.out's pseudo-header to normal .csv like first row. Maybe it will allow easier analyse 
+
 configfile: "./config/config.yaml"
 
 import pandas as pd
@@ -85,7 +90,7 @@ include: "workflow/rules/trnascan_rule.smk"
 rule all:
     input:
         expand(
-            f'{PER_GENOME}/{{sample}}/trnascan/trnascan.out', sample=SAMPLES
+            f'{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.out', sample=SAMPLES
         )
 
 

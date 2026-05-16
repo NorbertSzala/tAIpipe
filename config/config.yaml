@@ -22,6 +22,9 @@ paths:
   logs: "results/logs"
 
 
+trnascanse_threads: 8
+
+
 # ---------------------------
 # --- Analysis Parameters ---
 # ---------------------------
