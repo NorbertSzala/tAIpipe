@@ -81,6 +81,7 @@ def get_bed(wildcards):
 # ---  Include rules ---
 # ----------------------
 include: "workflow/rules/trnascan_rule.smk"
+include: "workflow/rules/clean_tRNAscanSE_output.smk"
 
 
 # -----------------
@@ -90,7 +91,8 @@ include: "workflow/rules/trnascan_rule.smk"
 rule all:
     input:
         expand(
-            f'{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.out', sample=SAMPLES
+            f'{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.tsv', sample=SAMPLES
+
         )
 
 

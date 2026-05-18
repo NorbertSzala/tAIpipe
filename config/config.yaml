@@ -5,7 +5,7 @@
 paths:
   data_cds: "data/CDS"
   data_genome: "data/genome"
-  data_downsampled: "data/downsampled/first_contig"
+  data_downsampled: "data/downsampled/10K"
 
   samples: "data/metadata/samples.tsv"
   main_dataset: "data/metadata/Main_Dataset.tsv"
@@ -22,16 +22,27 @@ paths:
   logs: "results/logs"
 
 
-trnascanse_threads: 8
+
 
 
 # ---------------------------
 # --- Analysis Parameters ---
 # ---------------------------
 
+# --- Tools parameters ---
+trnascanse:
+  threads: 8
+  max_sensitivity: false # set it later into true
+
+trnascanse_clean:
+  keep_pseudo: false #remove trnas recognized as pseudogenes
+  remove_nnn: true #remove undetermined tRNAs from output
+
+
+# --- Other parameters ---
 params:
 
-params:
+  # --- Taxonomic parameters ---
   kingdom_filter: "Fungi"
 
   allowed_phyla:
@@ -69,3 +80,4 @@ params:
     - "animal_endosymbiont"
     - "algal_parasite"
     - "lichenized"
+

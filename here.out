@@ -1,0 +1,12 @@
+Sequence                                                                           		tRNA 	Bounds	tRNA	Anti	Intron Bounds	Inf	      
+Name                                                                               	tRNA #	Begin	End  	Type	Codon	Begin	End	Score	Note
+--------                                                                           	------	-----	------	----	-----	-----	----	------	------
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_1::AAYY01000014.1:378832-398923 	1	10001	10091	Glu	CTC	10038	10056	55.7	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_2::AAYY01000014.1:416326-436414 	1	10001	10088	Ile	AAT	10039	10052	57.5	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_2::AAYY01000014.1:416326-436414 	2	4386 	4288 	His	GTG	4349	4323	58.3	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_2::AAYY01000014.1:416326-436414 	3	4219 	4121 	His	GTG	4182	4156	58.3	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_3::AAYY01000009.1:49179-69273   	1	10463	10369	Arg	ACG	10426	10405	60.8	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_3::AAYY01000009.1:49179-69273   	2	10263	10170	Arg	ACG	10226	10206	60.8	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_3::AAYY01000009.1:49179-69273   	3	10094	10001	Arg	ACG	10057	10037	60.8	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_4::AAYY01000003.1:789833-809917 	1	10084	10001	Arg	TCG	10046	10037	51.6	
+GCA_000181695.1|Malassezia_globosa_CBS_7966|region_5::AAYY01000001.1:0-17908       	1	7908 	7825 	Thr	TGT	7871	7861	63.4	

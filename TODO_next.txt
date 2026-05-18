@@ -1,0 +1,13 @@
+Norbert:
+
+- add different genome tables to S. pombe and C. albicans (for tRNAscan and other tools)
+
+
+Max:
+
+
+
+All:
+
+- add '--max' flag to tRNAscan-SE at final 
+- Consider using SQL database to manage files

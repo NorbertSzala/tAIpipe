@@ -19,9 +19,6 @@ rule run_trnascanse:
     input.genome - input
 
 
-    #TODO IMPORTANT: Later, add flag: --max
-
-
     !IMPORTANT!
 
     in the output's column 'Anti codon' there are sequences of tRNA anticodons, f.e. AAT in DNA 5'-> 3'. They are not codons from coding sequence. 
@@ -30,7 +27,8 @@ rule run_trnascanse:
     """
 
     input:
-        genome = get_first_contig
+        # genome = get_first_contig\
+        genome = get_downsampled_fasta
     
     output:
         out = f"{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.out",
@@ -41,12 +39,17 @@ rule run_trnascanse:
 
     log:
         f'{LOGS}/{{sample}}/trnascan.log'
-
+    
     threads:
-        config.get("trnascanse_threads", 4)
+        config.get("trnascanse", {}).get("threads", 4)
 
-    conda:
-        "../../envs/trnascan.yaml"
+    params:
+        sensitivity = "--max" if config.get('trnascanse', {}).get('max_sensitivity', True) else "" 
+    
+
+    # conda:
+    #     "../../envs/trnascan.yaml"
+
 
     shell:
         """
@@ -61,6 +64,7 @@ rule run_trnascanse:
             --fasta {output.fasta} \
             --prefix {wildcards.sample} \
             --forceow \
+            {params.sensitivity} \
             --thread  {threads} \
             {input.genome} \
             > {log} 2>&1

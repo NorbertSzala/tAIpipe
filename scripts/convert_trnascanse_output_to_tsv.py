@@ -45,7 +45,7 @@ Usage:
 
 Example usage:
 
-    ./scripts/convert_trnascanse_output_to_tsv.py -I results/per_genome/Spombe/trnascan/Spombe_trnascan.out -O ./try.tsv --remove-NNN
+    ./scripts/convert_trnascanse_output_to_tsv.py -I results/per_genome/Spombe/trnascan/Spombe_trnascan.out -O ./try.tsv --remove-nnn
 """
 
 # ----------------------
@@ -55,12 +55,46 @@ Example usage:
 from pathlib import Path
 import argparse
 import pandas as pd
+import warnings
+
+# -----------------------
+# --- Constant values ---
+# -----------------------
+RAW_COLUMNS = [
+    "seq_name",
+    "trna_number",
+    "begin",
+    "end",
+    "trna_type",
+    "anticodon",
+    "intron_begin",
+    "intron_end",
+    "score",
+    "note",
+]
+
+OUTPUT_COLUMNS = [
+    "seq_name",
+    "trna_number",
+    "begin",
+    "end",
+    "trna_type",
+    "anticodon",
+    "intron_begin",
+    "intron_end",
+    "score",
+    "note",
+    "strand",
+    "start",
+    "stop",
+    "has_intron",
+    "is_pseudo",
+]
+
 
 # -----------------
 # --- Arguments ---
 # -----------------
-
-
 def arguments():
     p = argparse.ArgumentParser(
         prog="convert_trnascanse_output_to_tsv.py",
@@ -93,7 +127,7 @@ def arguments():
     )
 
     p.add_argument(
-        "--remove-NNN",
+        "--remove-nnn",
         help="Remove tRNAs with unrecognized anticodon written as NNN in tRNAscan-SE output",
         action="store_true",
     )
@@ -104,8 +138,6 @@ def arguments():
 # ------------------------
 # --- Helper functions ---
 # ------------------------
-
-
 def validate_input_file(input_path: Path) -> None:
     """Check whether input file exists and is not empty."""
     if not input_path.exists():
@@ -118,8 +150,9 @@ def validate_input_file(input_path: Path) -> None:
         raise ValueError(f"Input file is empty: {input_path}")
 
     if input_path.suffix != ".out":
-        raise Warning(
-            f"Input file has improper extenstion: {input_path.suffix}. It should be '.out'"
+        warnings.warn(
+            f"Input file has improper extenstion: {input_path.suffix}. Expected '.out'",
+            stacklevel=2,
         )
 
 
@@ -153,67 +186,50 @@ def is_data_line(line: str) -> bool:
     return True
 
 
-def parse_trnascanse_output(input_path: Path) -> pd.DataFrame:
-    """
-    Parse tRNAscan-SE output into pandas DataFrame.
+def parse_record(line: str, line_number: int) -> dict:
+    """Parse one tRNAscan-SE data line into a dictionary."""
+    fields = line.strip().split()
 
-    Expected data columns:
-    seq_name, trna_number, begin, end, trna_type, anticodon,
-    intron_begin, intron_end, score, optional note
-    """
+    if len(fields) == 9:
+        fields.append("")
+    elif len(fields) != 10:
+        raise ValueError(
+            f"Unexpected number of columns in line {line_number}: "
+            f"expected 9 or 10, got {len(fields)}.\n"
+            f"Line content: {line.rstrip()}"
+        )
+
+    record = dict(zip(RAW_COLUMNS, fields))
+
+    try:
+        record["trna_number"] = int(record["trna_number"])
+        record["begin"] = int(record["begin"])
+        record["end"] = int(record["end"])
+        record["intron_begin"] = int(record["intron_begin"])
+        record["intron_end"] = int(record["intron_end"])
+        record["score"] = float(record["score"])
+    except ValueError as exc:
+        raise ValueError(
+            f"Could not parse numeric values in line {line_number}:\n"
+            f"{line.rstrip()}"
+        ) from exc
+
+    return record
+
+
+def read_trnascanse_output(path: Path) -> pd.DataFrame:
+    """Read tRNAscan-SE output into a raw DataFrame."""
     records = []
 
-    with input_path.open("r", encoding="utf-8") as handle:
+    with path.open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
-            if not is_data_line(line):
-                continue
-
-            fields = line.strip().split()
-
-            if len(fields) not in [9, 10]:
-                raise ValueError(
-                    f"Unexpected number of columns in line {line_number}: "
-                    f"expected 9 or 10, got {len(fields)}\n"
-                    f"Line content: {line.rstrip()}"
-                )
-
-            if len(fields) == 9:
-                fields.append("")
-
-            (
-                seq_name,
-                trna_number,
-                begin,
-                end,
-                trna_type,
-                anticodon,
-                intron_begin,
-                intron_end,
-                score,
-                note,
-            ) = fields
-
-            records.append(
-                {
-                    "seq_name": seq_name,
-                    "trna_number": int(trna_number),
-                    "begin": int(begin),
-                    "end": int(end),
-                    "trna_type": trna_type,
-                    "anticodon": anticodon,
-                    "intron_begin": int(intron_begin),
-                    "intron_end": int(intron_end),
-                    "score": float(score),
-                    "note": note,
-                }
-            )
+            if is_data_line(line):
+                records.append(parse_record(line, line_number))
 
     if not records:
-        raise ValueError(f"No valid tRNAscan-SE records found in: {input_path}")
+        raise ValueError(f"No valid tRNAscan-SE records found in: {path}")
 
-    df = pd.DataFrame(records)
-
-    return df
+    return pd.DataFrame.from_records(records, columns=RAW_COLUMNS)
 
 
 def add_derived_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -280,15 +296,26 @@ def validate_dataframe(df: pd.DataFrame) -> None:
         raise ValueError("Negative Infernal scores found; this is unexpected.")
 
 
+def filter_records(
+    df: pd.DataFrame, keep_pseudo: bool, remove_nnn: bool
+) -> pd.DataFrame:
+    """Apply optional filtering"""
+    filtered = df.copy()
+
+    if not keep_pseudo:
+        filtered = filtered[~filtered["is_pseudo"]]
+
+    if remove_nnn:
+        filtered = filtered[filtered["anticodon"] != "NNN"]
+
+    return filtered.copy()
+
+
 def write_output(df: pd.DataFrame, output_path: Path) -> None:
     """Write DataFrame to TSV."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df.to_csv(
-        output_path,
-        sep="\t",
-        index=False,
-    )
+    df.to_csv(output_path, sep="\t", index=False, columns=OUTPUT_COLUMNS)
 
 
 # ---------------------
@@ -299,15 +326,11 @@ def main():
 
     validate_input_file(args.input)
 
-    df = parse_trnascanse_output(args.input)
+    df = read_trnascanse_output(args.input)
     df = add_derived_columns(df)
     validate_dataframe(df)
 
-    if not args.keep_pseudo:
-        df = df[~df["is_pseudo"]].copy()
-
-    if args.remove_NNN:
-        df = df[df["anticodon"] != "NNN"].copy()
+    df = filter_records(df, keep_pseudo=args.keep_pseudo, remove_nnn=args.remove_nnn)
 
     write_output(df, args.output)
 
