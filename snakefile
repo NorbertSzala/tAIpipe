@@ -77,13 +77,6 @@ def get_bed(wildcards):
 
 
 
-# ----------------------
-# ---  Include rules ---
-# ----------------------
-include: "workflow/rules/trnascan_rule.smk"
-include: "workflow/rules/clean_tRNAscanSE_output.smk"
-
-
 # -----------------
 # --- Main Rule ---
 # -----------------
@@ -91,9 +84,18 @@ include: "workflow/rules/clean_tRNAscanSE_output.smk"
 rule all:
     input:
         expand(
-            f'{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.tsv', sample=SAMPLES
+            f'{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv', sample=SAMPLES
+)
 
-        )
+# ----------------------
+# ---  Include rules ---
+# ----------------------
+include: "workflow/rules/trnascan_rule.smk"
+include: "workflow/rules/clean_tRNAscanSE_output.smk"
+include: "workflow/rules/prepare_trna_codon_counts_to_tai_rule.smk"
+
+
+
 
 
 
