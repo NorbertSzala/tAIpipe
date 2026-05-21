@@ -1,0 +1,75 @@
+# workflow/schemas/config.schema.yaml
+
+$schema: "http://json-schema.org/draft-07/schema#"
+
+type: object
+
+required:
+  - paths
+  - trnascanse
+  - trnascanse_clean
+
+properties:
+  paths:
+    type: object
+    required:
+      - data_cds
+      - data_genome
+      - data_downsampled
+      - samples
+      - main_dataset
+      - results
+      - per_genome
+      - aggregated
+      - plots
+      - tables
+      - reports
+      - logs
+    properties:
+      data_cds:
+        type: string
+      data_genome:
+        type: string
+      data_downsampled:
+        type: string
+      samples:
+        type: string
+      main_dataset:
+        type: string
+      results:
+        type: string
+      per_genome:
+        type: string
+      aggregated:
+        type: string
+      plots:
+        type: string
+      tables:
+        type: string
+      reports:
+        type: string
+      logs:
+        type: string
+
+  trnascanse:
+    type: object
+    required:
+      - threads
+      - max_sensitivity
+    properties:
+      threads:
+        type: integer
+        minimum: 1
+      max_sensitivity:
+        type: boolean
+
+  trnascanse_clean:
+    type: object
+    required:
+      - keep_pseudo
+      - remove_nnn
+    properties:
+      keep_pseudo:
+        type: boolean
+      remove_nnn:
+        type: boolean

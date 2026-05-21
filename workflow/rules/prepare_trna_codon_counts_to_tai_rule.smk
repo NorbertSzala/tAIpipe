@@ -20,7 +20,7 @@ rule prepare_trna_codon_counts_to_tai:
         """
         mkdir -p $(dirname {ou  tput.aaa_count}) $(dirname {log})
 
-        python3 scripts/prepare_trna_codon_counts_to_tai.py \
+        python3 workflow/scripts/prepare_trna_codon_counts_to_tai.py \
             -I {input.clean_trnascan} \
             -O {output.aaa_count} \
             > {log} 2>&1

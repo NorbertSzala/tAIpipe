@@ -6,11 +6,15 @@ paths:
   data_cds: "data/CDS"
   data_genome: "data/genome"
   data_downsampled: "data/downsampled/10K"
+  data_first_contig: "data/downsampled/first_contig"
 
-  samples: "data/metadata/samples.tsv"
-  main_dataset: "data/metadata/Main_Dataset.tsv"
+  samples: "config/samples.tsv"
+  main_dataset: "resources/metadata/Main_Dataset.tsv"
 
   results: "results"
+  logs: "results/logs"
+  benchmarks: "results/benchmarks"
+
   per_genome: "results/per_genome"
   aggregated: "results/aggregated"
 
@@ -19,15 +23,12 @@ paths:
   tables: "results/aggregated/tables"
   reports: "results/aggregated/reports"
 
-  logs: "results/logs"
-
-
-
 
 
 # ---------------------------
 # --- Analysis Parameters ---
 # ---------------------------
+
 
 # --- Tools parameters ---
 trnascanse:

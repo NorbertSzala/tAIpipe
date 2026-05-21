@@ -1,0 +1,12 @@
+# workflow/profiles/default/config.yaml
+
+snakefile: workflow/Snakefile
+configfile: config/config.yaml
+
+cores: 4
+printshellcmds: true
+show-failed-logs: true
+use-conda: true
+rerun-incomplete: true
+keep-going: false
+latency-wait: 60

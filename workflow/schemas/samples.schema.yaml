@@ -1,0 +1,58 @@
+# workflow/schemas/samples.schema.yaml
+
+$schema: "http://json-schema.org/draft-07/schema#"
+
+type: object
+
+properties:
+  sample:
+    type: string
+    pattern: "^[A-Za-z0-9_.-]+$"
+
+  species:
+    type: string
+
+  genetic_code:
+    type: integer
+    enum: [1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14, 16, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33]
+
+  accession:
+    type: string
+
+  kingdom:
+    type: string
+
+  phylum:
+    type: string
+
+  lifestyle:
+    type: string
+
+  genome:
+    type: string
+
+  cds:
+    type: string
+
+  bed:
+    type: string
+
+  downsampled_fasta:
+    type: string
+
+  first_contig:
+    type: string
+
+required:
+  - sample
+  - species
+  - genetic_code
+  - accession
+  - kingdom
+  - phylum
+  - lifestyle
+  - genome
+  - cds
+  - bed
+  - downsampled_fasta
+  - first_contig

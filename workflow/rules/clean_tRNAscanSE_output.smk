@@ -23,7 +23,7 @@ rule convert_trnascanse_output_to_tsv:
         """
         mkdir -p $(dirname {output.clean_trnascan}) $(dirname {log})
 
-        python3 scripts/convert_trnascanse_output_to_tsv.py \
+        python3 workflow/scripts/convert_trnascanse_output_to_tsv.py \
             -I {input.trnascan_out} \
             -O {output.clean_trnascan} \
             {params.remove_nnn} \

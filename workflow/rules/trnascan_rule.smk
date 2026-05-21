@@ -6,7 +6,7 @@ rule run_trnascanse:
 
     Used flags:
 
-    -E: eukariotic mode (default)
+    -E: eukaryotic mode (default)
     --max: maximum sensitivity mode - search using Infernat without hmm finding
     --output: path to main output
     --stats: path to output with stats
@@ -43,8 +43,12 @@ rule run_trnascanse:
     threads:
         config.get("trnascanse", {}).get("threads", 4)
 
+    container:
+        "docker://quay.io/biocontainers/trnascan-se:2.0.12--pl5321h7b50bb2_2"
+
     params:
-        sensitivity = "--max" if config.get('trnascanse', {}).get('max_sensitivity', True) else "" 
+        sensitivity = "--max" if config.get('trnascanse', {}).get('max_sensitivity', True) else ""
+        gencode = get_genetic_code
     
 
     # conda:
@@ -62,7 +66,8 @@ rule run_trnascanse:
             --bed {output.bed} \
             --gff {output.gff} \
             --fasta {output.fasta} \
-            --prefix {wildcards.sample} \
+            --prefix {wildcards.sample} \\
+            -gencode {params.gencode} \\
             --forceow \
             {params.sensitivity} \
             --thread  {threads} \
