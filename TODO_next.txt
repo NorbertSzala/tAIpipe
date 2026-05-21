@@ -5,6 +5,18 @@ Norbert:
 
 Max:
 
+https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=13125
+Taxonomy, download and parse. 
+Make script downloading data (CDS, genome, gff (optionally))
+Na podstawie nazwy organizmu / ncbi accession stworyc samples.tsv (skrypt parsujący te informacje do inputu do workflow)
+
+Obligatoryjne pola w tsv:
+    - sample (regexp z species)
+    - species z podania uzytkownika lub wyciagniete z ncbi accession (dobrze by bylo by mozna bylo podac jako input albo accession GCA_.... albo nazwe organizmu - wtedy skrypt musialby pobrac referencyjny genom dla wyszukanego organizmu.)
+    - Genetic code - tez z ncbi
+    - kingdom i inna taksonomia (phylum lub odpowiednik wystarczy), mozna rozszerzyc potem -- z ncbi
+    - genome - pobierz z ncbi
+    - cds - z ncbi
 
 
 All:
