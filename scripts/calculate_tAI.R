@@ -12,7 +12,6 @@
 # Cubar package instruction:
 # https://cran.r-project.org/web/packages/cubar/cubar.pdf
 
-chan
 
 
 # -----------------
