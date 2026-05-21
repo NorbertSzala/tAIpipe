@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  snakemake-dry-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-name: taipipe-ci
+          create-args: >-
+            -c conda-forge
+            -c bioconda
+            snakemake
+            pandas
+            python
+
+      - name: Snakemake dry-run
+        shell: bash -l {0}
+        run: |
+          snakemake -s workflow/Snakefile \
+            --configfile config/config_test.yaml \
+            --cores 1 \
+            --dry-run \
+            --printshellcmds
