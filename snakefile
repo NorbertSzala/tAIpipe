@@ -9,6 +9,7 @@ configfile: "./config/config.yaml"
 import pandas as pd
 from glob import glob
 
+
 # ----------------------
 # --- Path variables ---
 # ----------------------
@@ -104,8 +105,7 @@ include: "workflow/rules/prepare_trna_codon_counts_to_tai_rule.smk"
 # ----------------------------------
 
 
-# TODO 
-# dopisać kolejne rule 
+
 
 
 
