@@ -104,7 +104,8 @@ include: "workflow/rules/prepare_trna_codon_counts_to_tai_rule.smk"
 # ----------------------------------
 
 
-
+# TODO 
+# dopisać kolejne rule 
 
 
 
