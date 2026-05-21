@@ -1,7 +1,31 @@
-data/CDS/*fna
-data/genome/*fna
-data/genome/*fai
-data/metadata/Main_Dataset.tsv
-data/downsampled/*
-results/*
-.snakemake*
+# Results
+results/
+logs/
+.dag/
+
+# Large input data
+data/genome/
+data/CDS/
+data/downsampled/
+resources/metadata/Main_Dataset.tsv
+
+
+# Snakemake
+.snakemake/
+*.snakemake.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS/editor
+.DS_Store
+.vscode/

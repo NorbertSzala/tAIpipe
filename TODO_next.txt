@@ -12,6 +12,7 @@ Norbert:
     - uwagi co należało by dodać a czego w nich brakuje. 
 - Określić konkretne czcionki, rozmiary, kolory na wykresach. Przyporządkować phylum/lifestyle do konkretnego koloru (na potrzeby magisterki)
 
+- Aktualizuj workflow/schemas/*.schema.yaml przy każdej edycji config, samples
 
 Max:
 
