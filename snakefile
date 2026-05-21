@@ -9,6 +9,7 @@ configfile: "./config/config.yaml"
 import pandas as pd
 from glob import glob
 
+example codon_usage_metrics
 # ----------------------
 # --- Path variables ---
 # ----------------------
