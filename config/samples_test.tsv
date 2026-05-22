@@ -1,0 +1,9 @@
+sample	species	genetic_code	accession	domain	kingdom	phylum	lifestyle	genome	cds	include
+Ztritici	Zymoseptoria_tritici	1	GCA_000219625.1	eukarya	Fungi	Ascomycota	plant_pathogen	GCA_000219625.1_*.fna	GCA_000219625.1_*.fna	True
+Pplacenta	Postia_placenta	1	GCA_000006255.1	eukarya	Fungi	Basidiomycota	wood_saprotroph	GCA_000006255.1_*.fna	GCA_000006255.1_*.fna	True
+Spombe	Schizosaccharomyces_pombe	3	GCA_000002945.2	eukarya	Fungi	Ascomycota	nectar_tap_saprotroph	GCA_000002945.2_*.fna	GCA_000002945.2_*.fna	True
+Anidulans	Aspergillus_nidulans_FGSC_A4	1	GCA_000149205.2	eukarya	Fungi	Ascomycota	unspecified_saprotroph	GCA_000149205.2_*.fna	GCA_000149205.2_*.fna	True
+Mglobosa	Malassezia_globosa_CBS_7966	1	GCA_000181695.1	eukarya	Fungi	Basidiomycota	soil_saprotroph	GCA_000181695.1_*.fna	GCA_000181695.1_*.fna	True
+Pfinnis	Piromyces_finnis	1	GCA_002104945.1	eukarya	Fungi	Neocallimastigomycota	animal_endosymbiont	GCA_002104945.1_*.fna	GCA_002104945.1_*.fna	True
+Rsolani	Rhizoctonia_solani	1	GCA_016906535.1	eukarya	Fungi	Basidiomycota	plant_pathogen	GCA_016906535.1_*.fna	GCA_016906535.1_*.fna	True
+Bgraminis	Blumeria_graminis_f_sp_triticale	1	GCA_905067625.1	eukarya	Fungi	Ascomycota	plant_pathogen	GCA_905067625.1_*.fna	GCA_905067625.1_*.fna	True

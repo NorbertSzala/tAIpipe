@@ -1,16 +1,15 @@
 Norbert:
 
 - add different genome tables to S. pombe and C. albicans (for tRNAscan and other tools)
-- Add Docker instead of tRNAscan-SE and R to maximize reproducibility. 
-- +- README.md żeby było wiadome co sie dzieje
+- Add singularity instead of tRNAscan-SE and R to maximize reproducibility. 
+
 - informacje o tym gdzie docelowo powinny się znajdować pliki z:
     - z końcowym wynikiem
     - wykresami (ja bym je zamieścił w osobnym folderze) 
     - o tym gdzie mają znajdowac sie sample i metadane. 
+
 - plik z końcowymi wynikami po analizach tai, z opisem które informacje są wykorzystywane, które są redundantne
-- folder ze starymi skryptami odpowiedzialnymi za robienie wykresów 
-    - uwagi co należało by dodać a czego w nich brakuje. 
-- Określić konkretne czcionki, rozmiary, kolory na wykresach. Przyporządkować phylum/lifestyle do konkretnego koloru (na potrzeby magisterki)
+
 
 - Aktualizuj workflow/schemas/*.schema.yaml przy każdej edycji config, samples
 
@@ -29,9 +28,6 @@ Obligatoryjne pola w tsv:
     - genome - pobierz z ncbi
     - cds - z ncbi
 
-Oczekuje / wymagam:
-
-
 Przejrzeć (pakiet shiny - R)
 
 
@@ -40,10 +36,10 @@ Przejrzeć (pakiet shiny - R)
 
 All:
 
-- add '--max' flag to tRNAscan-SE at final 
 - Consider using SQL database to manage files
 
 
+# --------------------------------------------
 udostępnianie dos†ępu:
 sprawdź czy na pewno zostały zapisane:
 
