@@ -6,10 +6,10 @@ configfile: config/config_test.yaml
 cores: 4
 printshellcmds: true
 show-failed-logs: true
-use-conda: false
-use-apptainer: true
-apptainer-prefix: "resources/containers"
-apptainer-args: "--cleanenv"
+use-conda: true
+use-apptainer: false
+conda-frontend: mamba
+conda-prefix: resources/conda
 rerun-incomplete: true
 keep-going: false
 latency-wait: 60

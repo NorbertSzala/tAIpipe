@@ -1,5 +1,5 @@
 #deprecated
-name: tai-trnascan
+name: trnascanse
 
 channels:
   - conda-forge

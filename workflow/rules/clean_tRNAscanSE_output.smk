@@ -20,7 +20,7 @@ rule convert_trnascanse_output_to_tsv:
         keep_pseudo = "--keep-pseudo" if config.get('trnascanse_clean', {}).get("keep_pseudo", True) else ""
 
     conda:
-        'workflow/envs/python.yaml'
+        '../envs/python.yaml'
 
     shell:
         """

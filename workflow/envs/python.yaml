@@ -1,0 +1,10 @@
+name: tai-python
+
+channels:
+  - conda-forge
+  - bioconda
+
+dependancies:
+  - python=3.11
+  - pandas
+  - biopython

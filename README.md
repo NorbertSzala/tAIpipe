@@ -63,6 +63,26 @@ results/per_genome/<sample>/
 └── codon_usage/
 ```
 
+
+### Execution backends
+
+The workflow is designed to support two execution modes:
+
+1. **Conda/Mamba mode** — current default and recommended mode on systems where Apptainer/Singularity is not available for unprivileged users.
+2. **Apptainer/Singularity mode** — prepared as a reproducible containerized backend, but it requires a working system-level Apptainer/Singularity installation that can run containers without sudo.
+
+Run with Conda:
+
+```bash
+snakemake --profile workflow/profiles/test
+```
+
+Run with Apptainer, if available:
+
+```bash
+snakemake --profile workflow/profiles/apptainer
+```
+
 ## ⬇️ Installation
 
 Clone the repository:

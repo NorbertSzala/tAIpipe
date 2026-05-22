@@ -27,8 +27,7 @@ rule run_trnascanse:
     """
 
     input:
-        # genome = get_first_contig\
-        genome = get_downsampled_fasta
+        genome = get_genome
     
     output:
         out = f"{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.out",
@@ -43,8 +42,11 @@ rule run_trnascanse:
     threads:
         config.get("trnascanse", {}).get("threads", 4)
 
-    container:
-        containers['trnascanse']
+    conda:
+        "../envs/trnascanse.yaml"
+
+    # container:
+    #     CONTAINERS['trnascanse']
 
     params:
         sensitivity = lambda wildcards: "--max" if config.get("trnascanse", {}).get("max_sensitivity", True) else "",

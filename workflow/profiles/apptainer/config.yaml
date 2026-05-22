@@ -1,4 +1,4 @@
-# workflow/profiles/default/config.yaml
+# workflow/profiles/apptainer/config.yaml
 
 snakefile: workflow/Snakefile
 configfile: config/config.yaml
@@ -6,9 +6,10 @@ configfile: config/config.yaml
 cores: 8
 printshellcmds: true
 show-failed-logs: true
-use-conda: true
-conda-frontend: mamba
-use-apptainer: false
+use-conda: false
+use-apptainer: true
+apptainer-prefix: "resources/containers"
+apptainer-args: "--cleanenv"
 rerun-incomplete: true
 keep-going: false
 latency-wait: 60

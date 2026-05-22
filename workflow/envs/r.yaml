@@ -1,0 +1,20 @@
+name: r-cubar
+
+channels:
+  - conda-forge
+  - bioconda
+
+dependencies:
+  - r-base=4.3
+  - bioconductor-biostrings
+  - bioconductor-iranges
+  - r-readr
+  - r-dplyr
+  - r-tidyr
+  - r-tibble
+  - r-stringr
+  - r-data.table
+  - r-ggplot2
+  - r-optparse
+  - r-remotes
+  - r-rlang

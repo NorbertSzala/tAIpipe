@@ -15,7 +15,6 @@ properties:
     required:
       - data_cds
       - data_genome
-      - data_downsampled
       - samples
       - main_dataset
       - results
@@ -29,8 +28,6 @@ properties:
       data_cds:
         type: string
       data_genome:
-        type: string
-      data_downsampled:
         type: string
       samples:
         type: string

@@ -4,13 +4,13 @@ configfile: "config/config.yaml"
 import pandas as pd
 from glob import glob
 from snakemake.utils import validate
-import yaml
+# import yaml
 
-with open("workflow/containers/containers.yaml") as f:
-    CONTAINERS = yaml.safe_load(f)
+# with open("workflow/containers/containers.yaml") as f:
+#     CONTAINERS = yaml.safe_load(f)
 
 
-validate(config, "workflow/schemas/config.schema.yaml")
+validate(config, "schemas/config.schema.yaml")
 
 
 # ----------------------
@@ -19,7 +19,6 @@ validate(config, "workflow/schemas/config.schema.yaml")
 # Helper path variables for easier acces
 
 DATA_CDS = config["paths"]["data_cds"]
-DATA_DOWN = config["paths"]["data_downsampled"]
 DATA_GENOME = config["paths"]["data_genome"]
 
 PER_GENOME = config['paths']['per_genome']
@@ -32,15 +31,6 @@ DATA_TABLES = config["paths"]["tables"]
 REPORT_FILE = config["paths"]["reports"]
 
 
-# ----------------------
-# ---  Include rules ---
-# ----------------------
-include: "workflow/rules/trnascan_rule.smk"
-include: "workflow/rules/clean_tRNAscanSE_output.smk"
-include: "workflow/rules/prepare_trna_codon_counts_to_tai_rule.smk"
-include: "workflow/rules/codon_usage_metrics_rule.smk"
-
-
 
 # ---------------------
 # --- Samples table ---
@@ -49,7 +39,7 @@ include: "workflow/rules/codon_usage_metrics_rule.smk"
 samples_df = pd.read_csv(config['paths']['samples'], sep = '\t')
 
 # Validate samples tsv
-validate(samples_df, "workflow/schemas/config.schema.yaml")
+validate(samples_df, "schemas/samples.schema.yaml")
 
 samples_df = samples_df.set_index("sample")
 samples_df = samples_df[samples_df['include']== True] # added additional column in samples.tsv to make excluding some samples much easier
@@ -80,22 +70,19 @@ def get_cds(wildcards):
     pattern = samples_df.loc[wildcards.sample, 'cds']
     return resolve_single_file(f'{DATA_CDS}/{pattern}')
 
-
-def get_downsampled_fasta(wildcards):
-    pattern = samples_df.loc[wildcards.sample]['downsampled_fasta']    
-    return resolve_single_file(f'{DATA_DOWN}/{pattern}')
-
-def get_first_contig(wildcards):
-    pattern = samples_df.loc[wildcards.sample]['first_contig']    
-    return resolve_single_file(f'{DATA_DOWN}/{pattern}')
-
-
-def get_bed(wildcards):
-    pattern = samples_df.loc[wildcards.sample]['bed']
-    return resolve_single_file(f'{DATA_DOWN}/{pattern}')
-
 def get_genetic_code(wildcards):
     return int(samples_df.loc[wildcards.sample, "genetic_code"])
+
+
+# ----------------------
+# ---  Include rules ---
+# ----------------------
+include: "rules/trnascan_rule.smk"
+include: "rules/clean_tRNAscanSE_output.smk"
+include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
+# include: "rules/codon_usage_metrics_rule.smk"
+
+
 
 
 # -----------------
