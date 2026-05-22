@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: mambaorg/micromamba:1.5.8
+
+%post
+    export MAMBA_ROOT_PREFIX=/opt/conda
+
+    micromamba create -y -n renv \
+        -c conda-forge \
+        -c bioconda \
+        r-base=4.3 \
+        bioconductor-biostrings \
+        bioconductor-iranges \
+        r-readr \
+        r-dplyr \
+        r-tidyr \
+        r-tibble \
+        r-stringr \
+        r-data.table \
+        r-ggplot2 \
+        r-optparse \
+        r-remotes \
+        r-rlang
+
+    /opt/conda/envs/renv/bin/Rscript \
+        -e 'install.packages("cubar", repos="https://cloud.r-project.org")'
+
+    micromamba clean -a -y
+
+%environment
+    export MAMBA_ROOT_PREFIX=/opt/conda
+    export PATH=/opt/conda/envs/renv/bin:$PATH
+
+%runscript
+    exec "$@"

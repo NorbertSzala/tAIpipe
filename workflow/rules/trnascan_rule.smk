@@ -27,8 +27,7 @@ rule run_trnascanse:
     """
 
     input:
-        # genome = get_first_contig\
-        genome = get_downsampled_fasta
+        genome = get_genome
     
     output:
         out = f"{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.out",
@@ -43,16 +42,18 @@ rule run_trnascanse:
     threads:
         config.get("trnascanse", {}).get("threads", 4)
 
-    container:
-        "docker://quay.io/biocontainers/trnascan-se:2.0.12--pl5321h7b50bb2_2"
+    conda:
+        "../envs/trnascanse.yaml"
+
+    # container:
+    #     CONTAINERS['trnascanse']
 
     params:
-        sensitivity = "--max" if config.get('trnascanse', {}).get('max_sensitivity', True) else ""
-        gencode = get_genetic_code
-    
+        sensitivity = lambda wildcards: "--max" if config.get("trnascanse", {}).get("max_sensitivity", True) else "",
+        gencode = get_genetic_code,
+        domain = lambda wildcards: config.get("trnascanse", {}).get("domain", "-E")
 
-    # conda:
-    #     "../../envs/trnascan.yaml"
+
 
 
     shell:
@@ -60,20 +61,17 @@ rule run_trnascanse:
         mkdir -p $(dirname {output.out}) $(dirname {log})  
         
         tRNAscan-SE \
-            -E \
+            {params.domain} \
+            {params.sensitivity} \
             --output {output.out} \
             --stats {output.stats} \
             --bed {output.bed} \
             --gff {output.gff} \
             --fasta {output.fasta} \
-            --prefix {wildcards.sample} \\
-            -gencode {params.gencode} \\
+            --prefix {wildcards.sample} \
+            -gencode {params.gencode} \
             --forceow \
-            {params.sensitivity} \
             --thread  {threads} \
             {input.genome} \
             > {log} 2>&1
         """
-
-
-# TODO: dodaj obsluge alternate genetic code - flaga --gencode

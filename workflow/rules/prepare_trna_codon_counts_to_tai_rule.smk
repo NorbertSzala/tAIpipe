@@ -14,11 +14,12 @@ rule prepare_trna_codon_counts_to_tai:
     log:
         f'{LOGS}/{{sample}}/prepare_trna_codon_counts_to_tai.log'
 
-
+    conda:
+        "../envs/python.yaml"
     
     shell:
         """
-        mkdir -p $(dirname {ou  tput.aaa_count}) $(dirname {log})
+        mkdir -p $(dirname {output.aaa_count}) $(dirname {log})
 
         python3 workflow/scripts/prepare_trna_codon_counts_to_tai.py \
             -I {input.clean_trnascan} \

@@ -5,8 +5,7 @@
 paths:
   data_cds: "data/CDS"
   data_genome: "data/genome"
-  data_downsampled: "data/downsampled/10K"
-  data_first_contig: "data/downsampled/first_contig"
+
 
   samples: "config/samples.tsv"
   main_dataset: "resources/metadata/Main_Dataset.tsv"
@@ -33,7 +32,8 @@ paths:
 # --- Tools parameters ---
 trnascanse:
   threads: 8
-  max_sensitivity: false # set it later into true
+  max_sensitivity: True # set it later into true
+  domain: "-E" # allowed: E- eukaryotic, A-Archaea, B-Bacteria
 
 trnascanse_clean:
   keep_pseudo: false #remove trnas recognized as pseudogenes

@@ -1,0 +1,3 @@
+trnascanse: "docker://quay.io/biocontainers/trnascan-se:2.0.12--pl5321h7b50bb2_2"
+renv: "resources/containers/renv.sif"
+python: "resources/containers/python.sif"
