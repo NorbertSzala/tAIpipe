@@ -14,7 +14,8 @@ rule prepare_trna_codon_counts_to_tai:
     log:
         f'{LOGS}/{{sample}}/prepare_trna_codon_counts_to_tai.log'
 
-
+    conda:
+        "workflow/envs/python.yaml"
     
     shell:
         """

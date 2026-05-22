@@ -1,6 +1,9 @@
-name: trnascan
+#deprecated
+name: tai-trnascan
+
 channels:
   - conda-forge
   - bioconda
-dependancies:
-  -trnascan-se=2.0.12
+
+dependencies:
+  - trnascan-se=2.0.12

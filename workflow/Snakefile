@@ -1,15 +1,13 @@
-# Load config file from yaml file
-
-# TODO: Add ption to select genetic code for S. pombe (3) and C. albicans (12)
-
-#TODO: Consider if change tRNAscan-SE.out's pseudo-header to normal .csv like first row. Maybe it will allow easier analyse 
 
 configfile: "config/config.yaml"
 
 import pandas as pd
 from glob import glob
 from snakemake.utils import validate
+import yaml
 
+with open("workflow/containers/containers.yaml") as f:
+    CONTAINERS = yaml.safe_load(f)
 
 
 validate(config, "workflow/schemas/config.schema.yaml")
@@ -25,6 +23,7 @@ DATA_DOWN = config["paths"]["data_downsampled"]
 DATA_GENOME = config["paths"]["data_genome"]
 
 PER_GENOME = config['paths']['per_genome']
+AGGREGATED = config['paths']['aggregated']
 LOGS = config['paths']['logs']
 
 DATA_MAINTABLE = config["paths"]["main_dataset"]

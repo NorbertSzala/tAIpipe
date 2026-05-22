@@ -8,6 +8,8 @@ data/genome/
 data/CDS/
 resources/metadata/Main_Dataset.tsv
 
+resources/containers/*.sif
+
 
 # Snakemake
 .snakemake/

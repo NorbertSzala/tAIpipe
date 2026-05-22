@@ -10,4 +10,7 @@ rule codon_usage_metrics:
     
     output:
 
+    container:
+        CONTAINERS['renv']
+
     shell:

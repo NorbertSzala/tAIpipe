@@ -1,0 +1,83 @@
+# ---------------------
+# --- Project Paths ---
+# ---------------------
+
+paths:
+  data_cds: "resources/test_data/CDS"
+  data_genome: "resources/test_data/genome"
+
+  samples: "config/samples_test.tsv"
+  main_dataset: "resources/test_data/metadata/test_metadata.tsv"
+
+  results: "resources/example_outputs"
+  logs: "resources/example_outputslogs"
+  benchmarks: "resources/example_outputs/benchmarks"
+
+  per_genome: "resources/example_outputs/per_genome"
+  aggregated: "resources/example_outputs/aggregated"
+
+
+  plots: "resources/example_outputs/aggregated/plots"
+  tables: "resources/example_outputs/aggregated/tables"
+  reports: "resources/example_outputs/aggregated/reports"
+
+
+
+# ---------------------------
+# --- Analysis Parameters ---
+# ---------------------------
+
+
+# --- Tools parameters ---
+trnascanse:
+  threads: 8
+  max_sensitivity: false # set it later into true
+  domain: "-E" # allowed: E- eukaryotic, A-Archaea, B-Bacteria
+
+trnascanse_clean:
+  keep_pseudo: false #remove trnas recognized as pseudogenes
+  remove_nnn: true #remove undetermined tRNAs from output
+
+
+# --- Other parameters ---
+params:
+
+  # --- Taxonomic parameters ---
+  kingdom_filter: "Fungi"
+
+  allowed_phyla:
+    - "Ascomycota"
+    - "Basidiobolomycota"
+    - "Basidiomycota"
+    - "Blastocladiomycota"
+    - "Chytridiomycota"
+    - "Entomophthoromycota"
+    - "Glomeromycota"
+    - "Kickxellomycota"
+    - "Microsporidia"
+    - "Monoblepharomycota"
+    - "Mortierellomycota"
+    - "Mucoromycota"
+    - "Neocallimastigomycota"
+    - "Olpidiomycota"
+    - "Rozellomycota"
+    - "Zoopagomycota"
+
+  allowed_lifestyles:
+    - "unspecified_saprotroph"
+    - "nectar_tap_saprotroph"
+    - "wood_saprotroph"
+    - "animal_parasite"
+    - "plant_pathogen"
+    - "soil_saprotroph"
+    - "ectomycorrhizal"
+    - "mycoparasite"
+    - "pollen_saprotroph"
+    - "arbuscular_mycorrhizal"
+    - "litter_saprotroph"
+    - "dung_saprotroph"
+    - "protistan_parasite"
+    - "animal_endosymbiont"
+    - "algal_parasite"
+    - "lichenized"
+
