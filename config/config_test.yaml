@@ -5,12 +5,14 @@
 paths:
   data_cds: "resources/test_data/CDS"
   data_genome: "resources/test_data/genome"
+  genetic_codes_trnascanse: "data/genetic_codes/trnascanse"
+  genetic_codes_tables: "data/genetic_codes/tables"
 
   samples: "config/samples_test.tsv"
   main_dataset: "resources/test_data/metadata/test_metadata.tsv"
 
   results: "resources/example_outputs"
-  logs: "resources/example_outputslogs"
+  logs: "resources/example_outputs/logs"
   benchmarks: "resources/example_outputs/benchmarks"
 
   per_genome: "resources/example_outputs/per_genome"

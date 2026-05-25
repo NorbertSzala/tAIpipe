@@ -22,6 +22,9 @@ rule convert_trnascanse_output_to_tsv:
     conda:
         '../envs/python.yaml'
 
+    message:
+        "Cleaning tRNAscan-SE output and saving into easy to interpret .tsv file"
+
     shell:
         """
         mkdir -p $(dirname {output.clean_trnascan}) $(dirname {log})

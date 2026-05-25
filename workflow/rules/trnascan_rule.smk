@@ -37,7 +37,7 @@ rule run_trnascanse:
         fasta = f'{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.fasta',
 
     log:
-        f'{LOGS}/{{sample}}/trnascan.log'
+        f'{LOGS}/{{sample}}/trnascanse.log'
     
     threads:
         config.get("trnascanse", {}).get("threads", 4)
@@ -50,10 +50,11 @@ rule run_trnascanse:
 
     params:
         sensitivity = lambda wildcards: "--max" if config.get("trnascanse", {}).get("max_sensitivity", True) else "",
-        gencode = get_genetic_code,
+        gencode_arg = get_trnascanse_code_arg,
         domain = lambda wildcards: config.get("trnascanse", {}).get("domain", "-E")
 
-
+    message:
+        "Predicting tRNA-genes using tRNAscan-SE 2.0 tool."
 
 
     shell:
@@ -63,13 +64,13 @@ rule run_trnascanse:
         tRNAscan-SE \
             {params.domain} \
             {params.sensitivity} \
+            {params.gencode_arg} \
             --output {output.out} \
             --stats {output.stats} \
             --bed {output.bed} \
             --gff {output.gff} \
             --fasta {output.fasta} \
             --prefix {wildcards.sample} \
-            -gencode {params.gencode} \
             --forceow \
             --thread  {threads} \
             {input.genome} \

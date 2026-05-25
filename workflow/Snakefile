@@ -4,6 +4,9 @@ configfile: "config/config.yaml"
 import pandas as pd
 from glob import glob
 from snakemake.utils import validate
+from pathlib import Path
+
+# fragment to use singularity/apptainer containers instead of conda
 # import yaml
 
 # with open("workflow/containers/containers.yaml") as f:
@@ -20,6 +23,8 @@ validate(config, "schemas/config.schema.yaml")
 
 DATA_CDS = config["paths"]["data_cds"]
 DATA_GENOME = config["paths"]["data_genome"]
+GCODES_TRNASCANSE = config['paths']['genetic_codes_trnascanse']
+GCODES_TABLES = config['paths']['genetic_codes_tables'] # currently out of use
 
 PER_GENOME = config['paths']['per_genome']
 AGGREGATED = config['paths']['aggregated']
@@ -73,17 +78,40 @@ def get_cds(wildcards):
 def get_genetic_code(wildcards):
     return int(samples_df.loc[wildcards.sample, "genetic_code"])
 
+def get_trnascanse_code_arg(wildcards):
+    ''' Function creates path to file with proper genetic code structure for tRNAscan-SE tool and returns argument.'''
+    genetic_code = get_genetic_code(wildcards)
 
-# ----------------------
-# ---  Include rules ---
-# ----------------------
-include: "rules/trnascan_rule.smk"
-include: "rules/clean_tRNAscanSE_output.smk"
-include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
-# include: "rules/codon_usage_metrics_rule.smk"
+    if genetic_code == 1:
+        return ""
+    
+    gcode_file = Path(GCODES_TRNASCANSE)/f'{genetic_code}.gcode'
 
+    if not gcode_file.exists():
+        raise FileNotFoundError(
+            f'Not found tRNAscan-SE genetic code file in {GCODES_TRNASCANSE} location. Consider to change code or add your own file with proper structure:\n # The Alternative Yeast Nuclear Code (transl_table=12)\n# Format:  <Codon> <3-letter AA abreviation> <One letter AA abrev>\nCTG Ser S\n. ps. This file has to contain ONLY DNA, tRNA is forbidden '
+        )
+    
+    return f"-g {gcode_file}"
 
+def get_domain(wildcards):
+    """Extract and normalize domain from samples.tsv."""
+    domain = str(samples_df.loc[wildcards.sample, "domain"]).strip().lower()
 
+    domain_map = {
+        "eukarya": "Eukarya",
+        "eukaryota": "Eukarya",
+        "bacteria": "Bacteria",
+        "archaea": "Archaea",
+    }
+
+    if domain not in domain_map:
+        raise ValueError(
+            f"Invalid domain for sample {wildcards.sample}: {domain}. "
+            "Allowed values: Eukarya, Bacteria, Archaea."
+        )
+
+    return domain_map[domain]
 
 # -----------------
 # --- Main Rule ---
@@ -92,10 +120,19 @@ include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 rule all:
     input:
         expand(
-            f'{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv', sample=SAMPLES
-)
+            f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
+            sample = SAMPLES
+        )
 
 
+
+# ----------------------
+# ---  Include rules ---
+# ----------------------
+include: "rules/trnascan_rule.smk"
+include: "rules/clean_tRNAscanSE_output.smk"
+include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
+include: "rules/codon_usage_metrics_rule.smk"
 
 
 

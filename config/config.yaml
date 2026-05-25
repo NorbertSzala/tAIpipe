@@ -5,7 +5,8 @@
 paths:
   data_cds: "data/CDS"
   data_genome: "data/genome"
-
+  genetic_codes_trnascanse: "data/genetic_codes/trnascanse"
+  genetic_codes_tables: "data/genetic_codes/tables"
 
   samples: "config/samples.tsv"
   main_dataset: "resources/metadata/Main_Dataset.tsv"
@@ -21,6 +22,7 @@ paths:
   plots: "results/aggregated/plots"
   tables: "results/aggregated/tables"
   reports: "results/aggregated/reports"
+
 
 
 
