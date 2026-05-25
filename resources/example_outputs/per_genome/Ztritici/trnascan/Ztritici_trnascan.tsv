@@ -1,0 +1,4 @@
+seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
+CM001196.1|GCA_000219625.1|first_contig_first_1000000bp	1	159330	159402	Arg	CCG	0	0	65.5		+	159330	159402	False	False
+CM001196.1|GCA_000219625.1|first_contig_first_1000000bp	2	184188	184259	Cys	ACA	0	0	41.1		+	184188	184259	False	False
+CM001196.1|GCA_000219625.1|first_contig_first_1000000bp	3	287353	287230	Leu	CAG	287316	287274	59.1		-	287230	287353	True	False

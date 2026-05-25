@@ -1,6 +1,12 @@
 rule prepare_trna_codon_counts_to_tai:
     """
     Extract anticodon_id count data from cleaned tRNAscan-SE output
+
+    Expected output:
+        TSV with tRNA gene copy numbers in format:
+        anticodon_id    count
+        Ala-CGC         5
+
     """
     
     input:
@@ -17,6 +23,9 @@ rule prepare_trna_codon_counts_to_tai:
     conda:
         "../envs/python.yaml"
     
+    message:
+        "Preparing cleaned tRNAscan-SE data to interpretation in R script"
+
     shell:
         """
         mkdir -p $(dirname {output.aaa_count}) $(dirname {log})

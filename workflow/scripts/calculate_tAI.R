@@ -23,6 +23,7 @@ suppressPackageStartupMessages({
     library(readr)
     library(dplyr)
     library(optparse)
+    library(tibble)
 })
 
 
@@ -48,6 +49,7 @@ option_list <- list(
         c('-G', "--genetic-code"),
         type = 'integer',
         default = 1,
+        dest = "genetic_code",
         help = "Genetic code ID. Usually 1, C. albicans = 12 [default: %default]"
     ),
 
@@ -89,7 +91,7 @@ if (is.null(args$input)) {
     stop("Missing input FASTA. Use -I / --input [path.fasta]")
 }
 
-if !file.exists(args$input)) {
+if (!file.exists(args$input)) {
     stop("Input fasta does not exists: ", args$input)
 }
 
@@ -98,7 +100,7 @@ if (is.null(args$trna)) {
     stop("Missing input tRNA gene copy number Use -T / --trna [path.tsv]")
 }
 
-if !file.exists(args$trna) {
+if (!file.exists(args$trna)) {
     stop("tRNA file does not exist: ", args$trna)
 }
 
@@ -108,6 +110,13 @@ if (!args$domain %in% c("Eukarya", "Bacteria", "Archaea")) {
     stop("--domain must be one of: Eukarya, Bacteria, Archaea")
 }
 
+if (is.null(args$sample)) {
+    stop("Missing '--sample' or '-S' argument.")
+}
+
+if (is.null(args$genetic_code) || length(args$genetic_code) != 1 || is.na(args$genetic_code)) {
+    stop("Invalid or missing genetic code. Use -G / --genetic-code, e.g. -G 1")
+}
 
 
 # -------------------------
@@ -149,7 +158,7 @@ write_table <- function(x, filename) {
         )
     } else {
         df <- as.data.frame(x)
-        df <- tibble:rownames_to_column(df, var = 'seq_id')
+        df <- rownames_to_column(df, var = 'seq_id')
     }
 
     readr::write_csv(df, outpath)
@@ -167,7 +176,7 @@ read_trna_levels <- function(path) {
     )
     colnames(trna_df)[1:2] <- c("anticodon_id", "count")
     
-    trna_level <- trna_df$count
+    trna_level <- as.numeric(trna_df$count)
     names(trna_level) <- trna_df$anticodon_id
 
     return(trna_level)
@@ -178,8 +187,8 @@ read_trna_levels <- function(path) {
 # ----------------------
 sample = args$sample
 
-message("Loading codon table: ", args$genetic-code)
-codon_table <- get_codon_table(gcid = args$genetic-code) # 1 for almost all organisms, 12 for C albicans. Reach from argument
+message("Loading codon table: ", as.character(args$genetic_code))
+codon_table <- get_codon_table(gcid = as.character(args$genetic_code)) # 1 for almost _all organisms, 12 for C albicans. Reach from argument
 
 message("Reading CDS fasta")
 seq_raw <- load_cds(args$input)
@@ -192,7 +201,7 @@ seq <- filter_valid_cds(
 
 message("Counting codons")
 cf <- count_codons(seq)
-write_table(cd, paste0(sample, "_codon_counts.csv"))
+write_table(cf, paste0(sample, "_codon_counts.csv"))
 
 
 
@@ -226,7 +235,7 @@ cai <- get_cai(
     rscu = rscu
 )
 
-write_table(cai, paste0(sample, "_cai.csv")
+write_table(cai, paste0(sample, "_cai.csv"))
 
 
 
@@ -319,4 +328,4 @@ summary_path <- file.path(args$outdir, paste0(sample, "_summary.tsv"))
 readr::write_tsv(summary_df, summary_path)
 
 message("Saved: ", summary_path)
-message("Done.")
+message("Done")

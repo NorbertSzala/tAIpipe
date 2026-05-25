@@ -1,0 +1,6 @@
+ncbi_table	scope	trnascanse_file	name	notes
+1	nuclear		Standard	Do not pass -g to tRNAscan-SE.
+12	nuclear	12.gcode	Alternative Yeast Nuclear	CTG encodes Ser instead of Leu; used for Candida albicans and related CTG-clade yeasts.
+3	mitochondrial	copied_from_trnascanse/gcode.ystmito	Yeast Mitochondrial	Use only for mitochondrial sequences, not for nuclear Saccharomyces or Schizosaccharomyces genomes.
+4	mitochondrial	copied_from_trnascanse/gcode.othmito	Mold/Protozoan/Coelenterate Mitochondrial	Use only when the analyzed sequences are mitochondrial and this code is appropriate.
+6	nuclear	copied_from_trnascanse/gcode.cilnuc	Ciliate Nuclear	Use only for ciliate nuclear genomes.

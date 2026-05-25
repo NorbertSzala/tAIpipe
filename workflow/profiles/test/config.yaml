@@ -3,7 +3,7 @@
 snakefile: workflow/Snakefile
 configfile: config/config_test.yaml
 
-cores: 4
+cores: 8
 printshellcmds: true
 show-failed-logs: true
 use-conda: true

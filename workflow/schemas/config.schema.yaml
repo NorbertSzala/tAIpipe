@@ -24,6 +24,8 @@ properties:
       - tables
       - reports
       - logs
+      - genetic_codes_trnascanse
+      - genetic_codes_tables
     properties:
       data_cds:
         type: string
@@ -47,7 +49,10 @@ properties:
         type: string
       logs:
         type: string
-
+      genetic_codes_trnascanse:
+        type: string
+      genetic_codes_tables:
+        type: string
   trnascanse:
     type: object
     required:

@@ -1,0 +1,9 @@
+seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	1	185324	185433	Thr	AGT	185361	185397	78.1		+	185324	185433	True	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	2	483725	483823	Ser	CGA	483762	483779	63.0		+	483725	483823	True	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	3	489107	489178	Arg	ACG	0	0	69.2		+	489107	489178	False	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	4	864278	864350	Arg	ACG	0	0	71.8		+	864278	864350	False	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	5	537938	537851	Tyr	GTA	537899	537887	63.0		-	537851	537938	True	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	6	487889	487797	Arg	CCG	487853	487833	61.6		-	487797	487889	True	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	7	434186	434114	Lys	CTT	0	0	77.1		-	434114	434186	False	False
+CH236927.1|GCA_000149205.2|first_contig_first_1000000bp	8	306034	305962	Arg	ACG	0	0	71.8		-	305962	306034	False	False
