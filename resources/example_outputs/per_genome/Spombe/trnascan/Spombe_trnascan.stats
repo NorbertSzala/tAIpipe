@@ -1,0 +1,88 @@
+
+tRNAscan-SE v.2.0.12 (Nov 2022) scan results (on host asusgpu0)
+Started: Sun May 24 12:29:46 PM CEST 2026
+
+------------------------------------------------------------
+Sequence file(s) to search:        resources/test_data/genome/GCA_000002945.2_first_contig_1Mbp.fna
+Search Mode:                       Eukaryotic
+Results written to:                resources/example_outputs/per_genome/Spombe/trnascan/Spombe_trnascan.out
+Output format:                     Tabular
+Searching with:                    Infernal First Pass->Infernal
+Isotype-specific model scan:       Yes
+Covariance model:                  /home/norbertszala/adp/tAIpipe/resources/conda/09217fb15175e6af81d7ddb3eebd9257_/lib/tRNAscan-SE/models/TRNAinf-euk.cm
+                                   /home/norbertszala/adp/tAIpipe/resources/conda/09217fb15175e6af81d7ddb3eebd9257_/lib/tRNAscan-SE/models/TRNAinf-euk-SeC.cm
+Infernal first pass cutoff score:  10
+
+Temporary directory:               /tmp
+tRNA predictions saved to:         resources/example_outputs/per_genome/Spombe/trnascan/Spombe_trnascan.bed
+tRNA predictions saved to:         resources/example_outputs/per_genome/Spombe/trnascan/Spombe_trnascan.gff
+Predicted tRNA sequences
+    saved to:                      resources/example_outputs/per_genome/Spombe/trnascan/Spombe_trnascan.fasta
+Search statistics saved in:        resources/example_outputs/per_genome/Spombe/trnascan/Spombe_trnascan.stats
+------------------------------------------------------------
+
+First-pass Stats:
+---------------
+Sequences read:         1
+Seqs w/at least 1 hit:  1
+Bases read:             1000000 (x2 for both strands)
+Bases in tRNAs:         435
+tRNAs predicted:        6
+Av. tRNA length:        72
+Script CPU time:        0.05 s
+Scan CPU time:          2.43 s
+Scan speed:             823.0 Kbp/sec
+
+First pass search(es) ended: Sun May 24 12:29:47 PM CEST 2026
+
+Infernal Stats:
+-----------
+Candidate tRNAs read:     6
+Infernal-confirmed tRNAs:     6
+Bases scanned by Infernal:  555
+% seq scanned by Infernal:  0.0 %
+Script CPU time:          0.05 s
+Infernal CPU time:            1.44 s
+Scan speed:               385.4 bp/sec
+
+Infernal analysis of tRNAs ended: Sun May 24 12:29:48 PM CEST 2026
+
+Overall scan speed: 503778.3 bp/sec
+
+tRNAs decoding Standard 20 AA:              6
+Selenocysteine tRNAs (TCA):                 0
+Possible suppressor tRNAs (CTA,TTA,TCA):    0
+tRNAs with undetermined/unknown isotypes:   0
+Predicted pseudogenes:                      0
+                                            -------
+Total tRNAs:                                6
+
+tRNAs with introns:     	0
+
+|
+
+Isotype / Anticodon Counts:
+
+Ala     : 1	  AGC: 1       GGC:         CGC:         TGC:       
+Gly     : 0	  ACC:         GCC:         CCC:         TCC:       
+Pro     : 1	  AGG:         GGG:         CGG:         TGG: 1     
+Thr     : 0	  AGT:         GGT:         CGT:         TGT:       
+Val     : 2	  AAC:         GAC:         CAC: 1       TAC: 1     
+Ser     : 0	  AGA:         GGA:         CGA:         TGA:         ACT:         GCT:       
+Arg     : 0	  ACG:         GCG:         CCG:         TCG:         CCT:         TCT:       
+Leu     : 0	  AAG:         GAG:         CAG:         TAG:         CAA:         TAA:       
+Phe     : 0	  AAA:         GAA:                                 
+Asn     : 0	  ATT:         GTT:                                 
+Lys     : 0	                            CTT:         TTT:       
+Asp     : 0	  ATC:         GTC:                                 
+Glu     : 2	                            CTC:         TTC: 2     
+His     : 0	  ATG:         GTG:                                 
+Gln     : 0	                            CTG:         TTG:       
+Ile     : 0	  AAT:         GAT:         CAT:         TAT:       
+Met     : 0	                            CAT:                    
+Tyr     : 0	  ATA:         GTA:                                 
+Supres  : 0	               CTA:         TTA:         TCA:       
+Cys     : 0	  ACA:         GCA:                                 
+Trp     : 0	                            CCA:                    
+SelCys  : 0	                                         TCA:       
+

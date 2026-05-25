@@ -1,0 +1,9 @@
+Sequence                                                		tRNA   	Bounds 	tRNA	Anti	Intron Bounds	Inf	      
+Name                                                    	tRNA #	Begin  	End    	Type	Codon	Begin	End	Score	Note
+--------                                                	------	-----  	------ 	----	-----	-----	----	------	------
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	1	365155 	365226 	Pro	TGG	0	0	68.8	
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	2	446000 	446071 	Val	CAC	0	0	64.9	
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	3	957183 	957254 	Glu	TTC	0	0	58.7	
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	4	934738 	934665 	Ala	AGC	0	0	57.1	
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	5	718190 	718119 	Glu	TTC	0	0	58.7	
+CU329670.1|GCA_000002945.2|first_contig_first_1000000bp 	6	703147 	703075 	Val	TAC	0	0	72.1	

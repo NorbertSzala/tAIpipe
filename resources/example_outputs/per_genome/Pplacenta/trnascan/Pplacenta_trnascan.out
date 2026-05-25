@@ -1,0 +1,10 @@
+Sequence                                                		tRNA   	Bounds 	tRNA	Anti	Intron Bounds	Inf	      
+Name                                                    	tRNA #	Begin  	End    	Type	Codon	Begin	End	Score	Note
+--------                                                	------	-----  	------ 	----	-----	-----	----	------	------
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	1	222722 	222805 	Tyr	GTA	222759	222769	73.1	
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	2	765292 	765392 	Ala	CGC	765328	765356	58.9	
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	3	964088 	964016 	iMet	CAT	0	0	60.9	
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	4	877552 	877482 	Gly	GCC	0	0	55.3	
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	5	812374 	812302 	Leu	CAA	0	0	20.0	pseudo
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	6	811100 	811029 	Leu	CAA	0	0	37.2	pseudo
+EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp 	7	231425 	231335 	Ser	CGA	231388	231380	63.6	
