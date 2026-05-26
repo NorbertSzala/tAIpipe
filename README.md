@@ -1,5 +1,7 @@
 # 🧬→🖥️→📊 tAIpipe
 
+v0.4.0
+
 Bioinformatics pipeline for tRNA adaptation index (**tAI**), codon usage, and tRNA gene analysis across genomic and CDS datasets, with outputs designed for downstream visualization and interactive dashboards.
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
@@ -38,6 +40,35 @@ Higher **tAI** values suggest that a gene uses codons recognized by more abundan
 
 - [Norbert Szala](https://github.com/NorbertSzala)
 - [Max Stróżyk](https://github.com/maxi7524)
+
+
+## Quick start
+
+```bash
+git clone https://github.com/NorbertSzala/tAIpipe.git
+cd tAIpipe
+micromamba create -n snakemake -c conda-forge -c bioconda snakemake
+micromamba activate snakemake
+snakemake -n --profile workflow/profiles/test
+snakemake --profile workflow/profiles/test
+```
+
+## Information flow
+
+```text
+Genome FASTA
+   ↓
+tRNAscan-SE
+   ↓
+clean TSV
+   ↓
+amino acid–anticodon counts
+   ↓
+R/cubar metrics
+   ↓
+per-genome summary tables
+```
+
 
 ## 🚀 Usage
 
