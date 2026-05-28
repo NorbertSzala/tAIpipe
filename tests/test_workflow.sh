@@ -2,8 +2,5 @@
 
 set -euo pipefail
 
-snakemake -s workflow/Snakefile \
-    --configfile config/config_test.yaml \
-    --cores 2 \
-    --use-conda \
-    --dry-run
+snakemake -n --profile workflow/profiles/test
+snakemake --profile workflow/profiles/test --rerun-incomplete --printshellcmds

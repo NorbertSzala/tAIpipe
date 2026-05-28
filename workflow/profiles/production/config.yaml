@@ -3,12 +3,12 @@
 snakefile: workflow/Snakefile
 configfile: config/config.yaml
 
-cores: 8
+cores: 32
 printshellcmds: true
 show-failed-logs: true
 use-conda: true
 conda-frontend: mamba
 use-apptainer: false
 rerun-incomplete: true
-keep-going: false
-latency-wait: 60
+keep-going: true
+latency-wait: 120
