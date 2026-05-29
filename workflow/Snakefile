@@ -117,13 +117,21 @@ def get_domain(wildcards):
 # --- Main Rule ---
 # -----------------
 
+# DEPRECATED
+# rule all:
+#     input:
+#         expand(
+#             f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
+#             sample = SAMPLES
+#         )
+
 rule all:
     input:
-        expand(
-            f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
-            sample = SAMPLES
-        )
-
+        # Per sample data
+        expand(f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv', sample = SAMPLES),
+        # Final reports
+        f"{REPORT_FILE}/summary_report.html",
+        f"{REPORT_FILE}/summary_report.md"
 
 
 # ----------------------
@@ -133,7 +141,8 @@ include: "rules/trnascan_rule.smk"
 include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 include: "rules/codon_usage_metrics_rule.smk"
-
+# report rule 
+include: "rules/aggregate_and_report.smk"
 
 
 

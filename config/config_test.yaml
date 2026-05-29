@@ -3,25 +3,30 @@
 # ---------------------
 
 paths:
-  data_cds: "resources/test_data/CDS"
-  data_genome: "resources/test_data/genome"
-  genetic_codes_trnascanse: "data/genetic_codes/trnascanse"
-  genetic_codes_tables: "data/genetic_codes/tables"
+  # input file 
+  data_cds: "data/tutorial_data/input/CDS"
+  data_genome: "data/tutorial_data/input/genome"
+  genetic_codes_trnascanse: "data/tutorial_data/input/trnascanse"
+  #TODO - tutaj nie ma takiego pliku !!! 
+  genetic_codes_tables: "data/tutorial_data/input/tables"
 
-  samples: "config/samples_test.tsv"
-  main_dataset: "resources/test_data/metadata/test_metadata.tsv"
+  # samples metadata and datasets
+  samples: "data/tutorial_data/input/metadata/samples_test.tsv"
+  main_dataset: "data/tutorial_data/input/metadata/test_dataset.tsv"
 
-  results: "resources/example_outputs"
-  logs: "resources/example_outputs/logs"
-  benchmarks: "resources/example_outputs/benchmarks"
+  # tmp script files 
+  results: "data/tutorial_data/output/"
+  logs: "data/tutorial_data/output/logs"
+  benchmarks: "data/tutorial_data/output/benchmarks"
 
-  per_genome: "resources/example_outputs/per_genome"
-  aggregated: "resources/example_outputs/aggregated"
+  # output folders 
+  per_genome: "data/tutorial_data/output/per_genome"
+  aggregated: "data/tutorial_data/output/aggregated"
 
-
-  plots: "resources/example_outputs/aggregated/plots"
-  tables: "resources/example_outputs/aggregated/tables"
-  reports: "resources/example_outputs/aggregated/reports"
+  # report results. 
+  plots: "data/tutorial_data/output/aggregated/plots"
+  tables: "data/tutorial_data/output/aggregated/tables"
+  reports: "data/tutorial_data/output/aggregated/reports"
 
 
 

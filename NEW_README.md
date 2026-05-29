@@ -19,21 +19,101 @@ Bioinformatics pipeline for tRNA adaptation index (**tAI**), codon usage, and tR
 - ja bym tutaj opisał dokkładnie jaki jest cel tego (bo samo powiedzenie co jest nie jest potrzebne) 
 - ogólnie jakie informacje możemy uzyskać i jaka jest ogólność tego
 
+
+***
+
 ## ℹ️ Overview
 
 #TODO 
 - ja bym opisał tutaj dokładniej na czym polega pipeline oraz w jaki sposób można to zgeneralizować  
 - czyli jakie dane (+- format) itd.
   - można już  tutaj rozbić na 
-  - ### What is tAI
-    - quick explanation of what we measure / detect 
-  - ### How pipeline looks like  *this information from flow part
-    - here we explain very briefly what is happening at each stage
-  - #### More deeply into metric and scripts explanation 
-    - breafly explanation per paragraph with link do deeper .md file 
-  - #### what analysis includes (shortly and deeply analysis)
-    - żeby tak dać - skrótowy opis i dać odnośni od tych dokladniejszych docsów
-    - tutaj nas interesuje moment raport
+
+
+
+### What is tAI
+The **tRNA Adaptation Index (tAI)** is a biosubstitutive metric used to estimate the translational efficiency of protein-coding genes. 
+
+Instead of relying on costly global quantification of cellular tRNA molecules, tAI utilizes tRNA gene copy numbers extracted from genomic sequences as a approximation for tRNA availability. By integrating these copy numbers with domain-specific codon-anticodon wobble pairing. 
+
+Higher **tAI** values suggest that a gene uses codons recognized by more abundant tRNAs, which may support faster or more efficient translation. Lower **tAI** values may reflect locally slower translation, which can also be biologically meaningful, for example in protein folding or regulatory regions. **tAI** is therefore useful for studying codon optimization, translational efficiency, and evolutionary adaptation of coding sequences.
+
+### What the Analysis Includes
+<!-- `tAIpipe` offers both a high-level overview and a deep-dive comprehensive analysis of codon preferences:
+- **Global Profiling:** Quantifying total tRNA gene pools across various fungal genomes.
+- **Translational Adaptation (tAI):** Scoring individual gene sequences based on translational optimization.
+- **Codon Usage Bias (CUB):** Calculating classic evolutionary metrics such as the Frequency of Optimal Codons (FOP), Effective Number of Codons (ENC), and Relative Synonymous Codon Usage (RSCU).
+- **Compositional Bias:** Assessing GC and synonymous third-position GC content (GC3s) to untangle mutational bias from natural selection.
+- **Macro-Evolutionary Insights:** Aggregating per-genome metrics with ecological and taxonomic metadata (e.g., lifestyle, phylum) to uncover adaptive patterns across the fungal kingdom.
+
+#TODO 
+- tutaj napisać to w takim "uogólnionym" formacie, to jest że dla dowolnego gatunku możemy to ustawić 
+- oraz bardziej napisać w formacie co robimy (skrótowo ale konkretnie) 
+- 
+- 
+- 
+- -->
+
+
+### Pipeline explanation
+
+#### Introduction to Pipeline Architecture
+`tAIpipe` follows a strict **per-sample** design pattern. Processing samples individually ensures parallel computational efficiency and localized error handling before multi-sample data consolidation.
+
+To navigate the workflow outputs and configurations, we define the following abstract path structures governed by `config/config.yaml`:
+- `{DATA_GENOME}`: Directory containing raw or downsampled whole-genome FASTA files (`.fna`).
+- `{DATA_CDS}`: Directory containing protein-coding sequence FASTA files (`.fna`).
+- `{PER_GENOME}`: Target root directory for isolated, sample-specific results.
+- `{AGGREGATED}`: Final directory where individual metrics are compiled, plotted, and summarized.
+
+**Core Inputs Breakdown:**
+- **Genome Files (`{DATA_GENOME}`)**: Required because tRNA genes are non-coding RNAs scattered throughout intergenic and intronic regions. We need the full chromosomal context to find them.
+- **CDS Files (`{DATA_CDS}`)**: Required to extract the exact frequency of the 61 sense codons within the translated part of the genome.
+- **Sample Table (`data/tutorial_data/input/metadata/samples_test.tsv`)**: The file containing experiment configuration for Snakemake, defining sample taxonomy, required genetic codes, file-naming patterns, and execution flags (`include`).
+- **Metadata Master Table (`data/tutorial_data/input/metadata/test_dataset.tsv`)**: A comprehensive phenotypic matrix containing downstream categorical factors (lifestyles, microenvironments) used exclusively during final data aggregation.
+
+
+#### Pipeline graph
+```text
+{DATA_GENOME} (FASTA)              {DATA_CDS} (FASTA)
+                 │                                │
+                 ▼                                │
+      [ 1. tRNAscan-SE ]                          │
+                 │                                │
+                 ▼                                │
+         Raw Text Output                          │
+                 │                                │
+                 ▼                                │
+    [ 2. clean_tRNAscanSE_output ]                │
+                 │                                │
+                 ▼                                │
+          Cleaned TSV Table                       │
+                 │                                │
+                 ▼                                │
+ [ 3. prepare_trna_codon_counts_to_tai ]          │
+                 │                                │
+                 ▼                                │
+      Anticodon Count Table                       │
+                 │                                │
+                 └───────────────┬────────────────┘
+                                 │
+                                 ▼
+                    [ 4. codon_usage_metrics ]
+                                 │
+                                 ▼
+                     {PER_GENOME}/<sample>/
+                     (tAI, FOP, GC, Summary TSV)
+                                 │
+                                 ▼
+                   [ 5. aggregate_and_report ]
+                                 │
+                                 ▼
+                       {AGGREGATED}/reports/
+                       (Interactive Dashboard & .md)
+```
+
+For a detailed map of the repository directories, code components, and environment configurations, see the [Project Map Explanation](docs/workflow_overview.md).
+
 
 ### 📖 Further reading
 
@@ -46,9 +126,6 @@ Recommended papers and resources:
 
 ## Usage
 In this section we explain how to use our library.
-
-#TODO - Norbert
-- możemy zrobić mały tutoria w osobnym .md zeby właśnie na tym próbnym datasetcie to pokazać. 
 
 ### Environment configuration
 In this sections we explain how to configure environment 
@@ -82,13 +159,12 @@ mamba activate snakemake_env
 
 > ⚠️ **CRITICAL ARCHITECTURAL NOTE:** Snakemake 9.x strictly requires a fully standard-compliant Conda/Mamba metadata interface (such as Miniforge) to evaluate execution prefixes and dependency maps. Using a standalone, stripped-down lightweight deployment (like pure global `micromamba`) will cause metadata parsing crashes during runtime, specifically throwing `KeyError: 'conda_prefix'` or exit status 127.
 
-
-#TODOTERAZ 
-
 #### Apptainer
 #TODO - wyłumacz jak to ustawić bo z tego nie korzystałem i nie wiem jak to działa. Potem przeczytam i sprawdzę czy działa 
 
-#### Apptainer - test
+<!-- #### Apptainer - test
+
+#TODO - u mnie poszła taka propozycja, ale nie wiem jak to sprawdzić i co to dokładnie jest 
 Apptainer (formerly Singularity) allows you to execute the pipeline inside fully containerized environments instead of dynamically compiling Conda packages. This is highly useful for HPC clusters or multi-user systems where package downloading or internet access is restricted during runtime.
 
 To utilize Apptainer, ensure that the system-level Apptainer binary is installed and that your user can run unprivileged containers (without `sudo`). 
@@ -98,7 +174,7 @@ You can execute the entire workflow using the containerized backend profile:
 snakemake --profile workflow/profiles/apptainer
 ```
 
-When this backend is invoked, Snakemake completely skips local Conda setups and pulls pre-built Docker/Singularity images defined inside the rule configurations, mounting your workspace automatically inside the container instance.
+When this backend is invoked, Snakemake completely skips local Conda setups and pulls pre-built Docker/Singularity images defined inside the rule configurations, mounting your workspace automatically inside the container instance. -->
 
 ### Snakemake configuration
 #TODO - Norbert:
@@ -124,6 +200,8 @@ Before committing heavy compute resources, it is highly recommended to inspect t
 snakemake -n --profile workflow/profiles/test
 ```
 
+<!-- 
+DEPRACATED - przeniosłem całość do docs/workflow_overview.md, ale możemy zrobić osobny skrypt który będzie to przechowywał i wtedy to tutaj wyświetlić. 
 ## 📁 Scripts and rules
 
 ### Scripts
@@ -149,29 +227,7 @@ scripts/
             Ala-CGC         4
             Gly-TCC         7
             Leu-CAG         3
-```
-
-### Snakemake rules
-
-```text
-workflow/rules/
-├── trnascan_rule.smk
-│   └── Runs tRNAscan-SE and predicts tRNA genes.
-│
-├── clean_tRNAscanSE_output.smk
-│   └── Cleans and reformats tRNAscan-SE output.
-│
-├── prepare_trna_codon_counts_to_tai_rule.smk
-│   └── Counts amino acid–anticodon pairs for tAI calculation.
-│
-└── codon_usage_metrics_rule.smk
-    └── Calculates tAI and additional codon usage metrics.
-```
-
-
-
-
-
+``` -->
 
 
 ## 💭 Feedback and contributing
