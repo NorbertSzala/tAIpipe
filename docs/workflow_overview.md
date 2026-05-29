@@ -12,11 +12,11 @@ Below is the complete project directory map showing exactly where rule configura
 #TODO - to można dać jako osobny doc ... 
  -->
 
-\```text
+```text
 .
 ├── config/
-│   ├── config.yaml                                 # Production workflow parameters
 │   ├── config_test.yaml                            # Test profile configuration parameters
+│   ├── ...
 ├── data/
 │   ├── genetic_codes/                              # Global genetic code rules
 │   │   ├── README.md
@@ -72,7 +72,7 @@ Below is the complete project directory map showing exactly where rule configura
     ├── schemas/                                    # Configuration structural validators
     ├── envs/                                       # Conda environment definition wrappers
     └── scripts/                                    # Internal script computational layer
-\```
+```
 
 ### Input
 
