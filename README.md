@@ -24,6 +24,9 @@ Bioinformatics pipeline for tRNA adaptation index (**tAI**), codon usage, and tR
 
 ## ℹ️ Overview
 
+<!-- #TODO
+To trzeba przepisać bo nic nie wiadomo, trzeba napisać, co to dokładnie bada, czym jest ta miara, oraz jakie inputy potrzebuje i skąd to bierze i jakie są wyniki potem tego.  -->
+
 `tAIpipe` is a bioinformatics workflow for studying codon usage and translational adaptation across genomic datasets. The pipeline combines genome/CDS input data, tRNA gene prediction, codon usage metrics, and structured output tables that can be used for comparative analyses and interactive visualization.
 
 The main goal of this project is to integrate **tRNA Adaptation Index** analysis with organism-level metadata, such as taxonomy, genome size, lifestyle, and other biological features. This makes it possible to explore questions such as whether **tAI** depends on genome size, ecological niche, protein function, or the presence of selected domains.
@@ -31,6 +34,8 @@ The main goal of this project is to integrate **tRNA Adaptation Index** analysis
 The workflow is designed as a modular Snakemake pipeline. Each step produces intermediate files that can be inspected, reused, or extended in downstream analyses.
 
 ## What is **tAI**?
+
+<!-- #TODO - tutaj to jest wogóle merytoryczny błąd, ponieważ my tutaj powinniśmy mówić o tym, że  -->
 
 The **tRNA Adaptation Index (tAI)** measures how well codons in a coding sequence match the available pool of tRNAs in a cell. It uses tRNA gene copy numbers as a proxy for tRNA availability and accounts for codon–anticodon pairing, including wobble interactions.
 

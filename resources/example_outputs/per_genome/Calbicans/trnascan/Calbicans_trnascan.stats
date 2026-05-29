@@ -1,6 +1,6 @@
 
-tRNAscan-SE v.2.0.12 (Nov 2022) scan results (on host asusgpu0)
-Started: Sun May 24 12:29:54 PM CEST 2026
+tRNAscan-SE v.2.0.12 (Nov 2022) scan results (on host DESKTOP-NKT8D63)
+Started: Fri May 29 13:48:07 CEST 2026
 
 ------------------------------------------------------------
 Sequence file(s) to search:        resources/test_data/genome/GCA_000182965.3_first_contig_1Mbp.fna
@@ -9,8 +9,8 @@ Results written to:                resources/example_outputs/per_genome/Calbican
 Output format:                     Tabular
 Searching with:                    Infernal First Pass->Infernal
 Isotype-specific model scan:       Yes
-Covariance model:                  /home/norbertszala/adp/tAIpipe/resources/conda/09217fb15175e6af81d7ddb3eebd9257_/lib/tRNAscan-SE/models/TRNAinf-euk.cm
-                                   /home/norbertszala/adp/tAIpipe/resources/conda/09217fb15175e6af81d7ddb3eebd9257_/lib/tRNAscan-SE/models/TRNAinf-euk-SeC.cm
+Covariance model:                  /home/maxi7524/repositories/tAIpipe/resources/conda/953b41a3bd6adcb291dd4d8fc3aa6b70_/lib/tRNAscan-SE/models/TRNAinf-euk.cm
+                                   /home/maxi7524/repositories/tAIpipe/resources/conda/953b41a3bd6adcb291dd4d8fc3aa6b70_/lib/tRNAscan-SE/models/TRNAinf-euk-SeC.cm
 Infernal first pass cutoff score:  10
 Alternate transl code used:        from file data/genetic_codes/trnascanse/12.gcode
 
@@ -30,11 +30,11 @@ Bases read:             1000000 (x2 for both strands)
 Bases in tRNAs:         880
 tRNAs predicted:        10
 Av. tRNA length:        88
-Script CPU time:        0.04 s
-Scan CPU time:          2.58 s
-Scan speed:             775.2 Kbp/sec
+Script CPU time:        0.03 s
+Scan CPU time:          2.01 s
+Scan speed:             995.0 Kbp/sec
 
-First pass search(es) ended: Sun May 24 12:29:55 PM CEST 2026
+First pass search(es) ended: Fri May 29 13:48:07 CEST 2026
 
 Infernal Stats:
 -----------
@@ -42,13 +42,13 @@ Candidate tRNAs read:     10
 Infernal-confirmed tRNAs:     10
 Bases scanned by Infernal:  1080
 % seq scanned by Infernal:  0.1 %
-Script CPU time:          0.07 s
-Infernal CPU time:            2.64 s
-Scan speed:               409.1 bp/sec
+Script CPU time:          0.02 s
+Infernal CPU time:            1.75 s
+Scan speed:               617.1 bp/sec
 
-Infernal analysis of tRNAs ended: Sun May 24 12:29:57 PM CEST 2026
+Infernal analysis of tRNAs ended: Fri May 29 13:48:09 CEST 2026
 
-Overall scan speed: 375234.5 bp/sec
+Overall scan speed: 524934.4 bp/sec
 
 tRNAs decoding Standard 20 AA:              10
 Selenocysteine tRNAs (TCA):                 0
