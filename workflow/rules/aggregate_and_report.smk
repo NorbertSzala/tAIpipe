@@ -6,7 +6,9 @@ rule aggregate_and_report:
         per_genome_dir = PER_GENOME,
         # Safely read the corrected path directly from the configuration object
         metadata_master = config["paths"]["main_dataset"],
-        samples_sheet = config["paths"]["samples"]
+        samples_sheet = config["paths"]["samples"],
+        # IMPORTANT: to ensure updates when report structure is changes
+        template = "workflow/scripts/report_template.Rmd"
     output:
         html_report = f"{REPORT_FILE}/summary_report.html",
         md_report = f"{REPORT_FILE}/summary_report.md"

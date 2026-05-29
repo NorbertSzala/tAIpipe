@@ -1,184 +1,189 @@
-- [1. Introduction & Dataset Summary](#introduction-dataset-summary)
-  - [1.1 Document Structure & Rationale](#document-structure-rationale)
-  - [1.2 Cohort Demographics &
+- [Introduction](#introduction)
+  - [Document Structure](#document-structure)
+  - [Cohort Demographics &
     Distribution](#cohort-demographics-distribution)
-- [2. Macro-Evolutionary Dynamics (Genome-wide
+- [Macro-Evolutionary Dynamics (Genome-wide
   Trends)](#macro-evolutionary-dynamics-genome-wide-trends)
-  - [2.1 The Interplay of Selection and Mutational
+  - [The Interplay of Selection and Mutational
     Pressure](#the-interplay-of-selection-and-mutational-pressure)
-- [3. Synonymous Codon Preferences (Mezo-scale
+- [Synonymous Codon Preferences (Mezo-scale
   Analytics)](#synonymous-codon-preferences-mezo-scale-analytics)
-  - [3.1 Global Codon Optimization
+  - [Global Codon Optimization
     Fingerprints](#global-codon-optimization-fingerprints)
-- [4. Structural and Functional Landscape of Extreme Proteins
-  (Micro-scale
+- [Structural and Functional Landscape of Extreme Proteins (Micro-scale
   Analysis)](#structural-and-functional-landscape-of-extreme-proteins-micro-scale-analysis)
-  - [4.1 Structural Features Driving Translational
+  - [Structural Features Driving Translational
     Extremes](#structural-features-driving-translational-extremes)
-  - [4.2 Functional Enrichment Profiles (Pfam & GO
+  - [Functional Enrichment Profiles (Pfam & GO
     Terms)](#functional-enrichment-profiles-pfam-go-terms)
 
-\`\`\`{r setup, include=FALSE} knitr::opts_chunk\$set(echo = FALSE,
-warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6)
+## Introduction
 
-library(dplyr) library(tidyr) library(ggplot2) library(readr)
-library(knitr)
+### Document Structure
 
-is_html \<- knitr::is_html_output() if (is_html) { library(plotly)
-library(DT) } \`\`\`
+**Objective:** This reporting engine aggregates metrics across all
+processed genomes to evaluate directional translational selection and
+codon optimization patterns. The comparative analytical layer
+investigates data from three distinct structural resolutions: \*
+**Macro-scale:** Evaluating overall genome-wide adaptation trends driven
+by broad evolutionary taxonomy and specific ecological lifestyles. \*
+**Mezo-scale:** Structural profiling of individual synonymous triplet
+preferences and localized wobble-pairing efficiency vectors. \*
+**Micro-scale:** Dissecting target molecular features, length variances,
+and functional paths bounding high- and low-efficiency translation
+classes.
 
-## 1. Introduction & Dataset Summary
+### Cohort Demographics & Distribution
 
-### 1.1 Document Structure & Rationale
-
-**Objective:** This layer aggregates information from all isolated
-samples processed by the workflow to provide a high-level comparative
-analysis. Translational selection parameters can vary across
-evolutionary distances and environmental pressures. Therefore, our
-automated system maps results into three granular perspectives: \*
-**Macro-scale (Section 2):** Cross-species overview examining how global
-phylogenetic constraints and ecological positioning shape translational
-adaptation strategies. \* **Mezo-scale (Section 3):** Dissection of
-individual codon optimization tables and wobble-pairing adaptiveness
-weights. \* **Micro-scale (Section 4):** Gene-by-gene classification
-identifying molecular markers within the translational extremes.
-
-### 1.2 Cohort Demographics & Distribution
-
-**Objective:** To summarize the composition of the investigated samples
-and cross-reference them against ecological classification groups.
-**Biological Rationale:** Grouping datasets by taxonomic properties
-(Phylum) and ecological characteristics (Lifestyle) provides an
-immediate overview of host distribution, establishing a balanced
-statistical baseline before downstream functional analysis.
+**Objective:** Summarize the operational footprint of active samples and
+evaluate distribution boundaries across taxonomic divisions.
+**Biological Rationale:** Grouping active items by taxonomy (`Phylum`)
+and environmental niches (`Lifestyle`) creates a descriptive baseline,
+confirming cohort equilibrium before testing selection assumptions.
 
 #### Taxonomic and Ecological Stratification
 
-\`\`\`{r cohort-summary-table} \# \#TODO: Read params\$samples_sheet and
-aggregate counts of samples across phyla and lifestyles \`\`\`
+| phylum        | lifestyle              | Active_Assemblies |
+|:--------------|:-----------------------|------------------:|
+| Ascomycota    | nectar/tap_saprotroph  |                 1 |
+| Ascomycota    | nectar_tap_saprotroph  |                 1 |
+| Ascomycota    | plant_pathogen         |                 1 |
+| Ascomycota    | unspecified_saprotroph |                 1 |
+| Basidiomycota | wood_saprotroph        |                 1 |
 
-\`\`\`{r cohort-summary-plots} \# \#TODO: Generate sample allocation
-bars or pie charts \`\`\`
+Processed Samples Stratified by Phylum and Lifestyle Groups
+
+![](/home/maxi7524/repositories/tAIpipe/data/tutorial_data/output/aggregated/reports/summary_report_files/figure-gfm/cohort-summary-plots-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
-## 2. Macro-Evolutionary Dynamics (Genome-wide Trends)
+## Macro-Evolutionary Dynamics (Genome-wide Trends)
 
-### 2.1 The Interplay of Selection and Mutational Pressure
+### The Interplay of Selection and Mutational Pressure
 
-**Objective:** To distinguish whether background mutational bias
-(neutral drift) or natural selection for translational efficiency drives
-codon preferences across the studied genomes.
+**Objective:** Distinguish whether natural selection for translation
+throughput or neutral background mutational bias drives the global codon
+landscape.
 
 #### Effective Number of Codons (ENC) vs. Global tAI
 
-**Biological Rationale:** The Effective Number of Codons (ENC) estimates
-general synonymous bias independently of external references, where
-values close to 20 denote extreme bias and 61 denotes equal synonymous
-codon usage. By plotting each genome’s mean tAI against its average ENC,
-we can evaluate selective strength. Organisms heavily optimized by
-directional translation selection will deviate significantly from the
-expected neutral evolution curve, showing high tAI and low alternative
-synonymous diversification.
+**Biological Rationale:** The Effective Number of Codons tracks generic
+usage bias without referencing external tRNA pools, with scores ranging
+from 20 (extreme single-codon exclusion) to 61 (unbiased uniform synonym
+allocation). Plotting mean tAI against mean ENC isolates directional
+selection. Genomes constrained by translation optimization will display
+high tAI paired with low ENC values, deviating sharply from neutral
+evolution baselines.
 
-\`\`\`{r enc-vs-tai-scatter} \# \#TODO: Construct scatter plot tracking
-average tAI vs average ENC color-mapped by lifestyle \`\`\`
+![](/home/maxi7524/repositories/tAIpipe/data/tutorial_data/output/aggregated/reports/summary_report_files/figure-gfm/enc-vs-tai-scatter-1.png)<!-- -->
 
 #### Compositional Synonymous Drift (GC3s) vs. Global tAI
 
-**Biological Rationale:** Mutations at the third synonymous codon
-position (GC3s) are frequently silent and tend to reflect neutral
-mutational pressures or regional GC drift. Correlating the global tAI
-index with GC3s isolates directional selection. If a high tAI score is
-tightly coupled with shifting GC3s positions, it indicates that adaptive
-selection for translational speed has actively constrained synonymous
-substitution networks.
+**Biological Rationale:** Nucleotide mutations hitting the third
+synonymous position (`GC3s`) are often silent and heavily capture
+neutral background mutational pressure and region-wide drift.
+Correlating global tAI averages with GC3s highlights adaptive
+constraints. If high translation adaptiveness tightly couples with
+shifting third-position base patterns, it indicates selection pressures
+have selectively fixed synonymous substitution tracks to maximize
+elongation speed.
 
-\`\`\`{r gc3s-vs-tai-scatter} \# \#TODO: Construct scatter plot tracking
-average tAI vs GC3s across the cohort \`\`\`
+![](/home/maxi7524/repositories/tAIpipe/data/tutorial_data/output/aggregated/reports/summary_report_files/figure-gfm/gc3s-vs-tai-scatter-1.png)<!-- -->
 
 ------------------------------------------------------------------------
 
-## 3. Synonymous Codon Preferences (Mezo-scale Analytics)
+## Synonymous Codon Preferences (Mezo-scale Analytics)
 
-### 3.1 Global Codon Optimization Fingerprints
+### Global Codon Optimization Fingerprints
 
-**Objective:** To trace the explicit preferences for individual
-nucleotide triplets across distinct genomic lineages.
+**Objective:** Map out explicit preferences for individual nucleotide
+triplets across the cohort lineages.
 
 #### RSCU Group Profiles Across Organisms
 
-**Biological Rationale:** Relative Synonymous Codon Usage (RSCU)
-standardizes for varying amino acid abundances, yielding a direct
-estimate of synonymous triplet preferences. Values above 1.0 denote
-overrepresentation. Projecting RSCU distributions into a cross-species
-matrix highlights whether related evolutionary clades or organisms with
-shared ecological lifestyles utilize identical optimized triplet
-subsets.
+**Biological Rationale:** Relative Synonymous Codon Usage (RSCU) scales
+out amino acid frequency imbalances, estimating synonym triplet
+overrepresentation. Values exceeding 1.0 reveal active bias. Projecting
+these matrices across targets maps out shared optimization models across
+taxonomy blocks or convergent niche environments.
 
-\`\`\`{r rscu-heatmap} \# \#TODO: Generate a comprehensive clustered
-heatmap of RSCU values across all sense codons \`\`\`
+| lifestyle              | Mean_GC3s |  Mean_FOP |
+|:-----------------------|----------:|----------:|
+| nectar/tap_saprotroph  | 0.2515436 | 0.6269587 |
+| nectar_tap_saprotroph  | 0.3129956 | 0.4863613 |
+| plant_pathogen         | 0.6320755 | 0.5211598 |
+| unspecified_saprotroph | 0.5748301 | 0.4728592 |
+| wood_saprotroph        | 0.6282675 | 0.4733346 |
+
+Average Metric Variations Aggregated by Organism Lifestyle Profile
 
 #### Relative tRNA Adaptation Weights ($`w_i`$) Divergence
 
-**Biological Rationale:** Individual codon weights ($`w_i`$) capture the
-raw processing efficiency of each triplet by accounting for the host’s
-actual genomic tRNA gene counts multiplied by domain-specific
-wobble-pairing parameters. Comparing these absolute optimization weights
-across organisms with non-standard genetic translations (e.g., standard
-nuclear code 1 vs. alternative yeast nuclear code 12) illustrates how
-changes in the translation machinery mirror shifts in genomic
-composition.
-
-\`\`\`{r trna-weights-comparison} \# \#TODO: Plot alternative tRNA
-weights arrays side-by-side \`\`\`
+**Biological Rationale:** Codon adaptiveness weights ($`w_i`$) quantify
+processing efficiency by crossing physical tRNA gene copy maps with
+domain-specific wobble constraints. Contrasting optimization weights
+across varying genetic translations (such as standard nuclear table 1
+versus Candida nuclear alternative 12) illustrates how underlying
+translational hardware shifts mirror total genomic rewiring events.
 
 ------------------------------------------------------------------------
 
-## 4. Structural and Functional Landscape of Extreme Proteins (Micro-scale Analysis)
+## Structural and Functional Landscape of Extreme Proteins (Micro-scale Analysis)
 
-### 4.1 Structural Features Driving Translational Extremes
+### Structural Features Driving Translational Extremes
 
-**Objective:** To identify the structural properties that differentiate
-highly optimized genes from non-optimized or deliberately slowed
-translation units. **Biological Rationale:** Genes inside each genome
-are grouped into the Top 10% (highly efficient translation) and Bottom
-10% (unoptimized or slow translation) tAI tranches. Highly optimized
-genes typically code for stable, abundant structures like ribosomal
-subunits or housekeeping metabolic paths. In contrast, complex proteins
-requiring temporal coordination—such as transmembrane domains or signal
-peptide target tracks—often utilize unoptimized, low-tAI segments to
-induce local ribosomal pausing, allowing functional co-translational
-protein folding.
+**Objective:** Map the physical features differentiating high-throughput
+translation structures from sequence tracks optimized for slow
+elongation speeds. **Biological Rationale:** Transcripts are stratified
+within their host genomes into Top 10% and Bottom 10% tAI tranches.
+High-efficiency arrays typically encode abundant housekeeping machinery
+(e.g., ribosomal complexes). Conversely, proteins requiring precise
+spatial navigation—such as transmembrane sequences or secretory signal
+tracks—frequently rely on unoptimized, low-tAI blocks to introduce
+deliberate ribosomal pausing, guiding accurate co-translational folding.
 
 #### Secretory and Membrane-bound Allocation (Signal Peptides & Transmembrane Domains)
 
-\`\`\`{r binary-features-barplots} \# \#TODO: Plot structural element
-allocation percentages across the extreme tAI tiers \`\`\`
+![](/home/maxi7524/repositories/tAIpipe/data/tutorial_data/output/aggregated/reports/summary_report_files/figure-gfm/binary-features-barplots-1.png)<!-- -->
 
 #### Sequence Length and Low Complexity Regions (LCR) Distribution
 
-\`\`\`{r continuity-features-violins} \# \#TODO: Generate box/violin
-metrics tracking absolute sequence lengths and LCR counts per tier
-\`\`\`
+\`\`\`{r continuity-features-violins} \# Rationale: Compare absolute
+length distributions of transcripts across translation speed tranches
+ggplot(extreme_genes, aes(x = tranche, y = prot_len, fill = tranche)) +
+geom_violin(alpha = 0.7, outlier.shape = NA) + geom_boxplot(width = 0.1,
+fill = “white”, color = “black”, outlier.shape = NA) + scale_y_log10() +
+\# Accommodate extreme structural gene length ranges theme_minimal() +
+labs( title = “Protein Length Variations across Translational Tranches”,
+x = “Translational Efficiency Tier”, y = “Sequence Length in Amino Acids
+(Log10 Scale)” ) + theme(legend.position = “none”) \`\`\`
 
-### 4.2 Functional Enrichment Profiles (Pfam & GO Terms)
+### Functional Enrichment Profiles (Pfam & GO Terms)
 
-**Objective:** To identify specific functional classifications (Pfam
-domains) and functional biological processes (Gene Ontology terms) that
-are significantly overrepresented within the high- and low-efficiency
-translation categories.
+**Objective:** Isolate functional families (`Pfam` classifications) and
+biological processes (`Gene Ontology` fields) overrepresented at the
+translation extremes.
 
 #### Top Accelerated Functional Domains (Top tAI Tranche)
 
-\`\`\`{r top-functional-domains-table} \# \#TODO: Compile table
-displaying prominent functional terms within highly optimized
-transcripts if (is_html) { \# DT::datatable(…) } else { \#
-knitr::kable(…) } \`\`\`
+\`\`\`{r top-functional-domains-table} \# Extract functional markers
+found in transcripts displaying rapid elongation attributes top_domains
+\<- extreme_genes %\>% filter(tranche == “Top 10% (High tAI)”) %\>%
+filter(!is.na(PFAM) & PFAM != ““) %\>% group_by(lifestyle, PFAM) %\>%
+summarise(Gene_Count = n(), .groups =”drop”) %\>%
+arrange(desc(Gene_Count)) %\>% slice_head(n = 10)
+
+knitr::kable(top_domains, caption = “Dominant Functional PFAM Domains in
+Highly Accelerated Transcripts”) \`\`\`
 
 #### Top Regulated/Stalled Functional Domains (Bottom tAI Tranche)
 
-\`\`\`{r bottom-functional-domains-table} \# \#TODO: Compile table
-displaying prominent functional terms within slow-translating
-transcripts if (is_html) { \# DT::datatable(…) } else { \#
-knitr::kable(…) } \`\`\`
+\`\`\`{r bottom-functional-domains-table} \# Extract functional markers
+found in transcripts requiring deliberate elongation delays
+bottom_domains \<- extreme_genes %\>% filter(tranche == “Bottom 10% (Low
+tAI)”) %\>% filter(!is.na(PFAM) & PFAM != ““) %\>% group_by(lifestyle,
+PFAM) %\>% summarise(Gene_Count = n(), .groups =”drop”) %\>%
+arrange(desc(Gene_Count)) %\>% slice_head(n = 10)
+
+knitr::kable(bottom_domains, caption = “Dominant Functional PFAM Domains
+in Slow-Translating Transcripts”) \`\`\`
