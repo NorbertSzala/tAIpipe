@@ -250,6 +250,7 @@ All results are systematically exported as tabular matrices into `{PER_GENOME}/<
 For an explicit explanation of metrics, their definitions and interpretations see the [Detailed Metrics Reference](./metrics.md).
 
 
+## 5. aggregate_and_report
 
-
-
+#TODO - jeszdcze nie jest skończone, idea jest taka że:
+- 

@@ -42,7 +42,11 @@ if (is_html) {
 samples <- read_tsv(params$samples_sheet) %>%
   filter(include == TRUE)
 
-# 2. Iteratively parse and aggregate individual per-genome gene summary matrices
+# TODO - damaged data
+# # 2. Ingest the master functional/structural annotation dataset
+# metadata_master_df <- read_tsv(params$metadata_master)
+
+# 3. Iteratively parse and aggregate individual per-genome gene summary matrices
 all_genes_list <- list()
 
 for (i in 1:nrow(samples)) {
@@ -55,8 +59,11 @@ for (i in 1:nrow(samples)) {
   )
   
   if (file.exists(summary_path)) {
-    # Ingest file and append origin tracking keys
-    gene_data <- read_tsv(summary_path) %>%
+    # Ingest file maintaining exact mixed-case column names intact
+    gene_data <- read_tsv(summary_path)
+    
+    # Append origin tracking taxonomy and lifestyle keys from samples steering file
+    gene_data <- gene_data %>%
       mutate(
         sample = current_sample,
         phylum = samples$phylum[i],
@@ -70,18 +77,30 @@ for (i in 1:nrow(samples)) {
 # Combine nested sample structures into a single global gene matrix
 master_genes <- bind_rows(all_genes_list)
 
-# 3. Calculate global genome-wide compressed mean indices for macro metrics
+# 4. Extract clean protein_id token from the raw seq_id FASTA header string via regex
+library(stringr)
+master_genes <- master_genes %>%
+  mutate(prot_id = str_extract(seq_id, "(?<=\\[protein_id=)[^\\]]+"))
+
+# TODO - damaged table
+# # 5. Execute left join to bridge codon metrics with functional protein features
+# master_genes <- master_genes %>%
+#   left_join(metadata_master_df, by = "prot_id")
+
+# 6. Calculate global genome-wide compressed mean indices for macro metrics using exact column names
 genome_summary <- master_genes %>%
   group_by(sample, species, phylum, lifestyle) %>%
   summarise(
     mean_tAI  = mean(tAI, na.rm = TRUE),
-    mean_ENC  = mean(ENC, na.rm = TRUE), # cubar lowercase output column mapping
+    mean_ENC  = mean(ENC, na.rm = TRUE),
     mean_GC   = mean(GC, na.rm = TRUE),
     mean_GC3s = mean(GC3s, na.rm = TRUE),
     total_genes = n(),
     .groups = "drop"
   )
 ```
+
+
 
 ## Introduction
 
@@ -204,7 +223,7 @@ message("Mezo-scale hardware weights profiling block prepared.")
 **Biological Rationale:** Transcripts are stratified within their host genomes into Top 10% and Bottom 10% tAI tranches. High-efficiency arrays typically encode abundant housekeeping machinery (e.g., ribosomal complexes). Conversely, proteins requiring precise spatial navigation—such as transmembrane sequences or secretory signal tracks—frequently rely on unoptimized, low-tAI blocks to introduce deliberate ribosomal pausing, guiding accurate co-translational folding.
 
 ```{r tranche-stratification, include=FALSE}
-# Group by host assembly and slice transcripts into operational extreme decile cohorts
+# Group by host assembly and slice transcripts into operational extreme decile cohorts using correct casing
 extreme_genes <- master_genes %>%
   group_by(sample) %>%
   mutate(

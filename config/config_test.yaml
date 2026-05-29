@@ -12,7 +12,7 @@ paths:
 
   # samples metadata and datasets
   samples: "data/tutorial_data/input/metadata/samples_test.tsv"
-  main_dataset: "data/tutorial_data/input/metadata/test_dataset.tsv"
+  main_dataset: "data/tutorial_data/input/metadata/dataset_test.tsv"
 
   # tmp script files 
   results: "data/tutorial_data/output/"
