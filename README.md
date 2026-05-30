@@ -27,7 +27,7 @@ Bioinformatics pipeline for tRNA adaptation index (**tAI**), codon usage, and tR
 ## Overview
 
 ### Goal
-`tAIpipe` is a production-grade bioinformatics workflow designed to systematically quantify translational efficiency and evolutionary codon usage bias (CUB) across genomic datasets.
+`tAIpipe` workflow designed to systematically quantify translational efficiency and evolutionary codon usage bias (CUB) across genomic datasets.
 
 ### What is tAI
 The **tRNA Adaptation Index (tAI)** is a biosubstitutive metric used to estimate the translational efficiency of protein-coding genes. 
@@ -55,7 +55,7 @@ To navigate the workflow outputs and configurations, we define the following abs
 - **Genome Files (`{DATA_GENOME}`)**: Required because tRNA genes are non-coding RNAs scattered throughout intergenic and intronic regions. We need the full chromosomal context to find them.
 - **CDS Files (`{DATA_CDS}`)**: Required to extract the exact frequency of the 61 sense codons within the translated part of the genome.
 - **Sample Table (`data/tutorial_data/input/metadata/samples_test.tsv`)**: The file containing experiment configuration for Snakemake, defining sample taxonomy, required genetic codes, file-naming patterns, and execution flags (`include`).
-- **Metadata Master Table (`data/tutorial_data/input/metadata/test_dataset.tsv`)**: A comprehensive phenotypic matrix containing downstream categorical factors (lifestyles, microenvironments) used exclusively during final data aggregation.
+- **Metadata Master Table (`data/tutorial_data/input/metadata/dataset_test.tsv`)**: A comprehensive phenotypic matrix containing downstream categorical factors (lifestyles, microenvironments) used exclusively during final data aggregation.
 
 
 #### Pipeline graph
