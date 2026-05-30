@@ -15,9 +15,10 @@ properties:
     required:
       - data_cds
       - data_genome
-      - samples
-      - main_dataset
+      - metadata_dataset
+      - metadata_samples
       - results
+      - benchmarks
       - per_genome
       - aggregated
       - plots
@@ -31,9 +32,11 @@ properties:
         type: string
       data_genome:
         type: string
-      samples:
+      metadata_dataset:
         type: string
-      main_dataset:
+      metadata_samples:
+        type: string
+      benchmarks:              # Dodane
         type: string
       results:
         type: string

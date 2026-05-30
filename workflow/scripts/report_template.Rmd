@@ -19,10 +19,6 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-# GLOBAL REPORT CONFIGURATION
-# Goal: Initialize the reporting library environment and set up global plot aesthetics.
-# Methodology: Load foundational packages (ggplot2, dplyr, tidyr, knitr).
-# Validation: Ensure output formats do not crash during silent automated rendering.
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7)
 
 library(ggplot2)
@@ -32,6 +28,20 @@ library(readr)
 library(knitr)
 library(cowplot)
 library(pheatmap)
+
+# STANDARDIZED SECTIONS PATH DEFINITIONS
+# Define and create output subdirectories for asset isolation
+sec0_dir <- file.path(params$output_dir, "summary_report_files", "sec0_quality_control")
+sec1_dir <- file.path(params$output_dir, "summary_report_files", "sec1_evolutionary_cohort")
+sec2_dir <- file.path(params$output_dir, "summary_report_files", "sec2_cross_species_functional")
+sec3_dir <- file.path(params$output_dir, "summary_report_files", "sec3_individual_deep_dive")
+sec4_dir <- file.path(params$output_dir, "summary_report_files", "sec4_molecular_code")
+
+dir.create(sec0_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(sec1_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(sec2_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(sec3_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(sec4_dir, recursive = TRUE, showWarnings = FALSE)
 ```
 
 # tAIpipe Analytical Report: Global and Local Translation Landscape
@@ -185,7 +195,7 @@ p_macro <- ggplot(cohort_summary, aes(x = mean_ENC, y = mean_tAI, color = lifest
 print(p_macro)
 
 # Save high resolution image file
-ggsave(file.path(params$output_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
+ggsave(file.path(sec1_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
 ```
 
 ### Selection Pressure vs Mutational Drift (The Wright's Curve)
@@ -219,7 +229,7 @@ p_wright <- ggplot() +
   theme_bw()
 
 print(p_wright)
-ggsave(file.path(params$output_dir, "wrights_curve_analysis.png"), plot = p_wright, width = 10, height = 7, dpi = 300)
+ggsave(file.path(sec1_dir, "wrights_curve_analysis.png"), plot = p_wright, width = 10, height = 7, dpi = 300)
 
 # Compute the perpendicular vertical distance (delta ENC) for each species as a direct proxy for selection intensity.
 cohort_summary <- cohort_summary %>%
@@ -317,8 +327,8 @@ p_spatial <- ggplot(combined_spatial, aes(x = Bin, y = Mean_Density, color = tAI
 composite_structural <- cowplot::plot_grid(p_bars, p_spatial, ncol = 1, rel_heights = c(1, 1))
 print(composite_structural)
 
-ggsave(file.path(params$output_dir, "cross_species_structural_extremes.png"), plot = p_bars, width = 10, height = 5, dpi = 300)
-ggsave(file.path(params$output_dir, "cross_species_spatial_profiles.png"), plot = p_spatial, width = 12, height = 5, dpi = 300)
+ggsave(file.path(sec2_dir, "cross_species_structural_extremes.png"), plot = p_bars, width = 10, height = 5, dpi = 300)
+ggsave(file.path(sec2_dir, "cross_species_spatial_profiles.png"), plot = p_spatial, width = 12, height = 5, dpi = 300)
 ```
 
 ### Global Pfam & GO Terms Enrichment of Translation Extremes
@@ -360,12 +370,8 @@ enrichment_output <- group_counts %>%
 
 print(knitr::kable(head(enrichment_output, 20), caption = "Top 20 Broad Functional GO Terms Enriched in Translation Rate Extremes"))
 
-# Resolve reports folder path dynamically to avoid cluttering the rule script directory
-output_reports_dir <- file.path(dirname(params$per_genome_dir), "aggregated", "reports")
-dir.create(output_reports_dir, showWarnings = FALSE, recursive = TRUE)
-
 # FIXED: Redirect CSV export away from workflow/scripts/ straight into output directories
-write_csv(enrichment_output, file.path(output_reports_dir, "global_functional_enrichment_results.csv"))
+write_csv(enrichment_output, file.path(sec2_dir, "global_functional_enrichment_results.csv"))
 ```
 
 ---
@@ -434,8 +440,8 @@ for (target_sample_id in unique_samples) {
   print(p_local_density)
   cat("\n\n")
   
-  # Enforce programmatic saving directly to the correct aggregated reports folder location
-  ggsave(file.path(output_reports_dir, paste0(target_sample_id, "_tai_local_density.png")), 
+  # Enforce programmatic saving directly to the correct section folder location
+  ggsave(file.path(sec3_dir, paste0(target_sample_id, "_tai_local_density.png")), 
          plot = p_local_density, width = 10, height = 5, dpi = 300)
   
   # Sort table to harvest expression extremes and resolve NA/empty annotation outputs safely
@@ -511,8 +517,8 @@ for (target_sample_id in unique_samples) {
   print(local_panel)
   cat("\n\n")
   
-  # Redirect generated panel graphic straight to the correct outputs folder
-  ggsave(file.path(output_reports_dir, paste0(target_sample_id, "_local_structural_panel.png")), 
+  # Redirect generated panel graphic straight to the correct section folder
+  ggsave(file.path(sec3_dir, paste0(target_sample_id, "_local_structural_panel.png")), 
          plot = local_panel, width = 14, height = 10, dpi = 300)
   
   cat("\n#### Overlap of Structural Domains and Sequence Complexity\n")
@@ -552,7 +558,7 @@ p_local_density <- ggplot(sample_isolated_df, aes(x = tAI)) +
   theme_bw()
 
 print(p_local_density)
-ggsave(file.path(params$output_dir, paste0(target_sample_id, "_tai_local_density.png")), plot = p_local_density, width = 10, height = 5, dpi = 300)
+ggsave(file.path(sec3_dir, paste0(target_sample_id, "_tai_local_density.png")), plot = p_local_density, width = 10, height = 5, dpi = 300)
 
 # Sort the table ascending/descending to harvest the highest 10 and lowest 10 tAI gene IDs.
 top_10_genes <- sample_isolated_df %>% dplyr::arrange(desc(tAI)) %>% head(10)
@@ -661,7 +667,7 @@ local_structural_panel <- cowplot::plot_grid(
 print(local_structural_panel)
 
 # Enforce clean handling of zero values and save static PNG files
-ggsave(file.path(params$output_dir, paste0(target_sample_id, "_local_structural_panel.png")), plot = local_structural_panel, width = 14, height = 10, dpi = 300)
+ggsave(file.path(sec3_dir, paste0(target_sample_id, "_local_structural_panel.png")), plot = local_structural_panel, width = 14, height = 10, dpi = 300)
 ```
 
 ### Overlap of Structural Domains and Sequence Complexity
@@ -740,7 +746,7 @@ p_weights_dist <- ggplot(weights_master_df, aes(x = Codon, y = Weight, fill = li
         legend.position = "bottom")
 
 print(p_weights_dist)
-ggsave(file.path(output_reports_dir, "global_codon_weights_distribution.png"), plot = p_weights_dist, width = 14, height = 8, dpi = 300)
+ggsave(file.path(sec4_dir, "global_codon_weights_distribution.png"), plot = p_weights_dist, width = 14, height = 8, dpi = 300)
 ```
 
 ### Comprehensive Codon Usage Fingerprint (RSCU Heatmap)
@@ -801,8 +807,8 @@ if (abs(mat_max - mat_min) < 1e-5) {
 custom_breaks <- seq(mat_min, mat_max, length.out = 51)
 dynamic_palette <- colorRampPalette(c("navy", "white", "firebrick3"))(50)
 
-# FIXED: Save matrix heatmap directly inside the target output aggregated reports path
-png(file.path(params$output_dir, "rscu_global_hierarchical_heatmap.png"), width = 1200, height = 900, res = 130)
+# FIXED: Save matrix heatmap directly inside the target section output path
+png(file.path(sec4_dir, "rscu_global_hierarchical_heatmap.png"), width = 1200, height = 900, res = 130)
 pheatmap::pheatmap(heatmap_matrix_filtered, 
                     clustering_distance_rows = "euclidean", 
                     clustering_distance_cols = "euclidean", 
