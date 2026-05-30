@@ -4,16 +4,18 @@ sink(log); sink(log, type="message")
 
 library(rmarkdown)
 
-template_path <- "workflow/scripts/report_template.Rmd"
+template_path = "workflow/scripts/report_template.Rmd"
 
-# Define the list of dynamic parameters directly from the snakemake object
+# Define the clean, simplified parameters for the Rmd document environment
+# Maps the precise Snakemake input aliases straight to the report workspace
 report_params <- list(
-  per_genome_dir  = normalizePath(snakemake@input$per_genome_dir),
-  metadata_master = normalizePath(snakemake@input$metadata_master),
-  samples_sheet   = normalizePath(snakemake@input$samples_sheet)
+  per_genome_dir = normalizePath(snakemake@params$per_genome_dir),
+  dataset        = normalizePath(snakemake@input$dataset),
+  samples        = normalizePath(snakemake@input$samples),
+  output_dir     = normalizePath(dirname(snakemake@output$html_report))
 )
 
-# 1. Render to static GitHub Flavored Markdown (.md)
+# 1. Render to a static GitHub Flavored Markdown (.md) document
 rmarkdown::render(
   input         = template_path,
   output_format = "md_document",
@@ -23,7 +25,7 @@ rmarkdown::render(
   quiet         = TRUE
 )
 
-# 2. Render to interactive HTML document
+# 2. Render to an interactive HTML document
 rmarkdown::render(
   input         = template_path,
   output_format = "html_document",

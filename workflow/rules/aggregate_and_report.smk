@@ -5,8 +5,8 @@ rule aggregate_and_report:
         # Pass specific paths needed for the R script
         per_genome_dir = PER_GENOME,
         # Safely read the corrected path directly from the configuration object
-        metadata_master = config["paths"]["metadata_samples"],
-        samples_sheet = config["paths"]["metadata_dataset"],
+        samples = config["paths"]["metadata_samples"],
+        dataset = config["paths"]["metadata_dataset"],
         # IMPORTANT: to ensure updates when report structure is changes
         template = "workflow/scripts/report_template.Rmd"
     output:
@@ -14,6 +14,9 @@ rule aggregate_and_report:
         md_report = f"{REPORT_FILE}/summary_report.md"
     log:
         f"{LOGS}/aggregated/generate_report.log"
+    params:
+        # Transfer static environment configurations and directory locations safely to params
+        per_genome_dir = PER_GENOME
     conda:
         "../envs/r.yaml"
     script:

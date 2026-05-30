@@ -6,6 +6,7 @@ logs/
 # Large input data
 data/genome/
 data/CDS/
+data/tutorial_data/output
 resources/metadata/Main_Dataset.tsv
 
 resources/containers/*.sif

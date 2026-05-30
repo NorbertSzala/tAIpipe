@@ -137,10 +137,13 @@ rule all:
 # ----------------------
 # ---  Include rules ---
 # ----------------------
+# calculate metrics rules 
 include: "rules/trnascan_rule.smk"
 include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 include: "rules/codon_usage_metrics_rule.smk"
+# metadata rule
+include: "rules/prepare_metadata_samples_rule.smk"
 # report rule 
 include: "rules/aggregate_and_report.smk"
 

@@ -1,0 +1,274 @@
+---
+title: "tAIpipe Comprehensive Analytical Report"
+subtitle: "Global and Local Translation Optimization Landscape"
+author: "tAIpipe Automated Framework"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+  md_document:
+    variant: markdown_github
+---
+
+\```{r setup, include=FALSE}
+# GLOBAL REPORT CONFIGURATION
+# Goal: Initialize the reporting library environment and set up global plot aesthetics.
+# Methodology: Load foundational packages (ggplot2, dplyr, tidyr, knitr).
+# Validation: Ensure output formats do not crash during silent automated rendering.
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7)
+\```
+
+# tAIpipe Analytical Report: Global and Local Translation Landscape
+
+---
+
+## Quality Control & Dataset Auditing
+
+### Cohort Ingestion Summary
+#### Goal
+Verify data ingestion and experiment layout integrity before computational evaluation. Ensure taxonomic and ecological categories are represented.
+
+#### Methodology
+Compile a cohort overview table summarizing total counts of independent operational taxonomic units (samples) across Domains, Kingdoms, Phyla, and Lifestyles.
+
+#### Critical Observations
+Look for extreme class imbalances or sample omissions. If a specific lifestyle or phylum contains too few records compared to the rest of the cohort, a text warning must alert the user to potential statistical inflation during downstream grouping.
+
+
+
+\```{r cohort-ingestion-summary}
+# --- Chunk: cohort-ingestion-summary ---
+# Input: Read the primary multi-sample manifest 'samples_test.tsv' and phenotypic table 'test_dataset.tsv'.
+# Process: Group rows by 'domain', 'kingdom', 'phylum', and 'lifestyle'. Compute total active samples (include == True).
+# Return: A summary markdown table using knitr::kable().
+# Validation: 
+#   - Check if total ingested row count equals the expected active sample list from the steering file.
+#   - Trigger a programmatic alert/warning text if any active group size drops below N=3 (statistical risk).
+\```
+
+### Organism-Level Assembly & Prediction QC
+#### Goal
+Identify analytical outliers, structural sequence assembly fragmentation artifacts, and potential downstream tRNA prediction errors.
+
+#### Methodology
+Generate a dual panel of sample-wide scatter plots:
+1. Genome Assembly Size (Mbp) vs. Total Predicted tRNA Gene Count.
+2. Genome-wide Average GC Content vs. Genome-wide Average Synonymous Third-Position GC Content (GC3s).
+
+#### Critical Observations
+Legitimate biological trends exhibit linear scaling between genome size and tRNA pools. Mark severe technical outliers in red with text labels. For instance, a bloated genome sequence with an artificially suppressed tRNA count indicates low assembly coverage or raw file contamination.
+
+#### Notes
+Samples identified as suspicious through the entire pipeline auditing process (across relevant data splits) must be explicitly flagged and listed here.
+
+\```{r assembly-prediction-qc-plots}
+# --- Chunk: assembly-prediction-qc-plots ---
+# Input: Global cohort metadata table ('cohort_summary.tsv') containing aggregated single-genome indices.
+# Process: 
+#   - Plot 1: X = genome_size_Mbp, Y = total_tRNA_count. Fit a linear regression model. Compute Cook's distance.
+#   - Plot 2: X = mean_GC, Y = mean_GC3s.
+# Return: Render a side-by-side graphical display (e.g., using cowplot or patchwork).
+# Validation: 
+#   - Identify points with Cook's distance > 4/n.
+#   - Color code these extreme technical outliers in Red and dynamically print an warning list of their sample IDs.
+\```
+
+---
+
+## Evolutionary & Cohort-Scale Analysis (Across All Species)
+
+### Translational Strategy Mapped by Lifestyle and Taxonomy
+#### Goal
+Evaluate how broad macro-evolutionary descent (Phylum) and ecological pressures (Lifestyle) dictate global codon usage selection across the entire cohort landscape.
+
+#### Methodology
+Compile an integrated multi-panel visualization mapping genome-wide mean tAI against mean Effective Number of Codons (ENC/Nc). Points represent distinct species, color-coded by lifestyle categories and shaped by taxonomic phyla, paired with marginal distribution boxplots.
+
+#### Critical Observations
+Determine if specific niche adaptations (e.g., high-impact plant pathogens vs. free-living saprotrophs) cluster into separated spaces of high translational efficiency (high tAI) paired with narrowed codon usage (low ENC).
+
+\```{r translational-strategy-macro}
+# --- Chunk: translational-strategy-macro ---
+# Input: Combined cohort metric file containing mean values for every validated genome.
+# Process: Create a scatter plot mapping X = mean_ENC, Y = mean_tAI. Add marginal boxplots for 'lifestyle' and 'phylum'.
+# Return: An integrated scatter-marginal-boxplot assembly.
+# Validation: Assert that no parsed metric exceeds biological boundaries (tAI between 0 and 1; ENC between 20 and 61).
+\```
+
+### Selection Pressure vs Mutational Drift (The Wright's Curve)
+#### Goal
+Disentangle whether observed codon usage bias across species is driven by natural selection for translational speed/accuracy or by passive genomic background mutational drift.
+
+#### Methodology
+Map genome-wide average ENC against average GC3s. Overlay the theoretical mathematical Wright's curve ($H_0$: purely neutral mutational drift) defined by:
+$$ENC_{\text{theoretical}} = 2 + s + \frac{29}{s^2 + (1-s)^2}$$
+where $s = GC3s$.
+
+#### Critical Observations
+Species or functional cohorts pooling significantly below the theoretical line undergo active directional selection toward optimal codons. Species hugging the curve evolve primarily under neutral mutational drift.
+
+\```{r wrights-curve-analysis}
+# --- Chunk: wrights-curve-analysis ---
+# Input: Aggregated cohort matrix with 'mean_ENC' and 'mean_GC3s' vectors.
+# Process: 
+#   - Generate a continuous math function vector tracking Wright's equation across s in [0, 1].
+#   - Plot actual species data points over the theoretical curve line.
+#   - Compute the perpendicular vertical distance (delta ENC) for each species as a direct proxy for selection intensity.
+# Return: A composite line-scatter plot.
+# Validation: Flags and records any species located above the mathematical boundary line (theoretically impossible under standard models).
+\```
+
+---
+
+## Cross-Species Functional Protein & Gene Adaptation (The Extremes)
+
+### Structural Features of Protein Extremes Across Cohorts
+#### Goal
+Determine global amino acid and protein structural sorting rules relative to translational efficiency across the entire experimental framework.
+
+#### Methodology
+Aggregate gene sequences from all genomes into a pooled dataset. Isolate top 10% (optimized) and bottom 10% (slowed/regulatory) global tAI thresholds. Construct dodge bar charts displaying the fraction of genes containing signal peptides or transmembrane domains (TM), grouped by Phylum or Lifestyle.
+
+#### Spatial Profiling
+For the Top 10% and Bottom 10% tAI groups, generate density profile charts across 10 unified length bins tracking the positional layout of:
+* Predicted protein domain boundaries (Pfam)
+* Transmembrane segments (TMHMM)
+* Low Complexity Regions (LCR)
+This directly checks if highly optimized proteins restrict sequence complexity or transmembrane blocks to specific structural domains (e.g., N- or C-termini) compared to slower translational targets.
+
+
+
+\```{r cross-species-structural-extremes}
+# --- Chunk: cross-species-structural-extremes ---
+# Input: Pooled structural metric file containing gene-by-gene measurements across all organisms ('master_gene_table.tsv').
+# Process:
+#   - Filter and slice global Top 10% and Bottom 10% tAI sub-cohorts.
+#   - Compute percentage presence for Signal Peptides and TM domains across groups.
+#   - For the spatial tracking, compute density profiles across 10 normalized alignment length bins for Pfam, TM, and LCR.
+# Return: 1. Dodge bar plot of global features. 2. Continuous line charts tracing structural feature density across binned length.
+# Validation: Confirm that input sequence lengths are properly normalized (0.0 to 1.0) before bin assignment.
+\```
+
+### Global Pfam & GO Terms Enrichment of Translation Extremes
+#### Goal
+Uncover universal metabolic or evolutionary pathways that are strictly conserved for rapid translation (Top) or translational pausing (Bottom) across taxonomic boundaries.
+
+#### Methodology
+Run hyper-geometric distribution tests for overrepresentation of Pfam domain keys and Gene Ontology (GO) terms (derived via `pfam2go` mappings) within the combined Top/Bottom 10% tAI gene pools. 
+
+#### Critical Observations
+Results are presented as profiles of top enriched functions broken down by Phylum and Lifestyle to highlight potential instances of evolutionary convergence among ecologically matching pathogens.
+
+\```{r global-functional-enrichment}
+# --- Chunk: global-functional-enrichment ---
+# Input: Global sliced gene indices linked with mapped Pfam IDs and GO terms.
+# Process: Execute a hyper-geometric enrichment routine (e.g., using clusterProfiler or native fisher tests). Apply Benjamini-Hochberg (BH) false discovery rate adjustments.
+# Return: A consolidated significance data table containing Adjusted P-values and Enrichment Scores.
+# Validation: Confirm that the background universe set matches total valid protein-coding sequences ingested by the workflow.
+\```
+
+---
+
+## Individual Organism Deep-Dive (Per-Genome Diagnostics)
+*Note: This diagnostic loop evaluates target individual assemblies dynamically or cycles sequentially through distinct species configurations.*
+
+### Intra-Organismal tAI Distribution and Core Outliers
+#### Goal
+Characterize localized cell investment across individual gene tracks and identify elite, highly optimized expression targets.
+
+#### Methodology
+Render a continuous density curve mapping the internal gene-by-gene tAI distribution profile of a chosen organism. Isolate the absolute extreme top 10 and bottom 10 genes, printing them out in a tabular index accompanied by direct GO descriptions.
+
+#### Critical Observations
+Review the distribution modality. Multi-modal distribution curves reveal clear functional gene stratification, whereas highly skewed distributions indicate extreme specialization towards housekeeping genes.
+
+\```{r single-organism-tai-distribution}
+# --- Chunk: single-organism-tai-distribution ---
+# Input: The standalone sample evaluation track summary ('results/per_genome/<sample>/codon_metrics/*_summary.tsv').
+# Process:
+#   - Generate an empirical density distribution plot for local gene tAI values.
+#   - Sort the table ascending/descending to harvest the highest 10 and lowest 10 tAI gene IDs.
+# Return: Combined continuous density line chart and an automated top/bottom textual index table.
+# Validation: Confirm that top and bottom slices contain unique gene IDs and check for empty GO annotation strings.
+\```
+
+### Local Protein Feature Correlation
+#### Goal
+Examine localized structural design principles inside a single organism to check if translational speed optimization matches structural folding requirements and LCR management.
+
+#### Methodology
+Build violin/boxplot charts evaluating protein length, total TM domain count, total TM domain length, LCR counts, and absolute LCR lengths against Top 10% vs. Bottom 10% subsets.
+
+#### N/C-Terminal LCR Polarization
+Construct bar charts comparing LCR density and specific amino acid compositions across three distinct functional regions: N-terminus (0.0-0.25), Internal (0.25-0.75), and C-terminus (0.75-1.0). This verifies whether low-complexity sequences localized at the N-terminus correlate with reduced tAI to implement a controlled ribosomal translation initiation delay.
+
+\```{r local-protein-feature-correlation}
+# --- Chunk: local-protein-feature-correlation ---
+# Input: Selected organism summary track integrated with structural locus adnotations.
+# Process:
+#   - Compile length, LCR, and TM count vectors across the extreme groups.
+#   - Divide gene lengths into N-terminal, middle, and C-terminal segments and summarize internal LCR occurrence rates.
+# Return: Panel displaying violin charts alongside localized structural bar plots.
+# Validation: Enforce clean handling of zero values (e.g., genes entirely lacking TM domains) to prevent scale distortion.
+\```
+
+### Overlap of Structural Domains and Sequence Complexity
+#### Goal
+Determine if low complexity sequences (LCRs) directly collide with functional structural folds within high-efficiency translation frameworks.
+
+#### Methodology
+Calculate the physical intersection length between predicted Pfam domain bounds and localized LCR coordinates. Flag structural elements experiencing an intersection overlap of greater than 80% total length across extreme tAI brackets.
+
+#### Critical Observations
+High overlap scores in high-tAI genes point to structural optimization constraints, whereas high overlap in low-tAI genes could signify regulatory regions.
+
+\```{r domain-lcr-structural-overlap}
+# --- Chunk: domain-lcr-structural-overlap ---
+# Input: Base coordinate track files mapping Pfam intervals and LCR intervals for the target genome.
+# Process: Compute interval overlap lengths: (Intersection BP / Total Domain BP) * 100. Filter rows matching overlap >= 80%.
+# Return: Matrix table displaying highly intersected functional domains grouped by extreme tAI status.
+# Validation: Verify that coordinate index tracking systems (0-based vs 1-based) are unified across input tracks.
+\```
+
+---
+
+## Molecular Code & Codon Efficiency Space
+
+### Comparative Codon Relative Adaptiveness ($w_i$ Distributions)
+#### Goal
+Decode the underlying organismal translation rules by assessing how specific codon adaptation weights vary across lifestyles or engineering groups.
+
+#### Methodology
+Compile distribution charts of calculated relative adaptiveness weights ($w_i$) for all 61 sense codons. Contrast these profiles across ecological classifications or domains.
+
+#### Critical Observations
+Identify shifting optimal codon switches. If distinct biological groups display contrasting weights for identical codons, it highlights divergent evolution in their underlying tRNA expression profiles.
+
+\```{r comparative-codon-weights}
+# --- Chunk: comparative-codon-weights ---
+# Input: Processed individual codon weight tables ('*_trna_weights.csv') compiled across genomes.
+# Process: Map the 61 codon categories, sorting weights by matching amino acid clusters. Plot distributions across lifestyles.
+# Return: Grid of multi-sample codon adaptiveness bar charts or density ridges.
+# Validation: Ensure the normalization constraint is maintained: the preferred codon in every synonymous group must equal 1.0.
+\```
+
+### Comprehensive Codon Usage Fingerprint (RSCU Heatmap)
+#### Goal
+Map global codon usage preferences simultaneously across all organisms to identify evolutionary convergent trends.
+
+#### Methodology
+Construct a global two-dimensional matrix containing calculated Relative Synonymous Codon Usage (RSCU) values across all 61 sense codons for all samples. Project this matrix using a clustered heatmap with independent hierarchical tree clustering branches for rows (species) and columns (codons).
+
+#### Critical Observations
+Evaluate whether clustering topology follows strict taxonomic lineages (phylogeny) or shifts toward ecological lifestyle grouping (niche adaptation).
+
+\```{r rscu-global-heatmap}
+# --- Chunk: rscu-global-heatmap ---
+# Input: Global aggregated RSCU matrix containing values for all active experimental runs.
+# Process: Execute a hierarchical clustering routing using Euclidean distance metrics and complete linkage clustering.
+# Return: A clustered layout heatmap plot tracking rows (species) and columns (codons).
+# Validation: Confirm that row and column dimensions match the active dataset bounds (N species x 61 codons).
+\```

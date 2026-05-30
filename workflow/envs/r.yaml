@@ -7,7 +7,7 @@ channels:
 
 dependencies:
   - r-base=4.3
-  
+
   # --- Core Data Manipulation & Bioinformatics ---
   - bioconductor-biostrings
   - bioconductor-iranges
@@ -25,34 +25,11 @@ dependencies:
   - r-ggplot2
   - r-plotly
   - r-dt
+  - r-cowplot
+  - r-patchwork
+  - r-pheatmap
 
   # --- Automated Reporting Engines ---
   - r-rmarkdown
   - r-knitr
   - pandoc
-
-
-
-
-
-# DEPRECATED
-# name: r-cubar
-
-# channels:
-#   - conda-forge
-#   - bioconda
-
-# dependencies:
-#   - r-base=4.3
-#   - bioconductor-biostrings
-#   - bioconductor-iranges
-#   - r-readr
-#   - r-dplyr
-#   - r-tidyr
-#   - r-tibble
-#   - r-stringr
-#   - r-data.table
-#   - r-ggplot2
-#   - r-optparse
-#   - r-remotes
-#   - r-rlang
