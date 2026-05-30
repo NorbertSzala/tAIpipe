@@ -30,7 +30,7 @@ PER_GENOME = config['paths']['per_genome']
 AGGREGATED = config['paths']['aggregated']
 LOGS = config['paths']['logs']
 
-DATA_MAINTABLE = config["paths"]["main_dataset"]
+DATA_MAINTABLE = config["paths"]["metadata_samples"]
 DATA_PLOTS = config["paths"]["plots"]
 DATA_TABLES = config["paths"]["tables"]
 REPORT_FILE = config["paths"]["reports"]
@@ -40,14 +40,14 @@ REPORT_FILE = config["paths"]["reports"]
 # ---------------------
 # --- Samples table ---
 # ---------------------
-# Read samples from tsv
-samples_df = pd.read_csv(config['paths']['samples'], sep = '\t')
+# Read metadata_dataset from tsv
+samples_df = pd.read_csv(config['paths']['metadata_dataset'], sep = '\t')
 
-# Validate samples tsv
-validate(samples_df, "schemas/samples.schema.yaml")
+# Validate metadata_dataset tsv
+validate(samples_df, "schemas/metadata_dataset.schema.yaml")
 
 samples_df = samples_df.set_index("sample")
-samples_df = samples_df[samples_df['include']== True] # added additional column in samples.tsv to make excluding some samples much easier
+samples_df = samples_df[samples_df['include']== True] # added additional column in metadata_dataset.tsv to make excluding some metadata_dataset much easier
 SAMPLES = samples_df.index.tolist()
 
 
@@ -95,7 +95,7 @@ def get_trnascanse_code_arg(wildcards):
     return f"-g {gcode_file}"
 
 def get_domain(wildcards):
-    """Extract and normalize domain from samples.tsv."""
+    """Extract and normalize domain from metadata_dataset.tsv."""
     domain = str(samples_df.loc[wildcards.sample, "domain"]).strip().lower()
 
     domain_map = {

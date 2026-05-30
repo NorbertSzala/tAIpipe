@@ -7,12 +7,12 @@ paths:
   data_cds: "data/tutorial_data/input/CDS"
   data_genome: "data/tutorial_data/input/genome"
   genetic_codes_trnascanse: "data/tutorial_data/input/trnascanse"
-  #TODO - tutaj nie ma takiego pliku !!! 
   genetic_codes_tables: "data/tutorial_data/input/tables"
 
   # samples metadata and datasets
-  samples: "data/tutorial_data/input/metadata/samples_test.tsv"
-  main_dataset: "data/tutorial_data/input/metadata/dataset_test.tsv"
+  # samples -> datatset, main_dataset->samples
+  metadata_dataset: "data/tutorial_data/input/metadata/dataset_test.tsv"
+  metadata_samples: "data/tutorial_data/input/metadata/samples_test.tsv"
 
   # tmp script files 
   results: "data/tutorial_data/output/"

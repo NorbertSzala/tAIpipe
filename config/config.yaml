@@ -6,7 +6,6 @@ paths:
   data_cds: "data/CDS"
   data_genome: "data/genome"
   genetic_codes_trnascanse: "data/genetic_codes/trnascanse"
-  #TODO - tutaj nie ma takiego pliku !!! 
   genetic_codes_tables: "data/genetic_codes/tables"
 
   samples: "config/samples.tsv"

@@ -51,6 +51,7 @@ This is the active control file read directly by `workflow/Snakefile`. Its param
 | `include` | Boolean | Active Execution Parameter | Logic gate evaluating to `True` or `False`. Rows matching `False` are culled during initialization, entirely excluding the target sample from processing. |
 
 
+
 ### B. The Metadata Master Table (`data/tutorial_data/input/metadata/test_dataset.tsv`)
 * **What it is:** A comprehensive matrix describing the biological taxonomy (`kingdom`, `phylum`, `class`) and ecological characteristics (`lifestyle`, `microenvironment`) of every available sample.
 * **Workflow Impact:** This file is completely ignored during the initial heavy computational rules (`run_trnascanse`, `codon_usage_metrics`). It is injected exclusively during **Step 5 (Aggregation and Report)**, allowing the pipeline to automatically group computed tAI, FOP, and ENC metrics by phenotypes—such as comparing whether wood-decaying saprotrophs exhibit higher translational efficiency for certain gene sets compared to plant pathogens.

@@ -1,6 +1,6 @@
 
 tRNAscan-SE v.2.0.12 (Nov 2022) scan results (on host DESKTOP-NKT8D63)
-Started: Fri May 29 18:31:24 CEST 2026
+Started: Sat May 30 14:17:18 CEST 2026
 
 ------------------------------------------------------------
 Sequence file(s) to search:        data/tutorial_data/input/genome/GCA_000219625.1_first_contig_1Mbp.fna
@@ -30,10 +30,10 @@ Bases in tRNAs:         269
 tRNAs predicted:        3
 Av. tRNA length:        89
 Script CPU time:        0.03 s
-Scan CPU time:          2.66 s
-Scan speed:             751.9 Kbp/sec
+Scan CPU time:          2.85 s
+Scan speed:             701.8 Kbp/sec
 
-First pass search(es) ended: Fri May 29 18:31:24 CEST 2026
+First pass search(es) ended: Sat May 30 14:17:19 CEST 2026
 
 Infernal Stats:
 -----------
@@ -41,13 +41,13 @@ Candidate tRNAs read:     3
 Infernal-confirmed tRNAs:     3
 Bases scanned by Infernal:  329
 % seq scanned by Infernal:  0.0 %
-Script CPU time:          0.02 s
-Infernal CPU time:            0.57 s
-Scan speed:               577.2 bp/sec
+Script CPU time:          0.01 s
+Infernal CPU time:            0.76 s
+Scan speed:               432.9 bp/sec
 
-Infernal analysis of tRNAs ended: Fri May 29 18:31:25 CEST 2026
+Infernal analysis of tRNAs ended: Sat May 30 14:17:20 CEST 2026
 
-Overall scan speed: 609756.1 bp/sec
+Overall scan speed: 547945.2 bp/sec
 
 tRNAs decoding Standard 20 AA:              3
 Selenocysteine tRNAs (TCA):                 0
