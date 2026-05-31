@@ -1,9 +1,8 @@
 #!/usr/bin/env Rscript
 
 # workflow/scripts/compile_metadata_samples.R
-# Skrypt agregujący metadane sekwencji CDS, pobierający termy GO online i łączący wyniki z metrykami tAIpipe.
+# Script aggregating CDS sequence metadata, fetching GO terms and UniProt online via biomaRt.
 
-# Wymagane pakiety instalowane w środowisku conda (np. r-essentials, bioconductor-biostrings, bioconductor-biomart)
 suppressPackageStartupMessages({
   library(argparse)
   library(Biostrings)
@@ -14,107 +13,115 @@ suppressPackageStartupMessages({
   library(purrr)
 })
 
-# 1. Parsowanie argumentów wejściowych
-parser <- ArgumentParser(description = "Kompilacja metadanych próbek i genów dla tAIpipe")
-parser$add_argument("--metadata_dataset", required = TRUE, help = "Ścieżka do pliku dataset_test.tsv")
-parser$add_argument("--per-genome-dir", required = TRUE, help = "Katalog główny z wynikami per_genome")
-parser$add_argument("--cds-dir", required = TRUE, help = "Katalog z wejściowymi plikami CDS (*.fna)")
-parser$add_argument("--gcode-dir", required = TRUE, help = "Katalog z kodami genetycznymi (zostawiony dla kompatybilności)")
-parser$add_argument("--output", required = TRUE, help = "Ścieżka wyjściowa dla skonsolidowanego pliku samples.tsv")
+# 1. Parsing input arguments
+parser <- ArgumentParser(description = "Compilation of sample and gene metadata for tAIpipe")
+parser$add_argument("--metadata_dataset", required = TRUE, help = "Path to dataset_test.tsv file")
+parser$add_argument("--per-genome-dir", required = TRUE, help = "Root directory with per_genome results")
+parser$add_argument("--cds-dir", required = TRUE, help = "Directory with input CDS files (*.fna)")
+parser$add_argument("--gcode-dir", required = TRUE, help = "Directory with genetic codes (kept for compatibility)")
+parser$add_argument("--output", required = TRUE, help = "Output path for the consolidated samples.tsv file")
 
 args <- parser$parse_args()
 
-# Inicjalizacja połączenia z BioMart (Ensembl Fungi jako domyślna baza dla Twoich danych)
-message("Inicjalizacja połączenia online z biomaRt...")
+# Initialization of connection with BioMart (Ensembl Fungi)
+message("[-] Initializing online connection with biomaRt (Ensembl Fungi)...")
 mart <- useMart(biomart = "fungi_mart", host = "https://fungi.ensembl.org")
 
-# Funkcja pomocnicza do pobierania GO online na podstawie listy Protein ID lub UniProt ID
-fetch_go_terms_online <- function(protein_ids) {
+# Function for fetching GO and UniProt ID per specific organism dataset
+fetch_biomart_annotations_by_dataset <- function(protein_ids, dataset_name) {
   tryCatch({
-    # Usunięcie pustych wartości
     valid_ids <- protein_ids[!is.na(protein_ids) & protein_ids != ""]
-    if (length(valid_ids) == 0) return(list())
+    if (length(valid_ids) == 0) return(NULL)
     
-    # Odpytanie Ensembl BioMart
-    # Uwaga: atrybuty mogą się różnić w zależności od wybranego datasetu, 
-    # dlatego jako uniwersalny fallback stosujemy wyszukiwanie po uniproksb
-    ensembl_mart <- useDataset("uniprot", mart = mart) # Przykładowe użycie dedykowanego datasetu
+    message(paste("[-] Connecting to dataset:", dataset_name, "for", length(valid_ids), "unique proteins..."))
+    ensembl_mart <- useDataset(dataset_name, mart = mart)
     
+    # Using 'uniprotkb_all' for maximum cross-reference retrieval alongside 'go_id'
     go_data <- getBM(
-      attributes = c('protein_id', 'go_id'),
+      attributes = c('protein_id', 'uniprotkb_all', 'go_id'),
       filters = 'protein_id',
       values = valid_ids,
       mart = ensembl_mart
     )
     
-    # Agregacja po protein_id (sklejanie średnikami)
-    go_mapped <- go_data %>%
-      filter(go_id != "") %>%
-      group_by(protein_id) %>%
-      summarise(go_list = paste(unique(go_id), collapse = ";"), .groups = "drop")
+    message(paste("[+] BioMart returned", nrow(go_data), "raw annotation rows for", dataset_name))
     
-    return(setNames(go_mapped$go_list, go_mapped$protein_id))
+    if (nrow(go_data) == 0) return(NULL)
+    
+    # Aggregation and formatting of results
+    annot_mapped <- go_data %>%
+      filter(!is.na(protein_id) & protein_id != "") %>%
+      group_by(protein_id) %>%
+      summarise(
+        uniprot_fetched = paste(unique(uniprotkb_all[!is.na(uniprotkb_all) & uniprotkb_all != ""]), collapse = ";"),
+        go_fetched = paste(unique(go_id[!is.na(go_id) & go_id != ""]), collapse = ";"),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        uniprot_fetched = ifelse(uniprot_fetched == "", NA_character_, uniprot_fetched),
+        go_fetched = ifelse(go_fetched == "", NA_character_, go_fetched)
+      )
+    
+    return(annot_mapped)
   }, error = function(e) {
-    message("Ostrzeżenie: Nie udało się pobrać GO przez biomaRt (błąd sieci/brak ID). Użyty zostanie fallback z nagłówków.")
-    return(list())
+    message(paste("[!] Warning: Failed to fetch data via biomaRt for dataset", dataset_name, ":", e$message))
+    return(NULL)
   })
 }
 
-# 2. Wczytanie aktywnego arkusza dataset
+# 2. Loading the active dataset sheet
 dataset_df <- read_tsv(args$metadata_dataset, show_col_types = FALSE) %>%
   filter(include == TRUE | include == "True")
 
 if (nrow(dataset_df) == 0) {
-  stop("Brak próbek z flagą include=True w pliku dataset.")
+  stop("[!] Error: No samples with the include=True flag found in the dataset file.")
 }
 
 all_samples_metadata <- list()
 
-# 3. Pętla przetwarzania dla każdej próbki
+# 3. Processing loop for each sample (Extracting structure from FASTA)
 for (i in 1:nrow(dataset_df)) {
   current_sample <- dataset_df$sample[i]
   cds_pattern    <- dataset_df$cds[i]
   
-  message(paste("Przetwarzanie próbki:", current_sample))
+  message(paste("[-] Processing sample:", current_sample))
   
-  # Znajdź plik CDS pasujący do wzorca z dataset.tsv
   cds_files <- Sys.glob(file.path(args$cds_dir, cds_pattern))
   if (length(cds_files) == 0) {
-    warning(paste("Brak pliku CDS dla wzorca:", cds_pattern))
+    warning(paste("[!] Warning: No CDS file found for pattern:", cds_pattern))
     next
   }
   cds_file <- cds_files[1]
-  message(paste("Znaleziono plik CDS:", cds_file)) # DODAJ TO
   
-  # Odczyt nagłówków FASTA za pomocą Biostrings
   fasta_headers <- names(readDNAStringSet(cds_file))
+  message(paste("    -> Found", length(fasta_headers), "sequences in FASTA file:", basename(cds_file)))
   
-  # Parsowanie skomplikowanych metadanych z nagłówka NCBI za pomocą wyrażeń regularnych
   parsed_cds <- map_df(fasta_headers, function(header) {
     
-    # Ekstrakcja kluczowych tagów
     gene_id      <- str_match(header, "\\[locus_tag=([^\\]]+)\\]")[,2]
     protein_id   <- str_match(header, "\\[protein_id=([^\\]]+)\\]")[,2]
     protein_name <- str_match(header, "\\[protein=([^\\]]+)\\]")[,2]
     location     <- str_match(header, "\\[location=([^\\]]+)\\]")[,2]
-    uniprot_id   <- str_match(header, "UniProtKB/Swiss-Prot:([^,\\]]+)")[,2]
-    if(is.na(uniprot_id)) uniprot_id <- str_match(header, "GOA:([^,\\]]+)")[,2] # alternatywne szukanie bazy
+    db_xref      <- str_match(header, "\\[db_xref=([^\\]]+)\\]")[,2]
     
-    # Wyciąganie GO bezpośrednio z nagłówka jako wbudowany fallback (z db_xref)
-    go_fallback <- paste(str_match_all(header, "GO:([0-9]+)")[[1]][,1], collapse = ";")
+    # Extraction directly from the header (if it exists)
+    uniprot_id   <- str_match(db_xref, "UniProtKB(?:/Swiss-Prot|/TrEMBL)?:([A-Za-z0-9]+)")[,2]
+    if(is.na(uniprot_id)) {
+      uniprot_id <- str_match(db_xref, "GOA:([A-Za-z0-9]+)")[,2]
+    }
     
-    # Obliczanie długości na podstawie pozycji w sekwencji (np. complement(<1..5662) lub 4409..4720)
-    # Wyciągamy wszystkie cyfry z pola location
+    go_matches  <- str_match_all(db_xref, "GO:([0-9]+)")[[1]]
+    go_fallback <- if(nrow(go_matches) > 0) paste(unique(go_matches[,2]), collapse = ";") else NA_character_
+
     coords <- as.numeric(str_extract_all(location, "[0-9]+")[[1]])
     length_nt <- NA
     length_aa <- NA
     
     if (length(coords) >= 2) {
       length_nt <- max(coords) - min(coords) + 1
-      length_aa <- floor((length_nt - 3) / 3) # Odjęcie kodonu stop i podział przez 3
+      length_aa <- floor((length_nt - 3) / 3)
     }
     
-    # Główny identyfikator w plikach _summary.tsv (z reguły to cały ciąg przed pierwszą spacją)
     seq_id_metrics <- str_split(header, " ")[[1]][1]
     
     tibble(
@@ -129,62 +136,105 @@ for (i in 1:nrow(dataset_df)) {
     )
   })
 
-  # TODO-debugging
-  message(paste("Liczba sparsowanych genów w", current_sample, ":", nrow(parsed_cds))) # DODAJ TO
-  message("Przykładowe ID z parsed_cds:") # DODAJ TO
-  print(head(parsed_cds$seq_id_metrics)) # DODAJ TO
-  
-  # Próba dociągnięcia termów GO online dla całej próbki
-  go_online_map <- fetch_go_terms_online(parsed_cds$protein_id)
-  
-  # Mapowanie końcowe GO (Priorytet: Online -> Fallback z nagłówka)
-  parsed_cds <- parsed_cds %>%
-    mutate(
-      go_online = as.character(go_online_map[protein_id]),
-      go_terms  = case_when(
-        !is.na(go_online) & go_online != "" ~ go_online,
-        go_fallback != "" ~ go_fallback,
-        TRUE ~ NA_character_
-      )
-    ) %>%
-    select(-go_online, -go_fallback)
-  
-  # Wczytanie powiązanego pliku _summary.tsv wygenerowanego w poprzednich krokach tAIpipe
   summary_file <- file.path(args$per_genome_dir, current_sample, "codon_metrics", paste0(current_sample, "_summary.tsv"))
   
   if (file.exists(summary_file)) {
     metrics_df <- read_tsv(summary_file, show_col_types = FALSE)
-    
-    #TODO - debugging
-    message(paste("Wierszy w parsed_cds:", nrow(parsed_cds)))
-    message(paste("Wierszy w metrics_df:", nrow(metrics_df)))
-    message("Przykładowe ID z metrics_df (summary):")
-    print(head(metrics_df$seq_id))
-
     metrics_df <- metrics_df %>%
       mutate(seq_id = str_trim(str_extract(seq_id, "^[^\\[]+")))
 
-    # Połączenie sparsowanych metadanych z wyliczonymi metrykami (ENC, CAI, tAI itp.)
+    message(paste("    -> Found", nrow(metrics_df), "metric rows inside summary tsv."))
+
     sample_consolidated <- parsed_cds %>%
       inner_join(metrics_df, by = c("seq_id_metrics" = "seq_id")) %>%
-      mutate(sample = current_sample) %>%
-      select(sample, gene_id, protein_id, uniprot_id, protein_name, length_nt, length_aa, go_terms, 
-             ENC, CAI, FOP, tAI, GC, GC3s)
-
-    #TODO - debugging:
-    message(paste("Liczba wierszy po join:", nrow(sample_consolidated)))
+      mutate(sample = current_sample)
+    
+    message(paste("    -> Successfully joined", nrow(sample_consolidated), "rows for sample:", current_sample))
+    
+    # Collect initial header statistics for debugging
+    headers_with_go <- sum(!is.na(sample_consolidated$go_fallback))
+    headers_with_uniprot <- sum(!is.na(sample_consolidated$uniprot_id))
+    message(paste("    -> FASTA internal metadata tracking: GO terms found in", headers_with_go, 
+                  "sequences; UniProt IDs found in", headers_with_uniprot, "sequences."))
     
     all_samples_metadata[[current_sample]] <- sample_consolidated
   } else {
-    warning(paste("Brak pliku podsumowania miar:", summary_file))
+    warning(paste("[!] Warning: No metrics summary file found:", summary_file))
   }
 }
 
-# 4. Zapisanie skonsolidowanej tabeli końcowej dla wszystkich uwzględnionych próbek
-final_metadata_df <- bind_rows(all_samples_metadata)
+# Combining data from all samples before the batch split BioMart query
+if (length(all_samples_metadata) == 0) {
+  stop("[!] Error: Failed to consolidate data for any of the samples.")
+}
+
+full_df <- bind_rows(all_samples_metadata)
+message(paste("[-] Total rows combined across all samples before external BioMart annotation:", nrow(full_df)))
+
+# 4. ORGANISM-SPECIFIC BATCH BIOMART QUERY
+# Map each sample name dynamically to its prospective Ensembl Fungi dataset format (e.g., Spombe -> spombe_eg_gene)
+full_df <- full_df %>%
+  mutate(target_dataset = paste0(tolower(sample), "_eg_gene"))
+
+unique_datasets <- unique(full_df$target_dataset)
+biomart_results_list <- list()
+
+for (ds in unique_datasets) {
+  ds_protein_ids <- full_df %>% 
+    filter(target_dataset == ds) %>% 
+    pull(protein_id) %>% 
+    unique()
+  
+  ds_annots <- fetch_biomart_annotations_by_dataset(ds_protein_ids, ds)
+  if (!is.null(ds_annots)) {
+    biomart_results_list[[ds]] <- ds_annots %>% mutate(target_dataset = ds)
+  }
+}
+
+# Combine all retrieved online records
+if (length(biomart_results_list) > 0) {
+  combined_biomart_df <- bind_rows(biomart_results_list)
+  message(paste("[+] Total unique proteins successfully annotated online via BioMart across all datasets:", 
+                nrow(combined_biomart_df)))
+  
+  message("[-] Integrating online fetched data with the compiled metadata table...")
+  full_df <- full_df %>%
+    left_join(combined_biomart_df, by = c("protein_id", "target_dataset")) %>%
+    mutate(
+      uniprot_id = case_when(
+        !is.na(uniprot_id) ~ uniprot_id,
+        !is.na(uniprot_fetched) ~ uniprot_fetched,
+        TRUE ~ NA_character_
+      ),
+      go_terms = case_when(
+        !is.na(go_fallback) ~ go_fallback,
+        !is.na(go_fetched) ~ go_fetched,
+        TRUE ~ NA_character_
+      )
+    )
+} else {
+  message("[!] Warning: Online integration with BioMart was skipped or returned zero results. Falling back exclusively to FASTA headers.")
+  full_df <- full_df %>%
+    mutate(go_terms = go_fallback)
+}
+
+# Final data completeness verification printout
+final_go_count <- sum(!is.na(full_df$go_terms))
+final_uniprot_count <- sum(!is.na(full_df$uniprot_id))
+message(paste("[+] Final Output Stats: Total rows:", nrow(full_df), 
+              "| Valid GO entries:", final_go_count, 
+              "| Valid UniProt entries:", final_uniprot_count))
+
+# Cleaning and final column formatting according to the expected template
+final_metadata_df <- full_df %>%
+  select(sample, gene_id, protein_id, uniprot_id, protein_name, length_nt, length_aa, go_terms, 
+         ENC, CAI, FOP, tAI, GC, GC3s)
+
+# Replacing explicit structural NA values with string literals for output consistency
+final_metadata_df[is.na(final_metadata_df)] <- NA
 
 ensure_dir <- dirname(args$output)
 if (!dir.exists(ensure_dir)) dir.create(ensure_dir, recursive = TRUE)
 
-readr::write_tsv(final_metadata_df, args$output)
-message(paste("Sukces! Metadane zapisano pomyślnie do:", args$output))
+readr::write_tsv(final_metadata_df, args$output, na = "NA")
+message(paste("[+] Success! Consolidated metadata safely saved to:", args$output))
