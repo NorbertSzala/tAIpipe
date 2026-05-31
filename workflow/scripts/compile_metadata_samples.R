@@ -25,18 +25,29 @@ args <- parser$parse_args()
 
 # Initialization of connection with BioMart (Ensembl Fungi)
 message("[-] Initializing online connection with biomaRt (Ensembl Fungi)...")
-mart <- useMart(biomart = "fungi_mart", host = "https://fungi.ensembl.org")
-
+# Setup mapping for Ensembl hosts
+get_mart_for_domain <- function(kingdom_val) {
+  # Map kingdom to the correct BioMart host URL
+  host_url <- case_when(
+    kingdom_val == "Fungi"    ~ "https://fungi.ensembl.org",
+    kingdom_val == "Plants"   ~ "https://plants.ensembl.org",
+    kingdom_val == "Metazoa"  ~ "https://metazoa.ensembl.org",
+    TRUE                      ~ "https://ensembl.org" 
+  )
+  # Ensembl mart names follow the pattern: fungi_mart, plants_mart, metazoa_mart
+  mart_name <- paste0(tolower(kingdom_val), "_mart")
+  
+  useMart(biomart = mart_name, host = host_url)
+}
 # Function for fetching GO and UniProt ID per specific organism dataset
-fetch_biomart_annotations_by_dataset <- function(protein_ids, dataset_name) {
+fetch_biomart_annotations_by_dataset <- function(protein_ids, verified_dataset) {
   tryCatch({
     valid_ids <- protein_ids[!is.na(protein_ids) & protein_ids != ""]
     if (length(valid_ids) == 0) return(NULL)
     
-    message(paste("[-] Connecting to dataset:", dataset_name, "for", length(valid_ids), "unique proteins..."))
-    ensembl_mart <- useDataset(dataset_name, mart = mart)
+    message(paste("[-] Connecting to verified dataset:", verified_dataset, "for", length(valid_ids), "unique proteins..."))
+    ensembl_mart <- useDataset(verified_dataset, mart = mart)
     
-    # Using 'uniprotkb_all' for maximum cross-reference retrieval alongside 'go_id'
     go_data <- getBM(
       attributes = c('protein_id', 'uniprotkb_all', 'go_id'),
       filters = 'protein_id',
@@ -44,11 +55,9 @@ fetch_biomart_annotations_by_dataset <- function(protein_ids, dataset_name) {
       mart = ensembl_mart
     )
     
-    message(paste("[+] BioMart returned", nrow(go_data), "raw annotation rows for", dataset_name))
-    
+    message(paste("[+] BioMart returned", nrow(go_data), "raw annotation rows for", verified_dataset))
     if (nrow(go_data) == 0) return(NULL)
     
-    # Aggregation and formatting of results
     annot_mapped <- go_data %>%
       filter(!is.na(protein_id) & protein_id != "") %>%
       group_by(protein_id) %>%
@@ -64,7 +73,7 @@ fetch_biomart_annotations_by_dataset <- function(protein_ids, dataset_name) {
     
     return(annot_mapped)
   }, error = function(e) {
-    message(paste("[!] Warning: Failed to fetch data via biomaRt for dataset", dataset_name, ":", e$message))
+    message(paste("[!] Warning: Failed to fetch data via biomaRt for dataset", verified_dataset, ":", e$message))
     return(NULL)
   })
 }
@@ -172,34 +181,63 @@ full_df <- bind_rows(all_samples_metadata)
 message(paste("[-] Total rows combined across all samples before external BioMart annotation:", nrow(full_df)))
 
 # 4. ORGANISM-SPECIFIC BATCH BIOMART QUERY
-# Map each sample name dynamically to its prospective Ensembl Fungi dataset format (e.g., Spombe -> spombe_eg_gene)
-full_df <- full_df %>%
-  mutate(target_dataset = paste0(tolower(sample), "_eg_gene"))
+# Ensure 'kingdom' matches Ensembl mart names (Fungi, Plants, Metazoa)
+full_df <- full_df %>% left_join(dataset_df %>% select(sample, kingdom, species), by = "sample")
+unique_kingdoms <- unique(full_df$kingdom)
 
-unique_datasets <- unique(full_df$target_dataset)
 biomart_results_list <- list()
 
-for (ds in unique_datasets) {
-  ds_protein_ids <- full_df %>% 
-    filter(target_dataset == ds) %>% 
-    pull(protein_id) %>% 
-    unique()
+for (king in unique_kingdoms) {
+  message(paste("[-] Processing kingdom:", king))
   
-  ds_annots <- fetch_biomart_annotations_by_dataset(ds_protein_ids, ds)
-  if (!is.null(ds_annots)) {
-    biomart_results_list[[ds]] <- ds_annots %>% mutate(target_dataset = ds)
+  # Connect to the mart corresponding to this kingdom
+  current_mart <- get_mart_for_domain(king)
+  available_datasets <- listDatasets(current_mart)$dataset
+  
+  # Select samples belonging to this kingdom
+  kingdom_samples <- full_df %>% filter(kingdom == king) %>% pull(sample) %>% unique()
+  
+  for (smpl in kingdom_samples) {
+    raw_species <- full_df %>% filter(sample == smpl) %>% pull(species) %>% first()
+    clean_species <- str_replace_all(raw_species, " ", "_")
+    ensembl_prefix <- tolower(paste0(substr(str_split(clean_species, "_")[[1]][1], 1, 1), str_split(clean_species, "_")[[1]][2]))
+    
+    matched_dataset <- available_datasets[grep(paste0("^", ensembl_prefix), available_datasets)]
+    if (length(matched_dataset) == 0) matched_dataset <- available_datasets[grep(tolower(smpl), available_datasets)]
+    
+    if (length(matched_dataset) > 0) {
+      target_dataset <- matched_dataset[1]
+      ds_protein_ids <- full_df %>% filter(sample == smpl) %>% pull(protein_id) %>% unique()
+      
+      # RETRY LOGIC: Try 3 times before giving up
+      ds_annots <- NULL
+      for (attempt in 1:3) {
+        ds_annots <- tryCatch({
+          ensembl_mart <- useDataset(target_dataset, mart = current_mart)
+          getBM(attributes = c('protein_id', 'uniprotkb_all', 'go_id'),
+                filters = 'protein_id', values = ds_protein_ids, mart = ensembl_mart) %>%
+            group_by(protein_id) %>%
+            summarise(uniprot_fetched = paste(unique(uniprotkb_all[!is.na(uniprotkb_all)]), collapse = ";"),
+                      go_fetched = paste(unique(go_id[!is.na(go_id)]), collapse = ";"), .groups = "drop")
+        }, error = function(e) {
+          message(paste("[!] Attempt", attempt, "failed for", smpl, "- Retrying..."))
+          Sys.sleep(5) # Wait 5 seconds before retry
+          return(NULL)
+        })
+        if (!is.null(ds_annots)) break 
+      }
+      if (!is.null(ds_annots)) biomart_results_list[[smpl]] <- ds_annots %>% mutate(sample = smpl)
+    }
   }
 }
 
-# Combine all retrieved online records
+# Integration of BioMart data
 if (length(biomart_results_list) > 0) {
   combined_biomart_df <- bind_rows(biomart_results_list)
-  message(paste("[+] Total unique proteins successfully annotated online via BioMart across all datasets:", 
-                nrow(combined_biomart_df)))
+  message(paste("[+] Total unique proteins successfully annotated via BioMart:", nrow(combined_biomart_df)))
   
-  message("[-] Integrating online fetched data with the compiled metadata table...")
   full_df <- full_df %>%
-    left_join(combined_biomart_df, by = c("protein_id", "target_dataset")) %>%
+    left_join(combined_biomart_df, by = c("protein_id", "sample")) %>%
     mutate(
       uniprot_id = case_when(
         !is.na(uniprot_id) ~ uniprot_id,
@@ -213,18 +251,14 @@ if (length(biomart_results_list) > 0) {
       )
     )
 } else {
-  message("[!] Warning: Online integration with BioMart was skipped or returned zero results. Falling back exclusively to FASTA headers.")
-  full_df <- full_df %>%
-    mutate(go_terms = go_fallback)
+  message("[!] Warning: BioMart integration returned no results. Using FASTA header data only.")
+  full_df <- full_df %>% mutate(go_terms = go_fallback)
 }
 
-# Final data completeness verification printout
+# Final statistics for debugging purposes
 final_go_count <- sum(!is.na(full_df$go_terms))
 final_uniprot_count <- sum(!is.na(full_df$uniprot_id))
-message(paste("[+] Final Output Stats: Total rows:", nrow(full_df), 
-              "| Valid GO entries:", final_go_count, 
-              "| Valid UniProt entries:", final_uniprot_count))
-
+message(paste("[+] Stats: Total rows:", nrow(full_df), "| GO entries:", final_go_count, "| UniProt entries:", final_uniprot_count))
 # Cleaning and final column formatting according to the expected template
 final_metadata_df <- full_df %>%
   select(sample, gene_id, protein_id, uniprot_id, protein_name, length_nt, length_aa, go_terms, 
