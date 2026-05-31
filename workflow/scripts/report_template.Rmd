@@ -73,7 +73,7 @@ Compile a cohort overview table summarizing total counts of independent operatio
 #### Critical Observations
 Look for extreme class imbalances or sample omissions. If a specific lifestyle or phylum contains too few records compared to the rest of the cohort, a text warning must alert the user to potential statistical inflation during downstream grouping.
 
-```{r cohort-ingestion-summary, #TODO }
+```{r cohort-ingestion-summary}
 # --- Chunk: cohort-ingestion-summary ---
 # Input: Phenotypic and taxonomic metadata table (dataset_df)
 # Process: Aggregate counts across taxonomic hierarchies and lifestyle classifications.
@@ -82,12 +82,18 @@ cohort_table <- dataset_df %>%
   group_by(domain, kingdom, phylum, lifestyle) %>%
   summarise(sample_count = n(), .groups = 'drop')
 
-datatable(cohort_table, 
-          options = list(pageLength = 10, dom = 'tip'),
-          rownames = FALSE,
-          caption = "Table 1: Overview of ingested biological samples stratified by taxonomy and lifestyle niche.")
+# Conditional rendering based on document target format
+if (knitr::is_html_output()) {
+  # Render interactive HTML widget for web report
+  datatable(cohort_table, 
+            options = list(pageLength = 10, dom = 'tip'),
+            rownames = FALSE,
+            caption = "Table 1: Overview of ingested biological samples stratified by taxonomy and lifestyle niche.")
+} else {
+  # Render static Markdown table for GitHub/MD outputs
+  knitr::kable(cohort_table, caption = "Table 1: Overview of ingested biological samples stratified by taxonomy and lifestyle niche.")
+}
 ```
-
 
 
 ### Organism-Level Assembly & Prediction QC
@@ -150,33 +156,15 @@ p2 <- ggplot(cohort_summary, aes(x = mean_GC, y = mean_GC3s, color = lifestyle, 
 ggsave(file.path(sec0_dir, "trna_repertoire_scaling.png"), plot = p1, width = 6, height = 5)
 ggsave(file.path(sec0_dir, "nucleotide_composition_concordance.png"), plot = p2, width = 6, height = 5)
 
-# Render interactive subplots
-subplot(ggplotly(p1, tooltip = "text"), ggplotly(p2, tooltip = "text"), nrows = 1, titleX = TRUE, titleY = TRUE)
+# Conditional output display depending on format
+if (knitr::is_html_output()) {
+  # Render interactive side-by-side plots for HTML format
+  subplot(ggplotly(p1, tooltip = "text"), ggplotly(p2, tooltip = "text"), nrows = 1, titleX = TRUE, titleY = TRUE)
+} else {
+  # Combine and render static ggplot objects for Markdown format using cowplot
+  cowplot::plot_grid(p1, p2, ncol = 2)
+}
 ```
-
-
-
-# ```{r translational-strategy-macro, echo=FALSE, fig.width=10, fig.height=7}
-# # --- Chunk: translational-strategy-macro ---
-# # Input: Compiled cohort summary data frame from the previous checkpoint.
-# # Validation: Enforce absolute biological boundaries before evaluation loops.
-# stopifnot(all(cohort_summary$mean_tAI >= 0 & cohort_summary$mean_tAI <= 1))
-# stopifnot(all(cohort_summary$mean_ENC >= 20 & cohort_summary$mean_ENC <= 61))
-
-# p_macro <- ggplot(cohort_summary, aes(x = mean_ENC, y = mean_tAI, color = lifestyle, shape = phylum,
-#                                      text = paste("Sample:", sample, "<br>Species:", species))) +
-#   geom_point(size = 4, alpha = 0.8) +
-#   labs(title = "Global Translational Selection Map (tAI vs ENC)",
-#        x = "Mean Effective Number of Codons (ENC)",
-#        y = "Mean tRNA Adaptation Index (tAI)",
-#        color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
-#   theme_bw()
-
-# # Save static artifact
-# ggsave(file.path(sec1_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
-
-# ggplotly(p_macro, tooltip = "text")
-# ```
 
 ***
 
@@ -206,12 +194,18 @@ p_macro <- ggplot(cohort_summary, aes(x = mean_ENC, y = mean_tAI, color = lifest
        x = "Mean Effective Number of Codons (ENC)",
        y = "Mean tRNA Adaptation Index (tAI)",
        color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = "bottom")
 
 # Save static artifact
 ggsave(file.path(sec1_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
 
-ggplotly(p_macro, tooltip = "text")
+# Check target format and render accordingly
+if (knitr::is_html_output()) {
+  ggplotly(p_macro, tooltip = "text")
+} else {
+  print(p_macro)
+}
 ```
 
 ### Selection Pressure vs Mutational Drift (The Wright's Curve)
@@ -298,10 +292,16 @@ enriched_data <- analysis_df %>%
   summarise(Observed_Count = n(), .groups = 'drop') %>%
   arrange(desc(Observed_Count))
 
-datatable(enriched_data, 
-          options = list(pageLength = 10, searchHighlight = TRUE),
-          rownames = FALSE,
-          caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails.")
+# Conditional table rendering based on document destination
+if (knitr::is_html_output()) {
+  datatable(enriched_data, 
+            options = list(pageLength = 10, searchHighlight = TRUE),
+            rownames = FALSE,
+            caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails.")
+} else {
+  # For Markdown, display the top 20 rows cleanly using kable
+  knitr::kable(head(enriched_data, 20), caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails (Top 20 rows).")
+}
 ```
 
 ***
@@ -332,7 +332,13 @@ p_density <- ggplot(analysis_df, aes(x = tAI, fill = sample)) +
 
 ggsave(file.path(sec3_dir, "intra_organismal_tai_density.png"), plot = p_density, width = 10, height = 6)
 
-ggplotly(p_density)
+# Handle density plot display type
+if (knitr::is_html_output()) {
+  ggplotly(p_density)
+} else {
+  print(p_density)
+}
+
 
 # Slice and print out extreme candidate arrays for review
 extreme_genes_table <- analysis_df %>%
@@ -342,12 +348,16 @@ extreme_genes_table <- analysis_df %>%
   select(sample, gene_id, protein_id, tAI, ENC, protein_name, go_terms) %>%
   arrange(sample, desc(tAI))
 
-datatable(extreme_genes_table, 
-          options = list(pageLength = 10, scrollX = TRUE), 
-          rownames = FALSE,
-          caption = "Table 3: High-throughput identification of elite highly optimized genes (Top 10 per Sample).")
+# Handle table display type
+if (knitr::is_html_output()) {
+  datatable(extreme_genes_table, 
+            options = list(pageLength = 10, scrollX = TRUE), 
+            rownames = FALSE,
+            caption = "Table 3: High-throughput identification of elite highly optimized genes (Top 10 per Sample).")
+} else {
+  knitr::kable(extreme_genes_table, caption = "Table 3: High-throughput identification of elite highly optimized genes (Top 10 per Sample).")
+}
 ```
-
 
 ***
 
@@ -375,7 +385,7 @@ for(s_id in unique(analysis_df$sample)) {
     w_data <- read_csv(w_path, show_col_types = FALSE)
     if("codon" %in% colnames(w_data) & "weight" %in% colnames(w_data)) {
       w_data$sample <- s_id
-      weights_list[[s_id]] <- w_data
+      weights_list[[s_id]] = w_data
     }
   }
 }
@@ -391,7 +401,13 @@ if(length(weights_list) > 0) {
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), legend.position = "bottom")
   
   ggsave(file.path(sec4_dir, "comparative_codon_weights_distribution.png"), plot = p_weights, width = 12, height = 6)
-  ggplotly(p_weights)
+  
+  # Prevent rendering execution failure based on document output mode
+  if (knitr::is_html_output()) {
+    ggplotly(p_weights)
+  } else {
+    print(p_weights)
+  }
 } else {
   cat("\n*No compiled codon relative adaptiveness metrics files found across active workspace configurations.*\n")
 }
