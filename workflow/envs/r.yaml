@@ -10,15 +10,18 @@ dependencies:
 
   # --- Core Data Manipulation & Bioinformatics ---
   - bioconductor-biostrings
+  - bioconductor-biomart
   - bioconductor-iranges
   - r-dplyr
   - r-tidyr
   - r-readr
   - r-tibble
   - r-stringr
+  - r-purrr
   - r-data.table
   - r-rlang
   - r-optparse
+  - r-argparse
   - r-remotes
 
   # --- Data Visualization & Interactive Features ---

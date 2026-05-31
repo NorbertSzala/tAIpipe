@@ -35,8 +35,8 @@ Below is the complete project directory map showing exactly where rule configura
 │       │   │   ├── GCA_000002945.2_first_contig_1Mbp.fna
 │       │   │   ├── ...
 │       │   ├── metadata/
-│       │   │   ├── samples_test.tsv                # Active Snakemake compilation sample table
-│       │   │   └── test_dataset.tsv                # Phenotypic descriptive metadata master sheet
+│       │   │   ├── samples_test.tsv                # prepared file with samples information needed for analysis 
+│       │   │   └── dataset_test.tsv                # Snakemake configuration  file
 │       │   └── trnascanse/                         # Local tRNAscan-SE genetic translation tables
 │       │       ├── 12.gcode
 │       │       ├── 3.gcode
@@ -254,3 +254,36 @@ For an explicit explanation of metrics, their definitions and interpretations se
 
 #TODO - jeszdcze nie jest skończone, idea jest taka że:
 - 
+
+
+
+
+# config settings
+
+
+## Mart settings
+To perform analysis on certain species you need to provide Mart parameters into `config.yaml` file.
+
+### Mart_host
+To set `Mart_host` you need to find their ensemble index, it should be in format:
+```yaml
+Mart_host="https://'kingdom'.ensembl.org"
+```
+In our case it is:
+```yaml
+Mart_host="https://fungi.ensembl.org"
+```
+
+### Mart_biomart
+To set `Mart_biomart` we need to find dataset for given organism. To do it we will use:
+
+```R
+marts <- listMarts(host = "https://fungi.ensembl.org")
+print(marts)
+# output
+           biomart                     version
+1       fungi_mart      Ensembl Fungi Genes 62
+2 fungi_variations Ensembl Fungi Variations 62
+```
+
+Now you need to copy first biomart part (`fungi_mart`), and insert it into config. 

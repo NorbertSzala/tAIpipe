@@ -9,7 +9,7 @@ This document provides reference for the core input files required to run `tAIpi
 `tAIpipe` requires three types of inputs to compute codon usage and translational adaptation metrics:
 1. **Genomic Sequence Files (`{DATA_GENOME}`)**
 2. **Coding Sequence Files (`{DATA_CDS}`)**
-3. **Tabular Control and Metadata Sheets (`metadata/samples_test`)**
+3. **Tabular Control and Metadata Sheets (`metadata/dataset_test`)**
 
 <!-- 
 #TODO - Norbert - możesz dodać jak te tabel użyć :) 
@@ -28,10 +28,10 @@ This document provides reference for the core input files required to run `tAIpi
 
 The pipeline splits configuration into two files to separate **workflow orchestration** from **biological/ecological metadata grouping**.
 
-### A. The Sample Steering Table (`data/tutorial_data/input/metadata/samples_test.tsv`)
+### A. Experiment metadata - dataset (`data/tutorial_data/input/metadata/dataset_test.tsv`)
 This is the active control file read directly by `workflow/Snakefile`. Its parameters determine exactly which jobs Snakemake compiles into the directed acyclic graph (DAG).
 
-#### Required Schema Columns:
+#### Required Schema Columns - dataset:
 
 | Column Name | Data Type | Operational Category | Purpose & Workflow Impact |
 | :--- | :--- | :--- | :--- |
@@ -52,7 +52,9 @@ This is the active control file read directly by `workflow/Snakefile`. Its param
 
 
 
-### B. The Metadata Master Table (`data/tutorial_data/input/metadata/test_dataset.tsv`)
+### B. Report metadata -  (`data/tutorial_data/input/metadata/samples_test.tsv`)
+#TODO - to dopiero zrobimy ale masz wzorzec jak to będzie wyglądać 
+#TODO - dodać że się to tworzy samo
 * **What it is:** A comprehensive matrix describing the biological taxonomy (`kingdom`, `phylum`, `class`) and ecological characteristics (`lifestyle`, `microenvironment`) of every available sample.
 * **Workflow Impact:** This file is completely ignored during the initial heavy computational rules (`run_trnascanse`, `codon_usage_metrics`). It is injected exclusively during **Step 5 (Aggregation and Report)**, allowing the pipeline to automatically group computed tAI, FOP, and ENC metrics by phenotypes—such as comparing whether wood-decaying saprotrophs exhibit higher translational efficiency for certain gene sets compared to plant pathogens.
 
@@ -64,7 +66,8 @@ This is the active control file read directly by `workflow/Snakefile`. Its param
 2. **Multiple Files Found:** If a pattern matches more than one file (e.g., `GCA_0002*.fna`) , the pipeline intentionally crashes instantly with a `Multiple files found for pattern` error. **Each pattern must resolve to exactly one unique sequence file.**
 
 ***
-
+<!-- 
+DEPRACATED - nie posiadamy skryptu który działa na dowolnych danach / ścieżce 
 ## 4. Test Data Generation and Downsampling
 
 For prototyping and testing local execution configurations, the workflow includes an automated downsampling bash script.
@@ -73,4 +76,4 @@ For prototyping and testing local execution configurations, the workflow include
 * **Mechanics:** 1. The script isolates the very first contig or chromosome from a heavy production genome FASTA file.
   2. It truncates that contig precisely at the first 1,000,000 bp (controlled via `-L` parameter).
   3. It searches the matching master CDS file and extracts up to 1,000 records that map back to that specific contig ID, outputting a fully functional, lightweight mock environment inside `resources/test_data/`.
-
+ -->
