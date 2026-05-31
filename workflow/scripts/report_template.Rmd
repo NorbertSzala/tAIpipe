@@ -60,53 +60,15 @@ Compile a cohort overview table summarizing total counts of independent operatio
 #### Critical Observations
 Look for extreme class imbalances or sample omissions. If a specific lifestyle or phylum contains too few records compared to the rest of the cohort, a text warning must alert the user to potential statistical inflation during downstream grouping.
 
-```{r cohort-ingestion-summary, echo=FALSE, results='asis'}
-# --- Chunk: cohort-ingestion-summary ---
-# Input: Read the primary multi-sample manifest 'samples_test.tsv' and phenotypic table 'test_dataset.tsv'.
-# Process: Group rows by 'domain', 'kingdom', 'phylum', and 'lifestyle'. Compute total active samples (include == True).
 
-# Read and isolate active samples from the design sheet configuration parameter
-samples_df <- readr::read_tsv(params$dataset, show_col_types = FALSE) %>%
-  dplyr::filter(include == TRUE | include == "True")
-
-summary_table <- samples_df %>%
-  dplyr::group_by(domain, kingdom, phylum, lifestyle) %>%
-  dplyr::summarise(Total_Samples = dplyr::n(), .groups = 'drop')
-
-# Return: A summary markdown table using knitr::kable().
-print(knitr::kable(summary_table, caption = "Summary of Successfully Ingested Cohort Groups"))
-
-# Validation: Trigger a programmatic alert/warning text if any active group size drops below N=3 (statistical risk).
-low_representation_groups <- summary_table %>% dplyr::filter(Total_Samples < 3)
-
-if (nrow(low_representation_groups) > 0) {
-  cat("\n<div class='alert alert-warning'><strong>⚠️ WARNING:</strong> The following sample cohorts have fewer than 3 active biological representatives. High risk of statistical inflation during macro comparative groupings:</div>\n")
-  print(knitr::kable(low_representation_groups))
-}
-```
-
-### Organism-Level Assembly & Prediction QC
-#### Goal
-Identify analytical outliers, structural sequence assembly fragmentation artifacts, and potential downstream tRNA prediction errors.
-
-#### Methodology
-Generate a dual panel of sample-wide scatter plots:
-1. Genome Assembly Size (Mbp) vs. Total Predicted tRNA Gene Count.
-2. Genome-wide Average GC Content vs. Genome-wide Average Synonymous Third-Position GC Content (GC3s).
-
-#### Critical Observations
-Legitimate biological trends exhibit linear scaling between genome size and tRNA pools. Mark severe technical outliers in red with text labels. For instance, a bloated genome sequence with an artificially suppressed tRNA count indicates low assembly coverage or raw file contamination.
-
-#### Notes
-Samples identified as suspicious through the entire pipeline auditing process (across relevant data splits) must be explicitly flagged and listed here.
 
 ```{r assembly-prediction-qc-plots, echo=FALSE, fig.width=12, fig.height=6}
 # --- Chunk: assembly-prediction-qc-plots ---
 # Input: Global cohort metadata table ('cohort_summary.tsv') containing aggregated single-genome indices.
-master_df <- readr::read_tsv(params$samples, show_col_types = FALSE)
+samples_df <- readr::read_tsv(params$samples, show_col_types = FALSE)
 
 # Generate single-genome summary attributes dynamically from the master table
-cohort_summary <- master_df %>%
+cohort_summary <- samples_df %>%
   dplyr::group_by(sample, phylum, lifestyle) %>%
   dplyr::summarise(
     mean_tAI = mean(tAI, na.rm = TRUE),
@@ -157,6 +119,46 @@ if (length(outlier_list) > 0) {
   cat("\n**Suspicious Assemblies Flagged for Anomalous tRNA/Size Ratio:**\n")
   cat(paste("-", outlier_list, collapse = "\n"), "\n")
 }
+```
+
+### Organism-Level Assembly & Prediction QC
+#### Goal
+Identify analytical outliers, structural sequence assembly fragmentation artifacts, and potential downstream tRNA prediction errors.
+
+#### Methodology
+Generate a dual panel of sample-wide scatter plots:
+1. Genome Assembly Size (Mbp) vs. Total Predicted tRNA Gene Count.
+2. Genome-wide Average GC Content vs. Genome-wide Average Synonymous Third-Position GC Content (GC3s).
+
+#### Critical Observations
+Legitimate biological trends exhibit linear scaling between genome size and tRNA pools. Mark severe technical outliers in red with text labels. For instance, a bloated genome sequence with an artificially suppressed tRNA count indicates low assembly coverage or raw file contamination.
+
+#### Notes
+Samples identified as suspicious through the entire pipeline auditing process (across relevant data splits) must be explicitly flagged and listed here.
+
+```{r translational-strategy-macro, echo=FALSE, fig.width=10, fig.height=7}
+# --- Chunk: translational-strategy-macro ---
+# Input: Combined cohort metric file containing mean values for every validated genome.
+# Process: Create a scatter plot mapping X = mean_ENC, Y = mean_tAI. Add marginal boxplots for 'lifestyle' and 'phylum'.
+
+# Validation: Assert that no parsed metric exceeds biological boundaries (tAI between 0 and 1; ENC between 20 and 61).
+stopifnot(all(cohort_summary$mean_tAI >= 0 & cohort_summary$mean_tAI <= 1))
+stopifnot(all(cohort_summary$mean_ENC >= 20 & cohort_summary$mean_ENC <= 61))
+
+p_macro <- ggplot(cohort_summary, aes(x = mean_ENC, y = mean_tAI, color = lifestyle, shape = phylum)) +
+  geom_point(size = 4, alpha = 0.8) +
+  labs(title = "Global Translational Selection Map (tAI vs ENC)",
+       x = "Mean Effective Number of Codons (ENC)",
+       y = "Mean tRNA Adaptation Index (tAI)",
+       color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Return: An integrated scatter-marginal-boxplot assembly.
+print(p_macro)
+
+# Save high resolution image file
+ggsave(file.path(sec1_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
 ```
 
 ---
@@ -246,7 +248,8 @@ if (nrow(impossible_species) > 0) {
 }
 ```
 
----
+
+***
 
 ## Type-Level Functional Protein & Gene Adaptation (The Extremes)
 
@@ -264,72 +267,18 @@ For the Top 10% and Bottom 10% tAI groups, generate density profile charts acros
 * Low Complexity Regions (LCR)
 This directly checks if highly optimized proteins restrict sequence complexity or transmembrane blocks to specific structural domains (e.g., N- or C-termini) compared to slower translational targets.
 
-```{r cross-species-structural-extremes, echo=FALSE, fig.width=12, fig.height=10}
+
+
+\```{r cross-species-structural-extremes}
 # --- Chunk: cross-species-structural-extremes ---
 # Input: Pooled structural metric file containing gene-by-gene measurements across all organisms ('master_gene_table.tsv').
-global_thresholds <- quantile(master_df$tAI, probs = c(0.1, 0.9), na.rm = TRUE)
-
-# Filter and slice global Top 10% and Bottom 10% sub-cohorts.
-master_df <- master_df %>%
-  dplyr::mutate(tAI_Group = case_when(
-    tAI <= global_thresholds[1] ~ "Bottom 10% (Slow)",
-    tAI >= global_thresholds[2] ~ "Top 10% (Fast)",
-    TRUE ~ "Background"
-  ))
-
-extremes_df <- master_df %>% dplyr::filter(tAI_Group %in% c("Bottom 10% (Slow)", "Top 10% (Fast)"))
-
-# Compute percentage presence for Signal Peptides and TM domains across groups.
-bar_data <- extremes_df %>%
-  dplyr::group_by(tAI_Group, phylum) %>%
-  dplyr::summarise(
-    Signal_Peptide = mean(`Presence of signal peptide; Boolean` == TRUE | `Presence of signal peptide; Boolean` == "True", na.rm = TRUE) * 100,
-    Transmembrane = mean(`number of transmembrane elements predicted with TMHMM` > 0, na.rm = TRUE) * 100,
-    .groups = 'drop'
-  ) %>%
-  tidyr::pivot_longer(cols = c(Signal_Peptide, Transmembrane), names_to = "Feature", values_to = "Percentage")
-
-p_bars <- ggplot(bar_data, aes(x = phylum, y = Percentage, fill = tAI_Group)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  facet_wrap(~Feature) +
-  labs(title = "Structural Feature Slicing Across Global tAI Boundaries", x = "Phylum", y = "Proportion of Genes (%)", fill = "Translational Space") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
+# Process:
+#   - Filter and slice global Top 10% and Bottom 10% tAI sub-cohorts.
+#   - Compute percentage presence for Signal Peptides and TM domains across groups.
+#   - For the spatial tracking, compute density profiles across 10 normalized alignment length bins for Pfam, TM, and LCR.
+# Return: 1. Dodge bar plot of global features. 2. Continuous line charts tracing structural feature density across binned length.
 # Validation: Confirm that input sequence lengths are properly normalized (0.0 to 1.0) before bin assignment.
-extract_spatial_bins <- function(df, column_name, label) {
-  split_lists <- strsplit(as.character(df[[column_name]]), ",")
-  matrix_bins <- do.call(rbind, lapply(split_lists, function(x) {
-    vals <- as.numeric(x)
-    if(length(vals) != 10) rep(0, 10) else vals
-  }))
-  colnames(matrix_bins) <- paste0("Bin", 1:10)
-  
-  cbind(df %>% dplyr::select(tAI_Group), matrix_bins) %>%
-    tidyr::pivot_longer(cols = starts_with("Bin"), names_to = "Bin", values_to = "Density") %>%
-    dplyr::mutate(Bin = as.numeric(sub("Bin", "", Bin)), Feature = label)
-}
-
-lcr_spatial <- extract_spatial_bins(extremes_df, "Symbolic localization of LCR; 10 bins scaled to sum up to total protein length", "Low Complexity Regions (LCR)")
-tm_spatial <- extract_spatial_bins(extremes_df, "Symbolic localization of transmembrane elements; 10 bins scaled to sum up to total protein length", "Transmembrane Domains (TM)")
-
-combined_spatial <- rbind(lcr_spatial, tm_spatial) %>%
-  dplyr::group_by(tAI_Group, Bin, Feature) %>%
-  dplyr::summarise(Mean_Density = mean(Density, na.rm = TRUE), .groups = 'drop')
-
-p_spatial <- ggplot(combined_spatial, aes(x = Bin, y = Mean_Density, color = tAI_Group)) +
-  geom_line(size = 1.2) +
-  facet_wrap(~Feature, scales = "free_y") +
-  scale_x_continuous(breaks = 1:10) +
-  labs(title = "Spatial Metagene Feature Profiling Along Normalized Protein Length Coordinates", x = "Structural Position Bin (N-term to C-term)", y = "Mean Density Accumulation Score") +
-  theme_bw()
-
-composite_structural <- cowplot::plot_grid(p_bars, p_spatial, ncol = 1, rel_heights = c(1, 1))
-print(composite_structural)
-
-ggsave(file.path(sec2_dir, "cross_species_structural_extremes.png"), plot = p_bars, width = 10, height = 5, dpi = 300)
-ggsave(file.path(sec2_dir, "cross_species_spatial_profiles.png"), plot = p_spatial, width = 12, height = 5, dpi = 300)
-```
+\```
 
 ### Global Pfam & GO Terms Enrichment of Translation Extremes
 #### Goal
@@ -341,201 +290,18 @@ Run hyper-geometric distribution tests for overrepresentation of Pfam domain key
 #### Critical Observations
 Results are presented as profiles of top enriched functions broken down by Phylum and Lifestyle to highlight potential instances of evolutionary convergence among ecologically matching pathogens.
 
-```{r global-functional-enrichment, echo=FALSE, results='asis'}
+\```{r global-functional-enrichment}
 # --- Chunk: global-functional-enrichment ---
 # Input: Global sliced gene indices linked with mapped Pfam IDs and GO terms.
-go_parsing_df <- master_df %>%
-  dplyr::select(tAI_Group, phylum, `GO terms based on Pfam domains obtained by mapping on pfam2go, separated with the pipe symbol '|'`) %>%
-  dplyr::rename(GO_raw = 3) %>%
-  dplyr::filter(!is.na(GO_raw) & GO_raw != "") %>%
-  tidyr::separate_rows(GO_raw, sep = "\\|")
-
-# Execute a hyper-geometric enrichment routine setup
-universe_counts <- go_parsing_df %>% dplyr::group_by(GO_raw) %>% dplyr::summarise(Universe_N = dplyr::n())
-group_counts <- go_parsing_df %>% dplyr::group_by(tAI_Group, phylum, GO_raw) %>% dplyr::summarise(Count_Selected = dplyr::n(), .groups = 'drop')
-
-# Confirm that the background universe set matches total valid protein-coding sequences ingested by the workflow.
-total_universe_n <- nrow(go_parsing_df)
-
-enrichment_output <- group_counts %>%
-  dplyr::filter(tAI_Group %in% c("Bottom 10% (Slow)", "Top 10% (Fast)")) %>%
-  dplyr::left_join(universe_counts, by = "GO_raw") %>%
-  dplyr::mutate(
-    Sample_Size = ifelse(tAI_Group == "Top 10% (Fast)", sum(master_df$tAI_Group == "Top 10% (Fast)"), sum(master_df$tAI_Group == "Bottom 10% (Slow)")),
-    p_value = phyper(Count_Selected - 1, Universe_N, total_universe_n - Universe_N, Sample_Size, lower.tail = FALSE)
-  ) %>%
-  dplyr::mutate(adj_p_value = p.adjust(p_value, method = "BH")) %>%
-  dplyr::filter(adj_p_value < 0.05) %>%
-  dplyr::arrange(adj_p_value)
-
-print(knitr::kable(head(enrichment_output, 20), caption = "Top 20 Broad Functional GO Terms Enriched in Translation Rate Extremes"))
-
-# FIXED: Redirect CSV export away from workflow/scripts/ straight into output directories
-write_csv(enrichment_output, file.path(sec2_dir, "global_functional_enrichment_results.csv"))
-```
+# Process: Execute a hyper-geometric enrichment routine (e.g., using clusterProfiler or native fisher tests). Apply Benjamini-Hochberg (BH) false discovery rate adjustments.
+# Return: A consolidated significance data table containing Adjusted P-values and Enrichment Scores.
+# Validation: Confirm that the background universe set matches total valid protein-coding sequences ingested by the workflow.
+\```
 
 ---
 
-## Individual Organism Deep-Dive (Per-Genome Diagnostics) {.tabset}
+## Individual Organism Deep-Dive (Per-Genome Diagnostics)
 *Note: This diagnostic loop evaluates target individual assemblies dynamically or cycles sequentially through distinct species configurations.*
-
-```{r deep-dive-config, include=FALSE}
-# Isolate first sample key from master data to automate evaluation dynamically without manual breaks
-target_sample_id <- unique(master_df$sample)[1]
-sample_isolated_df <- master_df %>% dplyr::filter(sample == target_sample_id)
-```
-
-
-```{r local-organism-deep-dive-loop, echo=FALSE, results='asis', fig.width=14, fig.height=10}
-# --- Chunk: local-organism-deep-dive-loop ---
-# Input: Read master table using the updated parameter name integrated from Snakemake
-master_df <- readr::read_tsv(params$samples, show_col_types = FALSE)
-
-# Resolve target reports directory dynamically relative to per_genome_dir path from config
-output_reports_dir <- file.path(dirname(params$per_genome_dir), "aggregated", "reports")
-dir.create(output_reports_dir, showWarnings = FALSE, recursive = TRUE)
-
-unique_samples <- unique(master_df$sample)
-
-for (target_sample_id in unique_samples) {
-  
-  # Isolate specific data split for the current organism iteration
-  local_df <- master_df %>%
-    dplyr::filter(sample == target_sample_id) %>%
-    dplyr::rename(
-      Prot_Len = `Protein length`,
-      TM_Count = `number of transmembrane elements predicted with TMHMM`,
-      TM_Len = `total length of transmembrane elements`,
-      LCR_Count = `Total number of LCR`,
-      LCR_Len = `Total length of LCR`
-    )
-  
-  if (nrow(local_df) == 0) next
-  
-  # Compute local boundary slices dynamically for the current genome distribution
-  local_bounds <- quantile(local_df$tAI, probs = c(0.1, 0.9), na.rm = TRUE)
-  
-  local_df <- local_df %>%
-    dplyr::mutate(Local_Cohort = dplyr::case_when(
-      tAI <= local_bounds[1] ~ "Local Bottom 10% (Slow)",
-      tAI >= local_bounds[2] ~ "Local Top 10% (Fast)",
-      TRUE ~ "Core Genome Background"
-    ))
-  
-  plot_subset <- local_df %>% 
-    dplyr::filter(Local_Cohort %in% c("Local Bottom 10% (Slow)", "Local Top 10% (Fast)"))
-  
-  # Create a clean tab set container per organism for the HTML dashboard interface
-  cat("\n### ", target_sample_id, " \n")
-  
-  cat("\n#### Intra-Organismal tAI Distribution and Core Outliers\n")
-  
-  # Generate continuous density line plot object
-  p_local_density <- ggplot(local_df, aes(x = tAI)) +
-    geom_density(fill = "aquamarine", alpha = 0.4, color = "darkgreen", size = 1.2) +
-    labs(title = paste("Intra-Organismal Capacity Allocation Profile:", target_sample_id), 
-         x = "Gene tAI Score Metric", y = "Kernel Density") +
-    theme_bw()
-  
-  print(p_local_density)
-  cat("\n\n")
-  
-  # Enforce programmatic saving directly to the correct section folder location
-  ggsave(file.path(sec3_dir, paste0(target_sample_id, "_tai_local_density.png")), 
-         plot = p_local_density, width = 10, height = 5, dpi = 300)
-  
-  # Sort table to harvest expression extremes and resolve NA/empty annotation outputs safely
-  top_10_genes <- local_df %>% dplyr::arrange(desc(tAI)) %>% head(10)
-  bottom_10_genes <- local_df %>% dplyr::arrange(tAI) %>% head(10)
-  
-  go_col_name <- colnames(local_df)[grepl("GO terms", colnames(local_df))]
-  
-  clean_print_table <- function(sub_df) {
-    sub_df %>% 
-      dplyr::select(`Protein ID (NCBI accession)`, tAI, ENC, dplyr::all_of(go_col_name)) %>%
-      dplyr::rename(GO_Terms = 4) %>%
-      dplyr::mutate(GO_Terms = dplyr::case_when(
-        is.na(GO_Terms) | GO_Terms == "" | GO_Terms == "NA" ~ "Unannotated / No Pfam Domain Found",
-        TRUE ~ GO_Terms
-      ))
-  }
-  
-  cat("\n##### Top 10 High-Efficiency Expression Target Genes (Elite Pool)\n")
-  print(knitr::kable(clean_print_table(top_10_genes), format = "markdown"))
-  cat("\n\n")
-  
-  cat("\n##### Bottom 10 Regulatory/Slowing Translation Genes (Structural Control)\n")
-  print(knitr::kable(clean_print_table(bottom_10_genes), format = "markdown"))
-  cat("\n\n")
-  
-  cat("\n#### Local Protein Feature Correlation\n")
-  
-  # Structural violin and box plots definitions
-  p_len <- ggplot(plot_subset, aes(x = Local_Cohort, y = Prot_Len, fill = Local_Cohort)) +
-    geom_violin(alpha = 0.6, trim = TRUE) +
-    geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
-    labs(title = "Protein Length Space", x = "", y = "Length (Amino Acids)") +
-    theme_bw() + theme(legend.position = "none")
-  
-  p_lcr_counts <- ggplot(plot_subset, aes(x = Local_Cohort, y = LCR_Count, fill = Local_Cohort)) +
-    geom_boxplot(alpha = 0.7, outlier.colour = "red", outlier.size = 1) +
-    labs(title = "LCR Density Bounds", x = "", y = "Number of Detected LCRs") +
-    theme_bw() + theme(legend.position = "none")
-  
-  p_tm_len <- ggplot(plot_subset, aes(x = Local_Cohort, y = TM_Len, fill = Local_Cohort)) +
-    geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-    labs(title = "Total Transmembrane Span Length", x = "", y = "Total TM Length (AA)") +
-    theme_bw() + theme(legend.position = "none")
-  
-  # Spatial tracking transformations for 3 sub-bins arrays mapping
-  lcr_3bin_col <- local_df %>% dplyr::select(dplyr::contains("3 bins")) %>% colnames()
-  lcr_3bin_strings <- plot_subset %>% dplyr::select(Local_Cohort, dplyr::all_of(lcr_3bin_col)) %>% dplyr::rename(B3 = 2)
-  
-  split_3bins <- strsplit(as.character(lcr_3bin_strings$B3), ",")
-  matrix_3bins <- do.call(rbind, lapply(split_3bins, function(x) {
-    v <- as.numeric(x)
-    if(length(v) != 3 || any(is.na(v))) rep(0, 3) else v
-  }))
-  colnames(matrix_3bins) <- c("N-terminus (0-0.25)", "Middle (0.25-0.75)", "C-terminus (0.75-1.0)")
-  
-  polarization_df <- cbind(lcr_3bin_strings %>% dplyr::select(Local_Cohort), matrix_3bins) %>%
-    tidyr::pivot_longer(cols = -Local_Cohort, names_to = "Region", values_to = "LCR_Accumulation") %>%
-    dplyr::group_by(Local_Cohort, Region) %>%
-    dplyr::summarise(Mean_Accumulation = mean(LCR_Accumulation, na.rm = TRUE), .groups = 'drop')
-  
-  p_polar_bars <- ggplot(polarization_df, aes(x = Region, y = Mean_Accumulation, fill = Local_Cohort)) +
-    geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
-    labs(title = "Spatial LCR Polarization Profile", x = "Functional Structural Region", y = "Mean Residue Length") +
-    theme_bw() + theme(legend.position = "bottom")
-  
-  local_panel <- cowplot::plot_grid(
-    cowplot::plot_grid(p_len, p_lcr_counts, p_tm_len, ncol = 3),
-    p_polar_bars,
-    ncol = 1,
-    rel_heights = c(1, 1.2)
-  )
-  print(local_panel)
-  cat("\n\n")
-  
-  # Redirect generated panel graphic straight to the correct section folder
-  ggsave(file.path(sec3_dir, paste0(target_sample_id, "_local_structural_panel.png")), 
-         plot = local_panel, width = 14, height = 10, dpi = 300)
-  
-  cat("\n#### Overlap of Structural Domains and Sequence Complexity\n")
-  overlap_column_name <- master_df %>% dplyr::select(dplyr::contains("overlapping with LCRs")) %>% colnames()
-  overlap_matrix <- local_df %>%
-    dplyr::filter(Local_Cohort %in% c("Local Bottom 10% (Slow)", "Local Top 10% (Fast)")) %>%
-    dplyr::select(`Protein ID (NCBI accession)`, Local_Cohort, dplyr::all_of(overlap_column_name)) %>%
-    dplyr::rename(Overlapping_Domains = 3) %>%
-    dplyr::mutate(Overlapping_Domains = dplyr::case_when(
-      is.na(Overlapping_Domains) | Overlapping_Domains == "" ~ "No Overlap Detected (>80%)",
-      TRUE ~ Overlapping_Domains
-    ))
-  
-  print(knitr::kable(head(overlap_matrix, 20), format = "markdown"))
-  cat("\n\n")
-}
-```
 
 ### Intra-Organismal tAI Distribution and Core Outliers
 #### Goal
@@ -547,30 +313,15 @@ Render a continuous density curve mapping the internal gene-by-gene tAI distribu
 #### Critical Observations
 Review the distribution modality. Multi-modal distribution curves reveal clear functional gene stratification, whereas highly skewed distributions indicate extreme specialization towards housekeeping genes.
 
-```{r single-organism-tai-distribution, echo=FALSE, results='asis', fig.width=10, fig.height=5}
+\```{r single-organism-tai-distribution}
 # --- Chunk: single-organism-tai-distribution ---
 # Input: The standalone sample evaluation track summary ('results/per_genome/<sample>/codon_metrics/*_summary.tsv').
-
-# Generate an empirical density distribution plot for local gene tAI values.
-p_local_density <- ggplot(sample_isolated_df, aes(x = tAI)) +
-  geom_density(fill = "aquamarine", alpha = 0.4, color = "darkgreen", size = 1.2) +
-  labs(title = paste("Intra-Organismal Core Translation Profile Capacity Allocation:", target_sample_id), x = "Gene tAI Value", y = "Density Distribution Parameter") +
-  theme_bw()
-
-print(p_local_density)
-ggsave(file.path(sec3_dir, paste0(target_sample_id, "_tai_local_density.png")), plot = p_local_density, width = 10, height = 5, dpi = 300)
-
-# Sort the table ascending/descending to harvest the highest 10 and lowest 10 tAI gene IDs.
-top_10_genes <- sample_isolated_df %>% dplyr::arrange(desc(tAI)) %>% head(10)
-bottom_10_genes <- sample_isolated_df %>% dplyr::arrange(tAI) %>% head(10)
-
-# Confirm that top and bottom slices contain unique gene IDs and check for empty GO annotation strings.
-cat("\n#### Top 10 High-Efficiency Expression Target Genes (Elite Pool)\n")
-print(knitr::kable(top_10_genes %>% dplyr::select(`Protein ID (NCBI accession)`, tAI, ENC, `GO terms based on Pfam domains obtained by mapping on pfam2go, separated with the pipe symbol '|'`), format = "markdown"))
-
-cat("\n#### Bottom 10 Regulatory/Slowing Translation Genes (Structural Control/Folding Delays)\n")
-print(knitr::kable(bottom_10_genes %>% dplyr::select(`Protein ID (NCBI accession)`, tAI, ENC, `GO terms based on Pfam domains obtained by mapping on pfam2go, separated with the pipe symbol '|'`), format = "markdown"))
-```
+# Process:
+#   - Generate an empirical density distribution plot for local gene tAI values.
+#   - Sort the table ascending/descending to harvest the highest 10 and lowest 10 tAI gene IDs.
+# Return: Combined continuous density line chart and an automated top/bottom textual index table.
+# Validation: Confirm that top and bottom slices contain unique gene IDs and check for empty GO annotation strings.
+\```
 
 ### Local Protein Feature Correlation
 #### Goal
@@ -582,93 +333,15 @@ Build violin/boxplot charts evaluating protein length, total TM domain count, to
 #### N/C-Terminal LCR Polarization
 Construct bar charts comparing LCR density and specific amino acid compositions across three distinct functional regions: N-terminus (0.0-0.25), Internal (0.25-0.75), and C-terminus (0.75-1.0). This verifies whether low-complexity sequences localized at the N-terminus correlate with reduced tAI to implement a controlled ribosomal translation initiation delay.
 
-```{r local-protein-feature-correlation, echo=FALSE, fig.width=14, fig.height=10}
+\```{r local-protein-feature-correlation}
 # --- Chunk: local-protein-feature-correlation ---
-# Input: Selected organism summary track integrated with structural locus annotations.
-# Safe Column Mapping to avoid string breaks and handle NA values gracefully
-local_df <- master_df %>%
-  dplyr::filter(sample == target_sample_id) %>%
-  dplyr::rename(
-    Prot_Len = `Protein length`,
-    TM_Count = `number of transmembrane elements predicted with TMHMM`,
-    TM_Len = `total length of transmembrane elements`,
-    LCR_Count = `Total number of LCR`,
-    LCR_Len = `Total length of LCR`
-  )
-
-local_bounds <- quantile(local_df$tAI, probs = c(0.1, 0.9), na.rm = TRUE)
-
-local_df <- local_df %>%
-  dplyr::mutate(Local_Cohort = dplyr::case_when(
-    tAI <= local_bounds[1] ~ "Local Bottom 10% (Slow)",
-    tAI >= local_bounds[2] ~ "Local Top 10% (Fast)",
-    TRUE ~ "Core Genome Background"
-  ))
-
-plot_subset <- local_df %>% 
-  dplyr::filter(Local_Cohort %in% c("Local Bottom 10% (Slow)", "Local Top 10% (Fast)"))
-
-# Plot 1: Violin chart for Protein Length
-p_len <- ggplot(plot_subset, aes(x = Local_Cohort, y = Prot_Len, fill = Local_Cohort)) +
-  geom_violin(alpha = 0.6, trim = TRUE) +
-  geom_boxplot(width = 0.15, fill = "white", outlier.shape = NA) +
-  labs(title = "Protein Length Distribution", x = "", y = "Length (Amino Acids)") +
-  theme_bw() + 
-  theme(legend.position = "none")
-
-# [NEW PLOT 1]: Distribution of Total LCR Counts per Gene across local cohorts
-p_lcr_counts <- ggplot(plot_subset, aes(x = Local_Cohort, y = LCR_Count, fill = Local_Cohort)) +
-  geom_boxplot(alpha = 0.7, outlier.colour = "red", outlier.size = 1) +
-  labs(title = "LCR Abundance per Protein", x = "", y = "Number of Detected LCRs") +
-  theme_bw() + 
-  theme(legend.position = "none")
-
-# [NEW PLOT 2]: Transmembrane Domain Length Boxplot
-p_tm_len <- ggplot(plot_subset, aes(x = Local_Cohort, y = TM_Len, fill = Local_Cohort)) +
-  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-  labs(title = "Total Transmembrane Span Length", x = "", y = "Total TM Length (AA)") +
-  theme_bw() + 
-  theme(legend.position = "none")
-
-# Process 3-Bin Spatial Polarization for LCRs
-# FIXED: Safe column extraction using standard base R execution layer
-selected_cols <- local_df %>% dplyr::select(Local_Cohort, dplyr::contains("3 bins"))
-lcr_3bin_col <- colnames(selected_cols)[-1]
-
-lcr_3bin_strings <- plot_subset %>%
-  dplyr::select(Local_Cohort, dplyr::all_of(lcr_3bin_col)) %>%
-  dplyr::rename(B3 = 2)
-
-split_3bins <- strsplit(as.character(lcr_3bin_strings$B3), ",")
-matrix_3bins <- do.call(rbind, lapply(split_3bins, function(x) {
-  v <- as.numeric(x)
-  if(length(v) != 3 || any(is.na(v))) rep(0, 3) else v
-}))
-colnames(matrix_3bins) <- c("N-terminus (0-0.25)", "Middle (0.25-0.75)", "C-terminus (0.75-1.0)")
-
-polarization_df <- cbind(lcr_3bin_strings %>% dplyr::select(Local_Cohort), matrix_3bins) %>%
-  tidyr::pivot_longer(cols = -Local_Cohort, names_to = "Region", values_to = "LCR_Accumulation") %>%
-  dplyr::group_by(Local_Cohort, Region) %>%
-  dplyr::summarise(Mean_Accumulation = mean(LCR_Accumulation, na.rm = TRUE), .groups = 'drop')
-
-p_polar_bars <- ggplot(polarization_df, aes(x = Region, y = Mean_Accumulation, fill = Local_Cohort)) +
-  geom_bar(stat = "identity", position = "dodge", alpha = 0.8) +
-  labs(title = "Spatial LCR Polarization Mapping", x = "Functional Structural Domain Region", y = "Mean Residue Length in Bins") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
+# Input: Selected organism summary track integrated with structural locus adnotations.
+# Process:
+#   - Compile length, LCR, and TM count vectors across the extreme groups.
+#   - Divide gene lengths into N-terminal, middle, and C-terminal segments and summarize internal LCR occurrence rates.
 # Return: Panel displaying violin charts alongside localized structural bar plots.
-local_structural_panel <- cowplot::plot_grid(
-  cowplot::plot_grid(p_len, p_lcr_counts, p_tm_len, ncol = 3),
-  p_polar_bars,
-  ncol = 1,
-  rel_heights = c(1, 1.2)
-)
-print(local_structural_panel)
-
-# Enforce clean handling of zero values and save static PNG files
-ggsave(file.path(sec3_dir, paste0(target_sample_id, "_local_structural_panel.png")), plot = local_structural_panel, width = 14, height = 10, dpi = 300)
-```
+# Validation: Enforce clean handling of zero values (e.g., genes entirely lacking TM domains) to prevent scale distortion.
+\```
 
 ### Overlap of Structural Domains and Sequence Complexity
 #### Goal
@@ -680,26 +353,13 @@ Calculate the physical intersection length between predicted Pfam domain bounds 
 #### Critical Observations
 High overlap scores in high-tAI genes point to structural optimization constraints, whereas high overlap in low-tAI genes could signify regulatory regions.
 
-```{r domain-lcr-structural-overlap, echo=FALSE, results='asis'}
+\```{r domain-lcr-structural-overlap}
 # --- Chunk: domain-lcr-structural-overlap ---
 # Input: Base coordinate track files mapping Pfam intervals and LCR intervals for the target genome.
-# Process: Compute interval overlap lengths: Filter rows matching overlap >= 80%.
-overlap_column_name <- master_df %>% dplyr::select(dplyr::contains("overlapping with LCRs")) %>% colnames()
-
-overlap_matrix <- local_df %>%
-  dplyr::filter(Local_Cohort %in% c("Local Bottom 10% (Slow)", "Local Top 10% (Fast)")) %>%
-  dplyr::select(`Protein ID (NCBI accession)`, Local_Cohort, dplyr::all_of(overlap_column_name)) %>%
-  dplyr::rename(Overlapping_Domains = 3) %>%
-  # Handle empty or NA strings dynamically to ensure tidy table generation
-  dplyr::mutate(Overlapping_Domains = dplyr::case_when(
-    is.na(Overlapping_Domains) | Overlapping_Domains == "" | Overlapping_Domains == "Not Available" ~ "No Overlap Detected (>80%)",
-    TRUE ~ Overlapping_Domains
-  ))
-
+# Process: Compute interval overlap lengths: (Intersection BP / Total Domain BP) * 100. Filter rows matching overlap >= 80%.
 # Return: Matrix table displaying highly intersected functional domains grouped by extreme tAI status.
-# Validation: Verify that coordinate index tracking systems are unified across input tracks.
-print(knitr::kable(head(overlap_matrix, 20), caption = paste("Identified Severe Domain-LCR Intersections for", target_sample_id)))
-```
+# Validation: Verify that coordinate index tracking systems (0-based vs 1-based) are unified across input tracks.
+\```
 
 ---
 
@@ -715,39 +375,13 @@ Compile distribution charts of calculated relative adaptiveness weights ($w_i$) 
 #### Critical Observations
 Identify shifting optimal codon switches. If distinct biological groups display contrasting weights for identical codons, it highlights divergent evolution in their underlying tRNA expression profiles.
 
-```{r comparative-codon-weights, echo=FALSE, fig.width=14, fig.height=8}
+\```{r comparative-codon-weights}
 # --- Chunk: comparative-codon-weights ---
 # Input: Processed individual codon weight tables ('*_trna_weights.csv') compiled across genomes.
-weight_files_list <- list.files(path = params$per_genome_dir, pattern = "_trna_weights.csv", recursive = TRUE, full.names = TRUE)
-
-compiled_weights_list <- lapply(weight_files_list, function(filepath) {
-  sample_key <- basename(dirname(dirname(filepath)))
-  df <- readr::read_csv(filepath, show_col_types = FALSE)
-  if (ncol(df) >= 2) {
-    colnames(df)[1:2] <- c("Codon", "Weight")
-    df$sample <- sample_key
-    return(df)
-  }
-  return(NULL)
-})
-
-dataset_meta <- readr::read_tsv(params$dataset, show_col_types = FALSE) %>%
-  dplyr::select(sample, lifestyle, phylum)
-
-weights_master_df <- do.call(rbind, Filter(Negate(is.null), compiled_weights_list)) %>%
-  dplyr::left_join(dataset_meta, by = "sample")
-
-p_weights_dist <- ggplot(weights_master_df, aes(x = Codon, y = Weight, fill = lifestyle)) +
-  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-  labs(title = "Codon Relative Adaptiveness Weights (w_i) Partitioned Across Lifestyles", 
-       x = "Sense Codon Triplets", y = "Relative Adaptation Weight (w_i)") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 9, face = "bold"),
-        legend.position = "bottom")
-
-print(p_weights_dist)
-ggsave(file.path(sec4_dir, "global_codon_weights_distribution.png"), plot = p_weights_dist, width = 14, height = 8, dpi = 300)
-```
+# Process: Map the 61 codon categories, sorting weights by matching amino acid clusters. Plot distributions across lifestyles.
+# Return: Grid of multi-sample codon adaptiveness bar charts or density ridges.
+# Validation: Ensure the normalization constraint is maintained: the preferred codon in every synonymous group must equal 1.0.
+\```
 
 ### Comprehensive Codon Usage Fingerprint (RSCU Heatmap)
 #### Goal
@@ -759,74 +393,10 @@ Construct a global two-dimensional matrix containing calculated Relative Synonym
 #### Critical Observations
 Evaluate whether clustering topology follows strict taxonomic lineages (phylogeny) or shifts toward ecological lifestyle grouping (niche adaptation).
 
-```{r rscu-global-heatmap, echo=FALSE, fig.width=12, fig.height=9}
+\```{r rscu-global-heatmap}
 # --- Chunk: rscu-global-heatmap ---
-# Input: Global RSCU profiles matrices tracks extraction.
-rscu_files_list <- list.files(path = params$per_genome_dir, pattern = "_rscu.csv", recursive = TRUE, full.names = TRUE)
-
-compiled_rscu_list <- lapply(rscu_files_list, function(filepath) {
-  sample_key <- basename(dirname(dirname(filepath)))
-  df <- readr::read_csv(filepath, show_col_types = FALSE)
-  if (ncol(df) >= 2) {
-    colnames(df)[1:2] <- c("Codon", "RSCU")
-    df$sample = sample_key
-    return(df)
-  }
-  return(NULL)
-})
-
-rscu_master_df <- do.call(rbind, Filter(Negate(is.null), compiled_rscu_list))
-
-# Execute a hierarchical clustering routing with forced numeric casting and NA cleanup
-heatmap_matrix <- rscu_master_df %>%
-  dplyr::mutate(Rscu_Numeric = as.numeric(RSCU)) %>%
-  dplyr::mutate(Rscu_Numeric = ifelse(is.na(Rscu_Numeric) | is.nan(Rscu_Numeric), 0.0, Rscu_Numeric)) %>%
-  tidyr::pivot_wider(id_cols = sample, names_from = Codon, values_from = Rscu_Numeric, values_fill = 0.0) %>%
-  as.data.frame()
-
-rownames(heatmap_matrix) <- heatmap_matrix$sample
-heatmap_matrix <- as.matrix(heatmap_matrix[, -1])
-
-# Filter out non-informative columns with zero variance across active samples
-variance_vector <- apply(heatmap_matrix, 2, sd)
-heatmap_matrix_filtered <- heatmap_matrix[, variance_vector > 0, drop = FALSE]
-
-if (ncol(heatmap_matrix_filtered) == 0) {
-  heatmap_matrix_filtered <- heatmap_matrix
-}
-
-# Dynamic and robust break generation execution layer
-mat_min <- min(heatmap_matrix_filtered, na.rm = TRUE)
-mat_max <- max(heatmap_matrix_filtered, na.rm = TRUE)
-
-if (abs(mat_max - mat_min) < 1e-5) {
-  mat_min <- mat_min - 0.1
-  mat_max <- mat_max + 0.1
-}
-
-custom_breaks <- seq(mat_min, mat_max, length.out = 51)
-dynamic_palette <- colorRampPalette(c("navy", "white", "firebrick3"))(50)
-
-# FIXED: Save matrix heatmap directly inside the target section output path
-png(file.path(sec4_dir, "rscu_global_hierarchical_heatmap.png"), width = 1200, height = 900, res = 130)
-pheatmap::pheatmap(heatmap_matrix_filtered, 
-                    clustering_distance_rows = "euclidean", 
-                    clustering_distance_cols = "euclidean", 
-                    clustering_method = "complete",
-                    scale = "none",
-                    color = dynamic_palette,
-                    breaks = custom_breaks,
-                    legend = TRUE,
-                    main = "Global Codon Usage Fingerprint (Hierarchical Clustered RSCU Profiles)")
-dev.off()
-
-pheatmap::pheatmap(heatmap_matrix_filtered, 
-                    clustering_distance_rows = "euclidean", 
-                    clustering_distance_cols = "euclidean", 
-                    clustering_method = "complete",
-                    scale = "none",
-                    color = dynamic_palette,
-                    breaks = custom_breaks,
-                    legend = TRUE,
-                    main = "Global Codon Usage Fingerprint (Hierarchical Clustered RSCU Profiles)")
-```
+# Input: Global aggregated RSCU matrix containing values for all active experimental runs.
+# Process: Execute a hierarchical clustering routing using Euclidean distance metrics and complete linkage clustering.
+# Return: A clustered layout heatmap plot tracking rows (species) and columns (codons).
+# Validation: Confirm that row and column dimensions match the active dataset bounds (N species x 61 codons).
+\```

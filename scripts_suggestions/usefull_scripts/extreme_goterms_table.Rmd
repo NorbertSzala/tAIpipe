@@ -229,7 +229,7 @@ create_statistical_label <- function(data, var1, var2, parametric_assumption = T
     
     if (ad_test$p.value < 0.05) {
       # ANOVA test for parametric values with normal distribution
-      test = 'ANOVA '
+      test = 'ANOVA ' 
       anova_results <- summary(aov(var1 ~ var2, data = data))
       p_value <- anova_results[[1]]$'Pr(>F)'[1]
     } else {
