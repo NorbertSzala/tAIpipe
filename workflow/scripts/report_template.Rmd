@@ -224,32 +224,41 @@ Species or functional cohorts pooling significantly below the theoretical line u
 ```{r wrights-curve-analysis, echo=FALSE, fig.width=10, fig.height=7}
 # --- Chunk: wrights-curve-analysis ---
 # Input: Aggregated cohort matrix with 'mean_ENC' and 'mean_GC3s' vectors.
-# Process: Generate a continuous math function vector tracking Wright's equation across s in [0, 1].
+
 s_vector <- seq(0, 1, length.out = 500)
 wright_theoretical <- 2 + s_vector + (29 / (s_vector^2 + (1 - s_vector)^2))
 wright_curve_df <- data.frame(GC3s = s_vector, ENC = wright_theoretical)
 
-# Plot actual species data points over the theoretical curve line.
+# Build descriptive GGPlot mapping tooltips for HTML rendering pipeline
 p_wright <- ggplot() +
   geom_line(data = wright_curve_df, aes(x = GC3s, y = ENC), color = "black", size = 1.2, linetype = "solid") +
-  geom_point(data = cohort_summary, aes(x = mean_GC3s, y = mean_ENC, color = lifestyle, shape = phylum), size = 3.5, alpha = 0.9) +
+  geom_point(data = cohort_summary, aes(x = mean_GC3s, y = mean_ENC, color = lifestyle, shape = phylum,
+                                       text = paste("Sample:", sample, "<br>Species:", species, "<br>ENC:", round(mean_ENC, 2), "<br>GC3s:", round(mean_GC3s, 2))), size = 3.5, alpha = 0.9) +
   ylim(20, 61) +
   labs(title = "Synonymous Selection Intensity vs. Neutral Mutation Frontier",
        x = "Synonymous Third-Position GC Content (GC3s)",
-       y = "Effective Number of Codons (ENC)") +
+       y = "Effective Number of Codons (ENC)",
+       color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
   theme_bw()
 
-print(p_wright)
+# Save static image asset
 ggsave(file.path(sec1_dir, "wrights_curve_analysis.png"), plot = p_wright, width = 10, height = 7, dpi = 300)
 
-# Compute the perpendicular vertical distance (delta ENC) for each species as a direct proxy for selection intensity.
+# Handle rendering format cleanly to support interactivity where allowed
+if (knitr::is_html_output()) {
+  ggplotly(p_wright, tooltip = "text")
+} else {
+  print(p_wright)
+}
+
+# Compute the perpendicular vertical distance (delta ENC) for direct proxy metric evaluation
 cohort_summary <- cohort_summary %>%
   dplyr::mutate(
     theoretical_ENC = 2 + mean_GC3s + (29 / (mean_GC3s^2 + (1 - mean_GC3s)^2)),
     delta_ENC = theoretical_ENC - mean_ENC
   )
 
-# Validation: Flags and records any species located above the mathematical boundary line.
+# Validation check: Flags anomalies residing strictly above theoretical threshold
 impossible_species <- cohort_summary %>% dplyr::filter(mean_ENC > theoretical_ENC)
 if (nrow(impossible_species) > 0) {
   cat("\n**Alert: Genomic targets residing above the mutation-neutral boundary:**\n")
