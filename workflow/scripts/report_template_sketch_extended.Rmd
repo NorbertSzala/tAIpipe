@@ -158,6 +158,7 @@ This directly checks if highly optimized proteins restrict sequence complexity o
 #### Goal
 Uncover universal metabolic or evolutionary pathways that are strictly conserved for rapid translation (Top) or translational pausing (Bottom) across taxonomic boundaries.
 
+#TODO: Czy 'combined top/botom 10 tAI GENE POOLS' oznacza ze wziales najwyzsze i najnizsze 10% genow ze wszystkich organizmów (combined) czy z kazdego organizmu wybrales 10% top/bottom a nastepnie połączyles ten dataset? Druga opcja jest poprawna, bo wydaje mi sie ze jednak liczysz po calosci 
 #### Methodology
 Run hyper-geometric distribution tests for overrepresentation of Pfam domain keys and Gene Ontology (GO) terms (derived via `pfam2go` mappings) within the combined Top/Bottom 10% tAI gene pools. 
 
