@@ -30,7 +30,7 @@ PER_GENOME = config['paths']['per_genome']
 AGGREGATED = config['paths']['aggregated']
 LOGS = config['paths']['logs']
 
-DATA_MAINTABLE = config["paths"]["main_dataset"]
+DATA_MAINTABLE = config["paths"]["metadata_samples"]
 DATA_PLOTS = config["paths"]["plots"]
 DATA_TABLES = config["paths"]["tables"]
 REPORT_FILE = config["paths"]["reports"]
@@ -40,14 +40,14 @@ REPORT_FILE = config["paths"]["reports"]
 # ---------------------
 # --- Samples table ---
 # ---------------------
-# Read samples from tsv
-samples_df = pd.read_csv(config['paths']['samples'], sep = '\t')
+# Read metadata_dataset from tsv
+samples_df = pd.read_csv(config['paths']['metadata_dataset'], sep = '\t')
 
-# Validate samples tsv
-validate(samples_df, "schemas/samples.schema.yaml")
+# Validate metadata_dataset tsv
+validate(samples_df, "schemas/metadata_dataset.schema.yaml")
 
 samples_df = samples_df.set_index("sample")
-samples_df = samples_df[samples_df['include']== True] # added additional column in samples.tsv to make excluding some samples much easier
+samples_df = samples_df[samples_df['include']== True] # added additional column in metadata_dataset.tsv to make excluding some metadata_dataset much easier
 SAMPLES = samples_df.index.tolist()
 
 
@@ -95,7 +95,7 @@ def get_trnascanse_code_arg(wildcards):
     return f"-g {gcode_file}"
 
 def get_domain(wildcards):
-    """Extract and normalize domain from samples.tsv."""
+    """Extract and normalize domain from metadata_dataset.tsv."""
     domain = str(samples_df.loc[wildcards.sample, "domain"]).strip().lower()
 
     domain_map = {
@@ -117,23 +117,35 @@ def get_domain(wildcards):
 # --- Main Rule ---
 # -----------------
 
+# DEPRECATED
+# rule all:
+#     input:
+#         expand(
+#             f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
+#             sample = SAMPLES
+#         )
+
 rule all:
     input:
-        expand(
-            f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
-            sample = SAMPLES
-        )
-
+        # Per sample data
+        expand(f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv', sample = SAMPLES),
+        # Final reports
+        f"{REPORT_FILE}/summary_report.html",
+        f"{REPORT_FILE}/summary_report.md"
 
 
 # ----------------------
 # ---  Include rules ---
 # ----------------------
+# calculate metrics rules 
 include: "rules/trnascan_rule.smk"
 include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 include: "rules/codon_usage_metrics_rule.smk"
-
+# metadata rule
+include: "rules/prepare_metadata_samples_rule.smk"
+# report rule 
+include: "rules/aggregate_and_report.smk"
 
 
 

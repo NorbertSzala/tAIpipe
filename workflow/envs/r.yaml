@@ -1,20 +1,38 @@
-name: r-cubar
+name: r-env
 
 channels:
   - conda-forge
   - bioconda
+  - defaults
 
 dependencies:
   - r-base=4.3
+
+  # --- Core Data Manipulation & Bioinformatics ---
   - bioconductor-biostrings
+  - bioconductor-biomart
   - bioconductor-iranges
-  - r-readr
   - r-dplyr
   - r-tidyr
+  - r-readr
   - r-tibble
   - r-stringr
+  - r-purrr
   - r-data.table
-  - r-ggplot2
-  - r-optparse
-  - r-remotes
   - r-rlang
+  - r-optparse
+  - r-argparse
+  - r-remotes
+
+  # --- Data Visualization & Interactive Features ---
+  - r-ggplot2
+  - r-plotly
+  - r-dt
+  - r-cowplot
+  - r-patchwork
+  - r-pheatmap
+
+  # --- Automated Reporting Engines ---
+  - r-rmarkdown
+  - r-knitr
+  - pandoc

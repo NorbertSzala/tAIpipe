@@ -1,0 +1,474 @@
+---
+title: "tAIpipe Comprehensive Analytical Report"
+subtitle: "Global and Local Translation Optimization Landscape"
+author: "tAIpipe Automated Framework"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+  md_document:
+    variant: markdown_github
+params:
+  samples: ""
+  dataset: ""
+  per_genome_dir: ""
+  output_dir: ""
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7)
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(knitr)
+library(cowplot)
+library(pheatmap)
+library(plotly)
+library(DT)
+
+# STANDARDIZED SECTIONS PATH DEFINITIONS
+sec0_dir <- file.path(params$output_dir, "summary_report_files", "sec0_quality_control")
+sec1_dir <- file.path(params$output_dir, "summary_report_files", "sec1_evolutionary_cohort")
+sec2_dir <- file.path(params$output_dir, "summary_report_files", "sec2_cross_species_functional")
+sec3_dir <- file.path(params$output_dir, "summary_report_files", "sec3_individual_deep_dive")
+sec4_dir <- file.path(params$output_dir, "summary_report_files", "sec4_codon_weights_weights")
+
+# Ensure asset directories exist
+for (dir_path in list(sec0_dir, sec1_dir, sec2_dir, sec3_dir, sec4_dir)) {
+  if (!dir.exists(dir_path)) dir.create(dir_path, recursive = TRUE)
+}
+
+# LOAD INPUT DATASETS
+# Dataset contains phenotypic/taxonomic information per sample
+dataset_df <- read_delim(params$dataset, delim = "\t", show_col_types = FALSE) %>%
+  filter(include == TRUE | include == "True")
+
+# Samples contains aggregated per-gene coding metrics and annotations
+samples_df <- read_delim(params$samples, delim = "\t", show_col_types = FALSE)
+
+# Combined analytical view for downstream chunks
+analysis_df <- samples_df %>%
+  inner_join(dataset_df, by = "sample")
+```
+
+# tAIpipe Analytical Report: Global and Local Translation Landscape
+
+***
+
+## Quality Control & Dataset Auditing
+
+### Cohort Ingestion Summary
+#### Goal
+Verify data ingestion and experiment layout integrity before computational evaluation. Ensure taxonomic and ecological categories are represented.
+
+#### Methodology
+Compile a cohort overview table summarizing total counts of independent operational taxonomic units (samples) across Domains, Kingdoms, Phyla, and Lifestyles.
+
+#### Critical Observations
+Look for extreme class imbalances or sample omissions. If a specific lifestyle or phylum contains too few records compared to the rest of the cohort, a text warning must alert the user to potential statistical inflation during downstream grouping.
+
+```{r cohort-ingestion-summary}
+# --- Chunk: cohort-ingestion-summary ---
+# Input: Phenotypic and taxonomic metadata table (dataset_df)
+# Process: Aggregate counts across taxonomic hierarchies and lifestyle classifications.
+
+cohort_table <- dataset_df %>%
+  group_by(domain, kingdom, phylum, lifestyle) %>%
+  summarise(sample_count = n(), .groups = 'drop')
+
+# Conditional rendering based on document target format
+if (knitr::is_html_output()) {
+  # Render interactive HTML widget for web report
+  datatable(cohort_table, 
+            options = list(pageLength = 10, dom = 'tip'),
+            rownames = FALSE,
+            caption = "Table 1: Overview of ingested biological samples stratified by taxonomy and lifestyle niche.")
+} else {
+  # Render static Markdown table for GitHub/MD outputs
+  knitr::kable(cohort_table, caption = "Table 1: Overview of ingested biological samples stratified by taxonomy and lifestyle niche.")
+}
+```
+
+
+### Organism-Level Assembly & Prediction QC
+#### Goal
+Identify analytical outliers, structural sequence assembly fragmentation artifacts, and potential downstream tRNA prediction errors.
+
+#### Methodology
+Generate a dual panel of sample-wide scatter plots:
+1. Genome Assembly Size (Mbp) vs. Total Predicted tRNA Gene Count.
+2. Genome-wide Average GC Content vs. Genome-wide Average Synonymous Third-Position GC Content (GC3s).
+
+#### Critical Observations
+Legitimate biological trends exhibit linear scaling between genome size and tRNA pools. Mark severe technical outliers in red with text labels. For instance, a bloated genome sequence with an artificially suppressed tRNA count indicates low assembly coverage or raw file contamination.
+
+#### Notes
+Samples identified as suspicious through the entire pipeline auditing process (across relevant data splits) must be explicitly flagged and listed here.
+
+```{r assembly-prediction-qc-plots, echo=FALSE, fig.width=12, fig.height=6}
+# --- Chunk: assembly-prediction-qc-plots ---
+# Input: Comprehensive analysis dataset mapping per-gene observations and genomic patterns.
+
+cohort_summary <- analysis_df %>%
+  group_by(sample, species, phylum, lifestyle, domain) %>%
+  summarise(
+    mean_tAI = mean(tAI, na.rm = TRUE),
+    mean_ENC = mean(ENC, na.rm = TRUE),
+    mean_GC = mean(GC, na.rm = TRUE),
+    mean_GC3s = mean(GC3s, na.rm = TRUE),
+    total_genes = n(),
+    .groups = 'drop'
+  ) %>%
+  mutate(total_tRNA_count = sapply(sample, function(s) {
+    p <- file.path(params$per_genome_dir, s, "trnascan", paste0(s, "_trnascan.tsv"))
+    if(file.exists(p)) nrow(read_tsv(p, show_col_types = FALSE)) else 0
+  })) %>%
+  mutate(genome_size_Mbp = total_genes * 0.003) 
+
+# Cook's distance filter to identify structural outliers
+fit <- lm(total_tRNA_count ~ genome_size_Mbp, data = cohort_summary)
+cohort_summary$cooksd <- cooks.distance(fit)
+n_samples <- nrow(cohort_summary)
+cohort_summary <- cohort_summary %>%
+  mutate(Outlier = ifelse(cooksd > (4 / n_samples), "Flagged Outlier", "Normal Lineage"))
+
+# Interactive Plot 1: Estimated Genome Size vs tRNA Count
+p1 <- ggplot(cohort_summary, aes(x = genome_size_Mbp, y = total_tRNA_count, text = paste("Sample:", sample, "<br>Species:", species))) +
+  geom_point(aes(color = Outlier), size = 3) +
+  geom_smooth(method = "lm", color = "black", se = FALSE, linetype = "dashed") +
+  scale_color_manual(values = c("Flagged Outlier" = "red", "Normal Lineage" = "black")) +
+  labs(title = "tRNA Repertoire Scaling Analysis", x = "Estimated Genome Size (Mbp)", y = "Total tRNA Gene Count") +
+  theme_bw()
+
+# Interactive Plot 2: GC vs GC3s Concordance
+p2 <- ggplot(cohort_summary, aes(x = mean_GC, y = mean_GC3s, color = lifestyle, text = paste("Sample:", sample, "<br>Species:", species))) +
+  geom_point(size = 3) +
+  labs(title = "Nucleotide Composition Concordance", x = "Genome Mean GC", y = "Genome Mean GC3s") +
+  theme_bw()
+
+# Export static versions for asset caching
+ggsave(file.path(sec0_dir, "trna_repertoire_scaling.png"), plot = p1, width = 6, height = 5)
+ggsave(file.path(sec0_dir, "nucleotide_composition_concordance.png"), plot = p2, width = 6, height = 5)
+
+# Conditional output display depending on format
+if (knitr::is_html_output()) {
+  # Render interactive side-by-side plots for HTML format
+  subplot(ggplotly(p1, tooltip = "text"), ggplotly(p2, tooltip = "text"), nrows = 1, titleX = TRUE, titleY = TRUE)
+} else {
+  # Combine and render static ggplot objects for Markdown format using cowplot
+  cowplot::plot_grid(p1, p2, ncol = 2)
+}
+```
+
+***
+
+## Evolutionary & Cohort-Scale Analysis (Across All Species)
+
+### Translational Strategy Mapped by Lifestyle and Taxonomy
+#### Goal
+Evaluate how broad macro-evolutionary descent (Phylum) and ecological pressures (Lifestyle) dictate global codon usage selection across the entire cohort landscape.
+
+#### Methodology
+Compile an integrated multi-panel visualization mapping genome-wide mean tAI against mean Effective Number of Codons (ENC/Nc). Points represent distinct species, color-coded by lifestyle categories and shaped by taxonomic phyla, paired with marginal distribution boxplots.
+
+#### Critical Observations
+Determine if specific niche adaptations (e.g., high-impact plant pathogens vs. free-living saprotrophs) cluster into separated spaces of high translational efficiency (high tAI) paired with narrowed codon usage (low ENC).
+
+```{r translational-strategy-macro, echo=FALSE, fig.width=10, fig.height=7}
+# --- Chunk: translational-strategy-macro ---
+# Input: Compiled cohort summary data frame from the previous checkpoint.
+# Validation: Enforce absolute biological boundaries before evaluation loops.
+stopifnot(all(cohort_summary$mean_tAI >= 0 & cohort_summary$mean_tAI <= 1))
+stopifnot(all(cohort_summary$mean_ENC >= 20 & cohort_summary$mean_ENC <= 61))
+
+p_macro <- ggplot(cohort_summary, aes(x = mean_ENC, y = mean_tAI, color = lifestyle, shape = phylum,
+                                     text = paste("Sample:", sample, "<br>Species:", species))) +
+  geom_point(size = 4, alpha = 0.8) +
+  labs(title = "Global Translational Selection Map (tAI vs ENC)",
+       x = "Mean Effective Number of Codons (ENC)",
+       y = "Mean tRNA Adaptation Index (tAI)",
+       color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Save static artifact
+ggsave(file.path(sec1_dir, "translational_strategy_macro.png"), plot = p_macro, width = 10, height = 7, dpi = 300)
+
+# Check target format and render accordingly
+if (knitr::is_html_output()) {
+  ggplotly(p_macro, tooltip = "text")
+} else {
+  print(p_macro)
+}
+```
+
+### Selection Pressure vs Mutational Drift (The Wright's Curve)
+#### Goal
+Disentangle whether observed codon usage bias across species is driven by natural selection for translational speed/accuracy or by passive genomic background mutational drift.
+
+#### Methodology
+Map genome-wide average ENC against average GC3s. Overlay the theoretical mathematical Wright's curve ($H_0$: purely neutral mutational drift) defined by:
+$$ENC_{\text{theoretical}} = 2 + s + \frac{29}{s^2 + (1-s)^2}$$
+where $s = GC3s$.
+
+#### Critical Observations
+Species or functional cohorts pooling significantly below the theoretical line undergo active directional selection toward optimal codons. Species hugging the curve evolve primarily under neutral mutational drift.
+
+
+```{r wrights-curve-analysis, echo=FALSE, fig.width=10, fig.height=7}
+# --- Chunk: wrights-curve-analysis ---
+# Input: Aggregated cohort matrix with 'mean_ENC' and 'mean_GC3s' vectors.
+
+s_vector <- seq(0, 1, length.out = 500)
+wright_theoretical <- 2 + s_vector + (29 / (s_vector^2 + (1 - s_vector)^2))
+wright_curve_df <- data.frame(GC3s = s_vector, ENC = wright_theoretical)
+
+# Build descriptive GGPlot mapping tooltips for HTML rendering pipeline
+p_wright <- ggplot() +
+  geom_line(data = wright_curve_df, aes(x = GC3s, y = ENC), color = "black", size = 1.2, linetype = "solid") +
+  geom_point(data = cohort_summary, aes(x = mean_GC3s, y = mean_ENC, color = lifestyle, shape = phylum,
+                                       text = paste("Sample:", sample, "<br>Species:", species, "<br>ENC:", round(mean_ENC, 2), "<br>GC3s:", round(mean_GC3s, 2))), size = 3.5, alpha = 0.9) +
+  ylim(20, 61) +
+  labs(title = "Synonymous Selection Intensity vs. Neutral Mutation Frontier",
+       x = "Synonymous Third-Position GC Content (GC3s)",
+       y = "Effective Number of Codons (ENC)",
+       color = "Ecological Lifestyle", shape = "Taxonomic Phylum") +
+  theme_bw()
+
+# Save static image asset
+ggsave(file.path(sec1_dir, "wrights_curve_analysis.png"), plot = p_wright, width = 10, height = 7, dpi = 300)
+
+# Handle rendering format cleanly to support interactivity where allowed
+if (knitr::is_html_output()) {
+  ggplotly(p_wright, tooltip = "text")
+} else {
+  print(p_wright)
+}
+
+# Compute the perpendicular vertical distance (delta ENC) for direct proxy metric evaluation
+cohort_summary <- cohort_summary %>%
+  dplyr::mutate(
+    theoretical_ENC = 2 + mean_GC3s + (29 / (mean_GC3s^2 + (1 - mean_GC3s)^2)),
+    delta_ENC = theoretical_ENC - mean_ENC
+  )
+
+# Validation check: Flags anomalies residing strictly above theoretical threshold
+impossible_species <- cohort_summary %>% dplyr::filter(mean_ENC > theoretical_ENC)
+if (nrow(impossible_species) > 0) {
+  cat("\n**Alert: Genomic targets residing above the mutation-neutral boundary:**\n")
+  print(knitr::kable(impossible_species %>% dplyr::select(sample, mean_ENC, theoretical_ENC)))
+}
+```
+
+***
+
+## Cross-Species Functional Protein & Gene Adaptation (The Extremes)
+
+### Global Pfam & GO Terms Enrichment of Translation Extremes
+#### Goal
+Uncover universal metabolic or evolutionary pathways that are strictly conserved for rapid translation (Top) or translational pausing (Bottom) across taxonomic boundaries.
+
+#### Methodology
+Run hyper-geometric distribution tests for overrepresentation of Pfam domain keys and Gene Ontology (GO) terms (derived via `pfam2go` mappings) within the combined Top/Bottom 10% tAI gene pools. 
+
+#### Critical Observations
+Results are presented as profiles of top enriched functions broken down by Phylum and Lifestyle to highlight potential instances of evolutionary convergence among ecologically matching pathogens.
+
+```{r global-functional-enrichment}
+# --- Chunk: global-functional-enrichment ---
+# Input: Combined multi-sample dataframe containing gene information and go_terms annotation fields.
+
+# Slicing out top and bottom tails from the analytical workspace
+enriched_data <- analysis_df %>%
+  group_by(sample) %>%
+  mutate(
+    rank_tai = percent_rank(tAI),
+    Cohort_Split = case_when(
+      rank_tai >= 0.90 ~ "Top 10% Optimized",
+      rank_tai <= 0.10 ~ "Bottom 10% Suppressed",
+      TRUE ~ "Background"
+    )
+  ) %>%
+  filter(Cohort_Split != "Background" & !is.na(go_terms) & go_terms != "") %>%
+  separate_rows(go_terms, sep = ";") %>%
+  group_by(lifestyle, Cohort_Split, go_terms) %>%
+  summarise(Observed_Count = n(), .groups = 'drop') %>%
+  arrange(desc(Observed_Count))
+
+# Conditional table rendering based on document destination
+if (knitr::is_html_output()) {
+  datatable(enriched_data, 
+            options = list(pageLength = 10, searchHighlight = TRUE),
+            rownames = FALSE,
+            caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails.")
+} else {
+  # For Markdown, display the top 20 rows cleanly using kable
+  knitr::kable(head(enriched_data, 20), caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails (Top 20 rows).")
+}
+```
+
+***
+
+## Individual Organism Deep-Dive (Per-Genome Diagnostics)
+*Note: This diagnostic loop evaluates target individual assemblies dynamically or cycles sequentially through distinct species configurations.*
+
+### Intra-Organismal tAI Distribution and Core Outliers
+#### Goal
+Characterize localized cell investment across individual gene tracks and identify elite, highly optimized expression targets.
+
+#### Methodology
+Render a continuous density curve mapping the internal gene-by-gene tAI distribution profile of a chosen organism. Isolate the absolute extreme top 10 and bottom 10 genes, printing them out in a tabular index accompanied by direct GO descriptions.
+
+#### Critical Observations
+Review the distribution modality. Multi-modal distribution curves reveal clear functional gene stratification, whereas highly skewed distributions indicate extreme specialization towards housekeeping genes.
+
+```{r single-organism-tai-distribution}
+# --- Chunk: single-organism-tai-distribution ---
+# Input: Per-gene analytics dataset containing expression indices.
+
+p_density <- ggplot(analysis_df, aes(x = tAI, fill = sample)) +
+  geom_density(alpha = 0.4) +
+  labs(title = "Intra-Organismal tAI Density Distribution Profiles",
+       x = "tRNA Adaptation Index (tAI)", y = "Probability Density Function") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+ggsave(file.path(sec3_dir, "intra_organismal_tai_density.png"), plot = p_density, width = 10, height = 6)
+
+# Handle density plot display type
+if (knitr::is_html_output()) {
+  ggplotly(p_density)
+} else {
+  print(p_density)
+}
+
+
+# Slice and print out extreme candidate arrays for review
+extreme_genes_table <- analysis_df %>%
+  group_by(sample) %>%
+  mutate(Rank = min_rank(desc(tAI))) %>%
+  filter(Rank <= 10) %>%
+  select(sample, gene_id, protein_id, tAI, ENC, protein_name, go_terms) %>%
+  arrange(sample, desc(tAI))
+
+# Handle table display type
+if (knitr::is_html_output()) {
+  datatable(extreme_genes_table, 
+            options = list(pageLength = 10, scrollX = TRUE), 
+            rownames = FALSE,
+            caption = "Table 3: High-throughput identification of elite highly optimized genes (Top 10 per Sample).")
+} else {
+  knitr::kable(extreme_genes_table, caption = "Table 3: High-throughput identification of elite highly optimized genes (Top 10 per Sample).")
+}
+```
+
+***
+
+## Molecular Code & Codon Efficiency Space
+
+### Comparative Codon Relative Adaptiveness ($w_i$ Distributions)
+#### Goal
+Decode the underlying organismal translation rules by assessing how specific codon adaptation weights vary across lifestyles or engineering groups.
+
+#### Methodology
+Compile distribution charts of calculated relative adaptiveness weights ($w_i$) for all 61 sense codons. Contrast these profiles across ecological classifications or domains.
+
+#### Critical Observations
+Identify shifting optimal codon switches. If distinct biological groups display contrasting weights for identical codons, it highlights divergent evolution in their underlying tRNA expression profiles.
+
+```{r comparative-codon-weights}
+# --- Chunk: comparative-codon-weights ---
+# Input: Multi-sample loop pulling local tRNA relative adaptation values.
+
+weights_list <- list()
+for(s_id in unique(analysis_df$sample)) {
+  w_path <- file.path(params$per_genome_dir, s_id, "codon_metrics", paste0(s_id, "_tai.csv"))
+  if(file.exists(w_path)) {
+    # Expected layout: parsed relative weights index sheet
+    w_data <- read_csv(w_path, show_col_types = FALSE)
+    if("codon" %in% colnames(w_data) & "weight" %in% colnames(w_data)) {
+      w_data$sample <- s_id
+      weights_list[[s_id]] = w_data
+    }
+  }
+}
+
+if(length(weights_list) > 0) {
+  weights_df <- bind_rows(weights_list) %>% inner_join(dataset_df, by = "sample")
+  
+  p_weights <- ggplot(weights_df, aes(x = codon, y = weight, fill = lifestyle)) +
+    geom_boxplot(outlier.size = 0.5) +
+    labs(title = "Codon Relative Adaptiveness Distribution Matrix Across Lifestyles",
+         x = "Codon Triplet Category", y = "Relative Adaptive Weight (wi)") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), legend.position = "bottom")
+  
+  ggsave(file.path(sec4_dir, "comparative_codon_weights_distribution.png"), plot = p_weights, width = 12, height = 6)
+  
+  # Prevent rendering execution failure based on document output mode
+  if (knitr::is_html_output()) {
+    ggplotly(p_weights)
+  } else {
+    print(p_weights)
+  }
+} else {
+  cat("\n*No compiled codon relative adaptiveness metrics files found across active workspace configurations.*\n")
+}
+```
+
+### Comprehensive Codon Usage Fingerprint (RSCU Heatmap)
+#### Goal
+Map global codon usage preferences simultaneously across all organisms to identify evolutionary convergent trends.
+
+#### Methodology
+Construct a global two-dimensional matrix containing calculated Relative Synonymous Codon Usage (RSCU) values across all 61 sense codons for all samples. Project this matrix using a clustered heatmap with independent hierarchical tree clustering branches for rows (species) and columns (codons).
+
+#### Critical Observations
+Evaluate whether clustering topology follows strict taxonomic lineages (phylogeny) or shifts toward ecological lifestyle grouping (niche adaptation).
+
+```{r rscu-global-heatmap}
+# --- Chunk: rscu-global-heatmap ---
+# Input: Iterative retrieval loop across computed RSCU profiling results.
+
+rscu_list <- list()
+for (i in 1:nrow(dataset_df)) {
+  s_id <- dataset_df$sample[i]
+  rscu_path <- file.path(params$per_genome_dir, s_id, "codon_metrics", paste0(s_id, "_rscu.csv"))
+  
+  if (file.exists(rscu_path)) {
+    rscu_data <- read_csv(rscu_path, show_col_types = FALSE)
+    rscu_mean <- rscu_data %>% summarise(across(where(is.numeric), mean, na.rm = TRUE))
+    rscu_mean$sample <- s_id
+    rscu_list[[s_id]] <- rscu_mean
+  }
+}
+
+if (length(rscu_list) > 0) {
+  rscu_matrix_df <- bind_rows(rscu_list)
+  rownames_vectors <- rscu_matrix_df$sample
+  
+  rscu_matrix <- rscu_matrix_df %>% select(-sample) %>% as.matrix()
+  rownames(rscu_matrix) <- rownames_vectors
+  rscu_matrix <- rscu_matrix[, colSums(is.na(rscu_matrix)) < nrow(rscu_matrix)]
+  
+  heatmap_file <- file.path(sec1_dir, "rscu_global_heatmap.png")
+  
+  pheatmap(rscu_matrix, 
+           clustering_distance_rows = "euclidean",
+           clustering_distance_cols = "euclidean",
+           clustering_method = "complete",
+           filename = heatmap_file,
+           width = 10, height = 8,
+           main = "Global Codon Usage Fingerprint Clustering Matrix (RSCU)")
+  
+  knitr::include_graphics(heatmap_file)
+} else {
+  message("RSCU metric matrix data arrays missing across current execution partitions.")
+}
+```
