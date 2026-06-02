@@ -38,7 +38,6 @@ Compile a cohort overview table summarizing total counts of independent operatio
 Look for extreme class imbalances or sample omissions. If a specific lifestyle or phylum contains too few records compared to the rest of the cohort, a text warning must alert the user to potential statistical inflation during downstream grouping.
 
 
-
 \```{r cohort-ingestion-summary}
 # --- Chunk: cohort-ingestion-summary ---
 # Input: Read the primary multi-sample manifest 'samples_test.tsv' and phenotypic table 'test_dataset.tsv'.
@@ -48,6 +47,9 @@ Look for extreme class imbalances or sample omissions. If a specific lifestyle o
 #   - Check if total ingested row count equals the expected active sample list from the steering file.
 #   - Trigger a programmatic alert/warning text if any active group size drops below N=3 (statistical risk).
 \```
+
+#TODO: dodaj kolumne ostrzegajaca jesli liczebnosc danej grupy jest mniejsza niz 5 - to mocno ulatwia analize 
+
 
 ### Organism-Level Assembly & Prediction QC
 #### Goal

@@ -4,8 +4,10 @@ sink(log); sink(log, type="message")
 
 library(rmarkdown)
 
+#TODO: HArdcoded path, lepiej dac przez params w config oraz w R przez normalizePath()
 template_path = "workflow/scripts/report_template.Rmd"
 
+#TODO: nie tworzysz folderow w outpucie, moze sie wywalic (mozliwe ze wczesniej juz to zawarłes, nei patrzylem)
 # Define the clean, simplified parameters for the Rmd document environment
 # Maps the precise Snakemake input aliases straight to the report workspace
 report_params <- list(

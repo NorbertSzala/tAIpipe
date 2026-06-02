@@ -19,6 +19,8 @@ params:
 always_allow_html: true
 ---
 
+#TODO: Brakuje ogolnei wykresow najprostszych, mean_tai vs phylum/lifestyle, delta_ENC vs phylum/lifestyle, mean_GC3s vs phylum/lifestyle, tAI vs obecnosc/brak {domen PFAM, peptydow sygnalowych, LCR, liczebnosci LCR, dlugosci LCR} itd. Najlepiej to dla present/ansent cech zrobic jeden typ wykresu ktory jako argument wybiera kolumne z tej ogromnej tabeli i plotuje ją vs tAI
+#TODO: Brakuje testów statystycznych. Warto dodać gdzies na gorze wykresu oznaczenie '>=0.05' lub przeciwne jesli nie wykryto zaleznosci statystycznie isttonyhc
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7)
 
@@ -180,6 +182,8 @@ Compile an integrated multi-panel visualization mapping genome-wide mean tAI aga
 #### Critical Observations
 Determine if specific niche adaptations (e.g., high-impact plant pathogens vs. free-living saprotrophs) cluster into separated spaces of high translational efficiency (high tAI) paired with narrowed codon usage (low ENC).
 
+#TODO: zbyt mocny tytuł, ten wykres nie mierzy bezpośrednio selekcji translacyjnej, a jedynie sugestie że taka może istnieć. bezpiecznie: Relationship between codon bias and tRNA adaptation.
+
 ```{r translational-strategy-macro, echo=FALSE, fig.width=10, fig.height=7}
 # --- Chunk: translational-strategy-macro ---
 # Input: Compiled cohort summary data frame from the previous checkpoint.
@@ -258,6 +262,9 @@ cohort_summary <- cohort_summary %>%
     delta_ENC = theoretical_ENC - mean_ENC
   )
 
+
+# TODO: - wskazowka od chata:  delta_ENC = theoretical_ENC - mean_ENC. To jest różnica pionowa, nie „perpendicular vertical distance”. Nie nazywałbym tego odległością prostopadłą. Lepsza nazwa:  delta_ENC_vertical
+
 # Validation check: Flags anomalies residing strictly above theoretical threshold
 impossible_species <- cohort_summary %>% dplyr::filter(mean_ENC > theoretical_ENC)
 if (nrow(impossible_species) > 0) {
@@ -280,6 +287,8 @@ Run hyper-geometric distribution tests for overrepresentation of Pfam domain key
 #### Critical Observations
 Results are presented as profiles of top enriched functions broken down by Phylum and Lifestyle to highlight potential instances of evolutionary convergence among ecologically matching pathogens.
 
+#TODO: to nie jest enrichment. Zmierzyłes wystepowanie GOtermsow w top10/bottom10 genach. Enrichment jest w odniesieniu tych top/bottom10 do tła - czy w top/bottom dane GOterms wystepuja czesciej niz w tle, czy rzadziej.
+#TODO: Testujesz setki lub tysiące GO terms, więc musisz użyć FDR: p.adjust(p_value, method='BH')
 ```{r global-functional-enrichment}
 # --- Chunk: global-functional-enrichment ---
 # Input: Combined multi-sample dataframe containing gene information and go_terms annotation fields.
@@ -332,6 +341,7 @@ Review the distribution modality. Multi-modal distribution curves reveal clear f
 # --- Chunk: single-organism-tai-distribution ---
 # Input: Per-gene analytics dataset containing expression indices.
 
+# TODO: to moze byc nieczytelne, lepiej pogrupować po phylum/lifestyle. Ogolnie nie bac sie produkowac multum wykresow. Albo heatmapa rozkladow, 
 p_density <- ggplot(analysis_df, aes(x = tAI, fill = sample)) +
   geom_density(alpha = 0.4) +
   labs(title = "Intra-Organismal tAI Density Distribution Profiles",
@@ -348,7 +358,7 @@ if (knitr::is_html_output()) {
   print(p_density)
 }
 
-
+#TODO: tu wybierasz tylko top 10, ale bez bottom 10
 # Slice and print out extreme candidate arrays for review
 extreme_genes_table <- analysis_df %>%
   group_by(sample) %>%
@@ -398,6 +408,11 @@ for(s_id in unique(analysis_df$sample)) {
     }
   }
 }
+
+# TODO: potencjalnie nieczytelne. Proponuje:
+# heatmapa: codony x lifestyle/phylum,
+# osobno dla aminokwasów, lub
+# pokazanie tylko kodonów o największej zmienności,
 
 if(length(weights_list) > 0) {
   weights_df <- bind_rows(weights_list) %>% inner_join(dataset_df, by = "sample")

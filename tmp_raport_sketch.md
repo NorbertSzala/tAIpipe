@@ -1,8 +1,20 @@
-chciałbym się bardziej skupić na tym i jak to sensownie zaprojektować, ponieważ chcemy wziąć elementy z tej analizy i zrobić z tego analize dla dowolnego organizmu, to jest będziemy mieli różne królestwa dokmeny (czy to się przewija później w analizach i dlaczego???)) 
+chciałbym się bardziej skupić na tym i jak to sensownie zaprojektować, ponieważ chcemy wziąć elementy z tej analizy i zrobić z tego analize dla dowolnego organizmu, to jest będziemy mieli różne królestwa dokmeny (czy to się przewija później w analizach i dlaczego???)
+
+ODP:
+branie pojedynczego organizmu nie ma większego sensu - ważne jest tło, porównanie organizmu do reszty, stwierdzenie czy na tle innych pasożytów ten organizm ma wyższe tAI/niższe
+Można oczywiście wziąć pojedynczy organizm i na nim się skupić, ale potrzebujemy wtedy + kilku może losowych przedstawicieli tej grupy taksonomizcznej/lifestyle-owej.
+Doprecyzuj o co chodzi
+
 
 
 
 i teraz jaki informacje mogą byc interesujące jeżęli chodzi o ten indeks tAI i dlaczego (ponieważ chce zrozumieć co jest ciekawego w badaniu takiego zjawiska) 
+
+ODP:
+Ciekawe jest to, że:
+  1. Jest to jeden z nielicznych wskaźników który opiera się na liczbie genów kodujących tRNA (pozostałe na porównywaniu do referencyjnych sekwencji, różnorodności aminokwasowej i inne)
+  2. Celem mojej analizy było wykorzystanie tej miary jako wskaźnika który pozwalał na porównanie poszczególnych oragnizmow i ich sekwencji ze sobą, np. czy odcinki LCR są lepiej/gorzej dopasowane do profilu translacyjnego
+  3. Niczego się nei spodziewałem robiąc tą analizę więc ciekawe jest to co sobie wymyślisz.
 
 # tAIpipe Analytical Report: Global and Local Translation Landscape
 
@@ -86,3 +98,10 @@ chciałbym żebyś wytłumaczył dokładniej::
 ### 1.2 Selection Pressure vs Mutational Drift (The Wright's Curve)
 * **Cel:** Określenie, czy preferencje kodonowe badanych grup wynikają z czystej selekcji naturalnej na szybkość translacji, czy z pasywnego dryfu mutacyjnego.
 * **Metodologia:** Wykres korelacji ENC vs GC3s z nałożoną teoretyczną matematyczną krzywą Wrighta. Gatunki, które grupują się drastycznie poniżej linii, są poddawane silnej selekcji translacyjnej (tAI-driven), co pozwala scharachteryzować grupy o najwyższym przystosowaniu ewolucyjnym.
+
+ODP:
+Nie rozumiem w jaki sposób chcesz połączyc ENC czy GC3 z selekcją naturalną/dryfem. 
+Spodziewamy się ujemnej korelacji między ENC i GC3, ponieważ:
+  - Im wyzsze ENC tym większe zróżnicowanie kodonów w sekwencji, czyli więcej kodonów nieoptymalnych
+  - To co wiadomo z innych źródeł, wyższe GC3 występuje w sekwencjach silniej konserwowanych ewolucyjnie
+  - Pamiętaj, że wysokie tAI nie jest lepsze od niskiego, oba są potrzebne.

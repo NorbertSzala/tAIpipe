@@ -86,6 +86,7 @@ cohort_summary <- samples_df %>%
   })) %>%
   # Approximate physical size in Mbp based on total annotated open reading frame sets
   dplyr::mutate(genome_size_Mbp = total_genes * 0.003) 
+  #TODO: tu jest blad, nie mozna szacowac rozmiaru genomu jako suma dlugosci wszystkich genow * 3, bo jeszcze introny. Lepiej policzyć z .fasta albo suma długosci contigów
 
 # Process: Identify points with Cook's distance > 4/n.
 fit <- lm(total_tRNA_count ~ genome_size_Mbp, data = cohort_summary)
