@@ -396,13 +396,14 @@ Identify shifting optimal codon switches. If distinct biological groups display 
 # --- Chunk: comparative-codon-weights ---
 # Input: Multi-sample loop pulling local tRNA relative adaptation values.
 
+#TODO - to jest źle zrobione 
 weights_list <- list()
 for(s_id in unique(analysis_df$sample)) {
-  w_path <- file.path(params$per_genome_dir, s_id, "codon_metrics", paste0(s_id, "_tai.csv"))
+  w_path <- file.path(params$per_genome_dir, s_id, "codon_metrics", paste0(s_id, "_trna_weights.csv"))
   if(file.exists(w_path)) {
     # Expected layout: parsed relative weights index sheet
     w_data <- read_csv(w_path, show_col_types = FALSE)
-    if("codon" %in% colnames(w_data) & "weight" %in% colnames(w_data)) {
+    if("codon" %in% colnames(w_data) & "w" %in% colnames(w_data)) {
       w_data$sample <- s_id
       weights_list[[s_id]] = w_data
     }

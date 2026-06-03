@@ -35,7 +35,10 @@ DATA_PLOTS = config["paths"]["plots"]
 DATA_TABLES = config["paths"]["tables"]
 REPORT_FILE = config["paths"]["reports"]
 
-
+# ----------------------
+# --- Report config ---
+# ----------------------
+TEMPLATE_PATH = config['report_config']['template_path']
 
 # ---------------------
 # --- Samples table ---
