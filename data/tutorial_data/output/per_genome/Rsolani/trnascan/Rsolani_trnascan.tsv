@@ -1,0 +1,2 @@
+seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
+CP059658.1|GCA_016906535.1|first_contig_first_1000000bp	1	531021	531113	iMet	CAT	531057	531077	62.8		+	531021	531113	True	False

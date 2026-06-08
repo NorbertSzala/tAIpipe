@@ -1,0 +1,7 @@
+Sequence                                                		tRNA   	Bounds 	tRNA	Anti	Intron Bounds	Inf	      
+Name                                                    	tRNA #	Begin  	End    	Type	Codon	Begin	End	Score	Note
+--------                                                	------	-----  	------ 	----	-----	-----	----	------	------
+LR898468.1|GCA_905067625.1|first_contig_first_1000000bp 	1	656159 	656232 	Ile	AAT	0	0	78.2	
+LR898468.1|GCA_905067625.1|first_contig_first_1000000bp 	2	701452 	701523 	Arg	TCG	0	0	69.1	
+LR898468.1|GCA_905067625.1|first_contig_first_1000000bp 	3	837869 	837965 	Leu	AAG	837907	837921	40.7	
+LR898468.1|GCA_905067625.1|first_contig_first_1000000bp 	4	831002 	830931 	Arg	TCG	0	0	61.5	

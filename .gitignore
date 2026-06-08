@@ -6,8 +6,9 @@ logs/
 # Large input data
 data/genome/
 data/CDS/
+data/genetic_codes/
 data/norbert_data
-data/tutorial_data/output
+data/tutorial_data/output/logs
 resources/metadata/Main_Dataset.tsv
 
 resources/containers/*.sif
@@ -37,3 +38,4 @@ venv/
 Zymoseptoria_casestudy/
 
 scripts_suggestions/
+inspiration_table.tsv
