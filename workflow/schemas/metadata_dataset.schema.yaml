@@ -27,6 +27,10 @@ properties:
 
   lifestyle:
     type: string
+  
+  domain:
+    type: string
+    enum: ['eukarya', 'eukaryota', 'bacteria', 'archaea']
 
   genome:
     type: string
@@ -42,6 +46,12 @@ properties:
 
   first_contig:
     type: string
+  
+  include:
+    anyOf:
+      - type: boolean
+      - type: string
+        enum: ["True", "False", "true", "false", "T", "F", "t", "f", "0", "1"]
 
 required:
   - sample
@@ -50,6 +60,8 @@ required:
   - accession
   - kingdom
   - phylum
+  - domain
   - lifestyle
   - genome
   - cds
+  - include
