@@ -34,6 +34,10 @@ paths:
 # --- Analysis Parameters ---
 # ---------------------------
 
+# --- Report configuration ---
+report_config:
+  # path for report template 
+  template_path: workflow/scripts/report_template.Rmd
 
 # --- Tools parameters ---
 trnascanse:

@@ -16,11 +16,11 @@ from pathlib import Path
 validate(config, "schemas/config.schema.yaml")
 
 
-# ----------------------
-# --- Path variables ---
-# ----------------------
-# Helper path variables for easier acces
+# ------------------------------------------------------------------------------
+# --- Path variables -----------------------------------------------------------
+# ------------------------------------------------------------------------------
 
+# Helper path variables for easier acces
 DATA_CDS = config["paths"]["data_cds"]
 DATA_GENOME = config["paths"]["data_genome"]
 GCODES_TRNASCANSE = config['paths']['genetic_codes_trnascanse']
@@ -35,11 +35,12 @@ DATA_PLOTS = config["paths"]["plots"]
 DATA_TABLES = config["paths"]["tables"]
 REPORT_FILE = config["paths"]["reports"]
 
+TEMPLATE_PATH = config['report_config']['template_path']
 
 
-# ---------------------
-# --- Samples table ---
-# ---------------------
+# ------------------------------------------------------------------------------
+# --- Samples table ------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Read metadata_dataset from tsv
 samples_df = pd.read_csv(config['paths']['metadata_dataset'], sep = '\t')
 
@@ -51,9 +52,10 @@ samples_df = samples_df[samples_df['include']== True] # added additional column 
 SAMPLES = samples_df.index.tolist()
 
 
-# -------------------------------
-# ------- Helper functions ------
-# -------------------------------
+
+# ------------------------------------------------------------------------------
+# ------- Helper functions -----------------------------------------------------
+# ------------------------------------------------------------------------------
 def resolve_single_file(pattern):
     matches = glob(pattern) # get list of path to proper file based on pattern
 
@@ -65,11 +67,9 @@ def resolve_single_file(pattern):
     
     return matches[0]
 
-
 def get_genome(wildcards):
     pattern = samples_df.loc[wildcards.sample,'genome']
-    return resolve_single_file(f"{DATA_GENOME}/{pattern}")
-    
+    return resolve_single_file(f"{DATA_GENOME}/{pattern}")    
 
 def get_cds(wildcards):
     pattern = samples_df.loc[wildcards.sample, 'cds']
@@ -113,18 +113,9 @@ def get_domain(wildcards):
 
     return domain_map[domain]
 
-# -----------------
-# --- Main Rule ---
-# -----------------
-
-# DEPRECATED
-# rule all:
-#     input:
-#         expand(
-#             f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv',
-#             sample = SAMPLES
-#         )
-
+# ------------------------------------------------------------------------------
+# --- Main Rule ----------------------------------------------------------------
+# ------------------------------------------------------------------------------
 rule all:
     input:
         # Per sample data
@@ -134,43 +125,14 @@ rule all:
         f"{REPORT_FILE}/summary_report.md"
 
 
-# ----------------------
-# ---  Include rules ---
-# ----------------------
+# ------------------------------------------------------------------------------
+# ---  Include rules -----------------------------------------------------------
+# ------------------------------------------------------------------------------
 # calculate metrics rules 
 include: "rules/trnascan_rule.smk"
 include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 include: "rules/codon_usage_metrics_rule.smk"
-# metadata rule
 include: "rules/prepare_metadata_samples_rule.smk"
-# report rule 
 include: "rules/aggregate_and_report.smk"
-
-
-
-
-# ----------------------------------
-# ---  Process data to count tAI ---
-# ----------------------------------
-
-
-
-
-
-
-# rule count_and_transform_trnas:
-#     '''
-#     Program reads table from tRNAscan-SE output and count previously complemented codons. Output is in format needed in gtAI (R).
-
-#     !!!!!!!!!!! CHECK THIS INFORMATION BELOW!!!!!!!!!!!!!!!
-#     Note: input Anti Codon is in DNA (as seq in input tRNAscan-SE)
-#     '''
-#     input:
-#         # trnascanse ouptut
-    
-#     output:
-
-#     shell:
-
 

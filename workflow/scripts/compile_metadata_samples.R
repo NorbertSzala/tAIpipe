@@ -212,13 +212,22 @@ for (king in unique_kingdoms) {
       # RETRY LOGIC: Try 3 times before giving up
       ds_annots <- NULL
       for (attempt in 1:3) {
+        # Handles noncharacter type
         ds_annots <- tryCatch({
           ensembl_mart <- useDataset(target_dataset, mart = current_mart)
-          getBM(attributes = c('protein_id', 'uniprotkb_all', 'go_id'),
-                filters = 'protein_id', values = ds_protein_ids, mart = ensembl_mart) %>%
-            group_by(protein_id) %>%
-            summarise(uniprot_fetched = paste(unique(uniprotkb_all[!is.na(uniprotkb_all)]), collapse = ";"),
-                      go_fetched = paste(unique(go_id[!is.na(go_id)]), collapse = ";"), .groups = "drop")
+          res <- getBM(attributes = c('protein_id', 'uniprotkb_all', 'go_id'),
+                filters = 'protein_id', values = ds_protein_ids, mart = ensembl_mart)
+          
+          if (nrow(res) == 0) {
+            # Jeśli BioMart nic nie zwrócił, stwórz pustą ramkę o właściwych typach
+            tibble(protein_id = character(), uniprot_fetched = character(), go_fetched = character())
+          } else {
+            res %>%
+              group_by(protein_id) %>%
+              summarise(uniprot_fetched = paste(unique(uniprotkb_all[!is.na(uniprotkb_all)]), collapse = ";"),
+                        go_fetched = paste(unique(go_id[!is.na(go_id)]), collapse = ";"), .groups = "drop") %>%
+              mutate(across(c(protein_id, uniprot_fetched, go_fetched), as.character))
+          }
         }, error = function(e) {
           message(paste("[!] Attempt", attempt, "failed for", smpl, "- Retrying..."))
           Sys.sleep(5) # Wait 5 seconds before retry
@@ -226,7 +235,9 @@ for (king in unique_kingdoms) {
         })
         if (!is.null(ds_annots)) break 
       }
-      if (!is.null(ds_annots)) biomart_results_list[[smpl]] <- ds_annots %>% mutate(sample = smpl)
+      if (!is.null(ds_annots) && nrow(ds_annots) > 0) {
+        biomart_results_list[[smpl]] <- ds_annots %>% mutate(sample = as.character(smpl))
+      }
     }
   }
 }
