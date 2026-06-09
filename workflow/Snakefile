@@ -113,6 +113,11 @@ def get_domain(wildcards):
 
     return domain_map[domain]
 
+def get_go_dictionary_input(wildcards):
+    if config.get("go_dictionary", {}).get("enabled", False):
+        return config["go_dictionary"]["path"]
+    return []
+
 # ------------------------------------------------------------------------------
 # --- Main Rule ----------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -134,5 +139,6 @@ include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
 include: "rules/codon_usage_metrics_rule.smk"
 include: "rules/prepare_metadata_samples_rule.smk"
+include: "rules/prepare_go_dictionary.smk"
 include: "rules/aggregate_and_report.smk"
 

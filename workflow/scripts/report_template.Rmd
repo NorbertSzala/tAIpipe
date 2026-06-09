@@ -16,6 +16,8 @@ params:
   dataset: ""
   per_genome_dir: ""
   output_dir: ""
+  go_dictionary_enabled: false
+  go_dictionary_path: ""
 always_allow_html: true
 ---
 
@@ -33,6 +35,8 @@ library(cowplot)
 library(pheatmap)
 library(plotly)
 library(DT)
+library(purrr)
+library(stringr)
 
 # STANDARDIZED SECTIONS PATH DEFINITIONS
 sec0_dir <- file.path(params$output_dir, "summary_report_files", "sec0_quality_control")
@@ -57,6 +61,36 @@ samples_df <- read_delim(params$samples, delim = "\t", show_col_types = FALSE)
 # Combined analytical view for downstream chunks
 analysis_df <- samples_df %>%
   inner_join(dataset_df, by = "sample")
+
+# GO dictionary feature
+go_dictionary <- NULL
+
+if (isTRUE(params$go_dictionary_enabled)) {
+  if (file.exists(params$go_dictionary_path)) {
+    go_dictionary <- readr::read_tsv(
+      params$go_dictionary_path,
+      show_col_types = FALSE
+    )
+
+    expected_go_cols <- c("go_terms", "go_name", "go_namespace")
+    missing_go_cols <- setdiff(expected_go_cols, colnames(go_dictionary))
+
+    if (length(missing_go_cols) > 0) {
+      warning(
+        "GO dictionary exists but is missing required columns: ",
+        paste(missing_go_cols, collapse = ", "),
+        ". GO names will not be used."
+      )
+      go_dictionary <- NULL
+    }
+  } else {
+    warning(
+      "GO dictionary integration is enabled, but file does not exist: ",
+      params$go_dictionary_path,
+      ". GO names will not be used."
+    )
+  }
+}
 ```
 
 # tAIpipe Analytical Report: Global and Local Translation Landscape
@@ -275,51 +309,339 @@ if (nrow(impossible_species) > 0) {
 
 ***
 
-## Cross-Species Functional Protein & Gene Adaptation (The Extremes)
+## Cross-Species Functional Annotation of tAI Extremes
 
-### Global Pfam & GO Terms Enrichment of Translation Extremes
+### GO Term Enrichment in High- and Low-tAI Gene Tails
+
 #### Goal
-Uncover universal metabolic or evolutionary pathways that are strictly conserved for rapid translation (Top) or translational pausing (Bottom) across taxonomic boundaries.
+
+Identify Gene Ontology (GO) terms that are overrepresented among genes with the highest and lowest tRNA Adaptation Index (tAI) values across fungal genomes. This analysis aims to determine whether specific functional categories are consistently associated with high or low codon adaptation within taxonomic and ecological groups.
 
 #### Methodology
-Run hyper-geometric distribution tests for overrepresentation of Pfam domain keys and Gene Ontology (GO) terms (derived via `pfam2go` mappings) within the combined Top/Bottom 10% tAI gene pools. 
+
+Genes were ranked by tAI independently within each genome. The top 10% and bottom 10% of genes were selected as high- and low-tAI tails, respectively. GO annotations were expanded into a long format, and enrichment was tested separately for each combination of phylum, lifestyle, tAI tail, and GO term.
+
+For each GO term, genes in the selected tAI tail were compared against the remaining annotated genes from the same phylum and lifestyle group. Fisher’s exact test was used to evaluate overrepresentation, and p-values were corrected using the Benjamini-Hochberg false discovery rate (FDR) procedure.
 
 #### Critical Observations
-Results are presented as profiles of top enriched functions broken down by Phylum and Lifestyle to highlight potential instances of evolutionary convergence among ecologically matching pathogens.
 
-#TODO: to nie jest enrichment. Zmierzyłes wystepowanie GOtermsow w top10/bottom10 genach. Enrichment jest w odniesieniu tych top/bottom10 do tła - czy w top/bottom dane GOterms wystepuja czesciej niz w tle, czy rzadziej.
-#TODO: Testujesz setki lub tysiące GO terms, więc musisz użyć FDR: p.adjust(p_value, method='BH')
-```{r global-functional-enrichment}
+The resulting table reports GO terms enriched or depleted in high- and low-tAI gene tails, together with effect-size information such as fold change, odds ratio, tail frequency, background frequency, and the number of genomes supporting each term. Results should be interpreted as functional associations with tAI extremes, not as direct evidence of translational selection or translational pausing.
+
+Terms supported by only a small number of genes or genomes should be treated cautiously, especially in underrepresented phylum–lifestyle groups.
+
+#### How to read the enrichment table
+
+Each row represents one GO term tested within a specific phylum, lifestyle group, and tAI tail.
+
+The `tail_genes_with_go` column shows how many genes in the selected high- or low-tAI tail contain the tested GO term. The `tail_genes_total` column shows the total number of GO-annotated genes in that tail. The same logic applies to the background columns, which describe the remaining GO-annotated genes from the same phylum and lifestyle group.
+
+`tail_frequency` is the fraction of genes in the selected tAI tail annotated with the tested GO term. `background_frequency` is the same fraction calculated for the background genes.
+
+`fold_change` compares these two frequencies:
+
+```text
+fold_change = tail_frequency / background_frequency
+```
+
+A `fold_change` above 1 means that the GO term is more frequent in the selected tAI tail than in the background. A value below 1 means that the GO term is less frequent in the selected tAI tail than in the background.
+
+`odds_ratio` is the effect size from Fisher’s exact test. Values above 1 indicate that the GO term is associated with the selected tAI tail. Values below 1 indicate depletion in the selected tAI tail. Very large odds ratios can occur when the GO term is rare or absent from the background, so they should be interpreted together with gene counts.
+
+`p_value` is the raw statistical significance from Fisher’s exact test. `padj_BH` is the Benjamini-Hochberg adjusted p-value, used to reduce false positives when many GO terms are tested. In this report, `padj_BH` should be treated as the main statistical significance value.
+
+`samples_with_term_in_tail` shows in how many genomes the GO term appears within the selected tAI tail. Terms supported by only one genome should be interpreted cautiously, even if the p-value is low.
+
+`enrichment_direction` summarizes the result as `enriched`, `depleted`, `not_significant`, or `not_tested`.
+
+
+
+```{r global-functional-enrichment, echo = FALSE, results = 'asis'}
 # --- Chunk: global-functional-enrichment ---
-# Input: Combined multi-sample dataframe containing gene information and go_terms annotation fields.
+# Goal:
+# Identify GO terms overrepresented in high- and low-tAI gene tails.
+#
+# Method:
+# 1. Select top and bottom 10% tAI genes independently within each genome.
+# 2. Expand semicolon-separated GO annotations into long format.
+# 3. For each phylum/lifestyle/tAI-tail/GO-term combination, compare:
+#    - genes in the selected tail
+#    - remaining genes from the same phylum/lifestyle background
+# 4. Use Fisher's exact test and Benjamini-Hochberg FDR correction.
+#TODO: Brakuje mi PFAM kolumny w datasecie, to bardzo istotne
+top_frac <- 0.10
+min_tail_genes_with_go <- 3
+min_background_genes_with_go <- 5
+min_total_tail_genes <- 20
 
-# Slicing out top and bottom tails from the analytical workspace
-enriched_data <- analysis_df %>%
-  group_by(sample) %>%
-  mutate(
-    rank_tai = percent_rank(tAI),
-    Cohort_Split = case_when(
-      rank_tai >= 0.90 ~ "Top 10% Optimized",
-      rank_tai <= 0.10 ~ "Bottom 10% Suppressed",
-      TRUE ~ "Background"
-    )
-  ) %>%
-  filter(Cohort_Split != "Background" & !is.na(go_terms) & go_terms != "") %>%
-  separate_rows(go_terms, sep = ";") %>%
-  group_by(lifestyle, Cohort_Split, go_terms) %>%
-  summarise(Observed_Count = n(), .groups = 'drop') %>%
-  arrange(desc(Observed_Count))
+# Required columns:
+required_cols <- c("sample", "gene_id", "tAI", "phylum", "lifestyle", 'go_terms')
+missing_cols <- setdiff(required_cols, colnames(analysis_df))
 
-# Conditional table rendering based on document destination
-if (knitr::is_html_output()) {
-  datatable(enriched_data, 
-            options = list(pageLength = 10, searchHighlight = TRUE),
-            rownames = FALSE,
-            caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails.")
+if (length(missing_cols) > 0) {
+  cat(
+    "\n<div class='alert alert-warning'><strong>GO enrichment skipped.</strong> Missing required columns: ",
+    paste(missing_cols, collapse = ", "),
+    "</div>\n"
+  )
 } else {
-  # For Markdown, display the top 20 rows cleanly using kable
-  knitr::kable(head(enriched_data, 20), caption = "Table 2: Gene Ontology (GO) terms representation count across functional tails (Top 20 rows).")
-}
+
+    #1. Define high/low tAI tails per genom
+    # This step selects approximately equal-size top and bototm tails per sample
+    gene_tail_df <- analysis_df %>% 
+      filter(!is.na(tAI)) %>% 
+      group_by(sample) %>% 
+      mutate(
+        n_genes_sample = n(),
+        n_tail = ceiling(n_genes_sample*top_frac), # number of top/bottom genes
+        tail_rank_desc = min_rank(desc(tAI)),
+        tail_rank_asc = min_rank(tAI),
+        tai_tail = case_when(
+          tail_rank_desc <= n_tail ~ "High tAI genes (top 10% per genome)",
+          tail_rank_asc <= n_tail ~ "Low tAI genes (bottom 10% per genome)",
+          TRUE ~ "Background"
+        )
+      ) %>% 
+      ungroup() %>% 
+      mutate(
+        has_go_annotation = !is.na(go_terms) & go_terms != ""
+      )
+
+    
+    # 2. Long go table for genes with go annotaion
+    go_long <- gene_tail_df %>% 
+      filter(has_go_annotation) %>% 
+      separate_rows(go_terms, sep = ";") %>% 
+      mutate(go_terms = stringr::str_trim(go_terms)) %>% 
+      filter(go_terms != "") %>% 
+      distinct(sample, gene_id, phylum, lifestyle, tai_tail, go_terms)
+
+    # Expected columns: go_terms, go_name, go_namespace
+    # 2.5 [OPTIONAL] Integration with GO term dictionary - external source
+    go_dictionary_path <- file.path("resources", "metadata", "go_terms_dictionary.tsv")
+    if (file.exists(go_dictionary_path)) {
+      go_dictionary <- readr::read_tsv(go_dictionary_path, show_col_types = FALSE)
+      go_long <- go_long %>%
+        left_join(go_dictionary, by = "go_terms")
+    } else {
+      go_long <- go_long %>%
+        mutate(go_name = NA_character_, go_namespace = NA_character_)
+    }
+
+    # 3. Background
+    # Includes all genes with go annotation
+    annotated_gene_universe <- go_long %>% 
+      distinct(sample, gene_id, phylum, lifestyle)
+
+    
+    # 4. All go terms tested within each phylum/lifestyle combination
+    test_grid <- go_long %>% 
+      distinct(phylum, lifestyle, go_terms) %>% 
+      tidyr::crossing(
+        tai_tail = c(
+          "High tAI genes (top 10% per genome)",
+          "Low tAI genes (bottom 10% per genome)"
+        )
+      )
+
+    # 5. Function to run Fischer enrichment for one phylum/lifestyle/tail/go term
+
+    run_go_enrichment <- function(current_phylum, current_lifestyle, current_tail, current_goterm) {
+      # All annotated genes from the same phylum/lifestyle group.
+      group_genes <- annotated_gene_universe %>% 
+        filter(
+          phylum == current_phylum,
+          lifestyle == current_lifestyle
+        ) %>% 
+        distinct(sample, gene_id)
+
+      # Genes belonging to the selected high/low tAI tail.
+      tail_genes <- gene_tail_df %>% 
+        filter(
+          phylum == current_phylum,
+          lifestyle == current_lifestyle,
+          tai_tail == current_tail,
+          has_go_annotation
+        ) %>% 
+        distinct(sample, gene_id)
+
+      # Genes annotated with the tested GO term.
+      go_genes <- go_long %>%
+        filter(
+          phylum == current_phylum,
+          lifestyle == current_lifestyle,
+          go_terms == current_goterm
+        ) %>%
+        distinct(sample, gene_id)
+
+      # Keep tail genes only from the valid annotated universe.
+      tail_genes <- tail_genes %>%
+        semi_join(group_genes, by = c("sample", "gene_id"))
+
+      # Background = all annotated genes from the same group, excluding current tail.
+      background_genes <- group_genes %>%
+        anti_join(tail_genes, by = c("sample", "gene_id"))
+
+      # Genes with the tested GO term inside the current tail.
+      tail_go_genes <- tail_genes %>%
+        semi_join(go_genes, by = c("sample", "gene_id"))
+
+      # Genes with the tested GO term in the background.
+      background_go_genes <- background_genes %>%
+        semi_join(go_genes, by = c("sample", "gene_id"))
+
+      a <- nrow(tail_go_genes) # Number of genes in tail (top/bottom) containing specific goterm
+      b <- nrow(tail_genes) - a # Number of genes in tail without that gotetm
+      c <- nrow(background_go_genes) # Number of genes in the background with that goterm
+      d <- nrow(background_genes) - c # Number of genes in the background without that goterm
+
+      if (nrow(tail_genes) == 0 || nrow(background_genes) == 0) {
+        return(tibble(
+          phylum = current_phylum,
+          lifestyle = current_lifestyle,
+          tai_tail = current_tail,
+          go_terms = current_goterm,
+          tail_genes_with_go = a,
+          tail_genes_total = nrow(tail_genes),
+          background_genes_with_go = c,
+          background_genes_total = nrow(background_genes),
+          tail_frequency = NA_real_,
+          background_frequency = NA_real_,
+          fold_change = NA_real_,
+          odds_ratio = NA_real_,
+          p_value = NA_real_,
+          samples_with_term_in_tail = NA_integer_
+        ))
+      }
+
+      fisher_mat <- matrix(
+        c(a, b, c, d),
+        nrow = 2,
+        byrow = TRUE,
+        dimnames = list(
+          c("tail", "background"),
+          c("go_present", "go_absent")
+        )
+      )
+
+      fisher_res <- fisher.test(fisher_mat)
+
+      tail_frequency <- a / nrow(tail_genes) # What percent of the tail has given goterm
+      background_frequency <- c / nrow(background_genes) # What percent of the bacground has that goterm
+
+      fold_change <- ifelse(
+        background_frequency > 0,
+        tail_frequency / background_frequency,
+        NA_real_
+      ) # >1 -> Go term occurs more frequently in the tail
+
+      # How many genomes support the score?
+      samples_with_term_in_tail <- tail_go_genes %>%
+        summarise(n = n_distinct(sample)) %>%
+        pull(n)
+
+      tibble(
+        phylum = current_phylum,
+        lifestyle = current_lifestyle,
+        tai_tail = current_tail,
+        go_terms = current_goterm,
+        tail_genes_with_go = a,
+        tail_genes_total = nrow(tail_genes),
+        background_genes_with_go = c,
+        background_genes_total = nrow(background_genes),
+        tail_frequency = tail_frequency,
+        background_frequency = background_frequency,
+        fold_change = fold_change,
+        odds_ratio = unname(fisher_res$estimate),
+        p_value = fisher_res$p.value,
+        samples_with_term_in_tail = samples_with_term_in_tail
+      )
+    }
+
+
+    # 6. Run tests.
+    go_enrichment_table <- purrr::pmap_dfr(
+      list(
+        test_grid$phylum,
+        test_grid$lifestyle,
+        test_grid$tai_tail,
+        test_grid$go_terms
+      ),
+      run_go_enrichment
+    ) %>%
+      group_by(phylum, lifestyle, tai_tail) %>%
+      mutate(
+        padj_BH = p.adjust(p_value, method = "BH")
+      ) %>%
+      ungroup() %>%
+      mutate(
+        enrichment_direction = case_when(
+          is.na(padj_BH) ~ "not_tested",
+          padj_BH < 0.05 & fold_change > 1 ~ "enriched",
+          padj_BH < 0.05 & fold_change < 1 ~ "depleted",
+          TRUE ~ "not_significant"
+        )
+      ) %>%
+      filter(
+        tail_genes_total >= min_total_tail_genes,
+        tail_genes_with_go >= min_tail_genes_with_go,
+        background_genes_with_go >= min_background_genes_with_go
+      ) %>%
+      arrange(padj_BH, desc(fold_change), desc(tail_genes_with_go))
+
+    if (!is.null(go_dictionary)) {
+      go_enrichment_table <- go_enrichment_table %>%
+        left_join(go_dictionary, by = "go_terms") %>%
+        relocate(go_name, go_namespace, .after = go_terms)
+    }
+    
+    # 7. Save table
+    readr::write_tsv(
+      go_enrichment_table,
+      file.path(sec2_dir, "go_tai_tail_enrichment.tsv")
+    )
+
+    # 8. Render report table.
+
+
+    display_table <- go_enrichment_table %>%
+      mutate(
+        tail_frequency = round(tail_frequency, 4),
+        background_frequency = round(background_frequency, 4),
+        fold_change = round(fold_change, 3),
+        odds_ratio = round(odds_ratio, 3),
+        p_value = signif(p_value, 3),
+        padj_BH = signif(padj_BH, 3)
+      )
+
+    if (nrow(display_table) == 0) {
+      cat(
+        "\n<div class='alert alert-info'><strong>No GO terms passed the reporting thresholds.</strong> ",
+        "This does not mean that no GO terms are present in high/low tAI genes; it means no tested term passed the selected count filters.</div>\n"
+      )
+    } else if (knitr::is_html_output()) {
+      DT::datatable(
+        display_table,
+        filter = "top",
+        extensions = c("Buttons", "FixedHeader"),
+        options = list(
+          pageLength = 25,
+          scrollX = TRUE,
+          fixedHeader = TRUE,
+          searchHighlight = TRUE,
+          dom = "Bfrtip",
+          buttons = c("copy", "csv", "excel")
+        ),
+        rownames = FALSE,
+        caption = "Table 2: GO term enrichment in high- and low-tAI gene tails selected independently within each genome. Fisher's exact test with Benjamini-Hochberg FDR correction."
+      )
+    } else {
+      knitr::kable(
+        head(display_table, 30),
+        caption = "Table 2: GO term enrichment in high- and low-tAI gene tails selected independently within each genome."
+      )
+    }
+  }
+
 ```
 
 ***

@@ -41,6 +41,13 @@ report_config:
   # path for report template 
   template_path: workflow/scripts/report_template.Rmd
 
+go_dictionary:
+  enabled: true
+  path: "resources/metadata/go_terms_dictionary.tsv"
+  obo_path: "resources/metadata/go_terms_dictionary.obo"
+  obo_url: "https://purl.obolibrary.org/obo/go/go-basic.obo"
+
+
 
 # --- Tools parameters ---
 trnascanse:

@@ -39,6 +39,12 @@ report_config:
   # path for report template 
   template_path: workflow/scripts/report_template.Rmd
 
+go_dictionary:
+  enabled: true
+  path: "data/tutorial_data/input/metadata/go_terms_dictionary_test.tsv"
+  obo_path: "data/tutorial_data/input/metadata/go_terms_dictionary_test.obo"
+  obo_url: ""
+
 # --- Tools parameters ---
 trnascanse:
   threads: 8
