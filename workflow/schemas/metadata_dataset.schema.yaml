@@ -50,6 +50,8 @@ properties:
   include:
     anyOf:
       - type: boolean
+      - type: integer
+        enum: [0, 1]
       - type: string
         enum: ["True", "False", "true", "false", "T", "F", "t", "f", "0", "1"]
 

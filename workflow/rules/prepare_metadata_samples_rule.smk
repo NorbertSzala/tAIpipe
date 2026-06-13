@@ -14,6 +14,7 @@ rule prepare_metadata_samples:
         "../envs/r.yaml"
     shell:
         """
+        mkdir -p $(dirname {output.metadata_sample}) {log}
         Rscript workflow/scripts/compile_metadata_samples.R \
             --metadata_dataset {input.metadata_dataset} \
             --per-genome-dir {PER_GENOME} \

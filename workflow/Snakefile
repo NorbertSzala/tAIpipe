@@ -56,6 +56,15 @@ SAMPLES = samples_df.index.tolist()
 # ------------------------------------------------------------------------------
 # ------- Helper functions -----------------------------------------------------
 # ------------------------------------------------------------------------------
+def require_existing_path(path, label):
+    path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Required {label} does not exist: {path}"
+        )
+    return path
+
 def resolve_single_file(pattern):
     matches = glob(pattern) # get list of path to proper file based on pattern
 
@@ -117,6 +126,16 @@ def get_go_dictionary_input(wildcards):
     if config.get("go_dictionary", {}).get("enabled", False):
         return config["go_dictionary"]["path"]
     return []
+
+
+# ------------------------------------------------------------------------------
+# --- Check files --------------------------------------------------------------
+# ------------------------------------------------------------------------------
+require_existing_path(DATA_CDS, "CDS directory")
+require_existing_path(DATA_GENOME, "genome directory")
+require_existing_path(GCODES_TRNASCANSE, "tRNAscan-SE genetic codes directory")
+require_existing_path(config["paths"]["metadata_dataset"], "metadata dataset file")
+
 
 # ------------------------------------------------------------------------------
 # --- Main Rule ----------------------------------------------------------------

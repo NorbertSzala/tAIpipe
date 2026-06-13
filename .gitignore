@@ -9,6 +9,8 @@ data/CDS/
 data/genetic_codes/
 data/norbert_data
 data/tutorial_data/output/logs
+data/output/per_genome
+data/output/logs
 resources/metadata/Main_Dataset.tsv
 resources/metadata/go_terms_dictionary.obo
 resources/metadata/go_terms_dictionary.tsv

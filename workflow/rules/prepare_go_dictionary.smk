@@ -32,7 +32,7 @@ rule prepare_go_dictionary:
 
     shell:
         """
-        mkdir -p $(dirname {log})
+        mkdir -p $(dirname {log}) $(driname{output.tsv})
         
         python workflow/scripts/parse_go_obo_to_tsv.py \
             --input-obo {params.obo_path} \
