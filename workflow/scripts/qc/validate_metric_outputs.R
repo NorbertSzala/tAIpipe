@@ -1,0 +1,1 @@
+# Checks whether generated metric files are structurally and numerically suitable for downstream analysis. It verifies required columns, identifier uniqueness, missing-value fractions, finite metric counts, and other configured output-quality thresholds.

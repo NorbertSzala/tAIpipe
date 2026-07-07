@@ -1,4 +1,0 @@
-##gff-version 3
-CP059658.1|GCA_016906535.1|first_contig_first_1000000bp	tRNAscan-SE	tRNA	531021	531113	62.8	+	.	ID=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.trna1;Name=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.tRNA1-iMetCAT;isotype=iMet;anticodon=CAT;gene_biotype=tRNA;
-CP059658.1|GCA_016906535.1|first_contig_first_1000000bp	tRNAscan-SE	exon	531021	531056	.	+	.	ID=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.trna1.exon1;Parent=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.trna1;
-CP059658.1|GCA_016906535.1|first_contig_first_1000000bp	tRNAscan-SE	exon	531078	531113	.	+	.	ID=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.trna1.exon2;Parent=CP059658.1|GCA_016906535.1|first_contig_first_1000000bp.trna1;

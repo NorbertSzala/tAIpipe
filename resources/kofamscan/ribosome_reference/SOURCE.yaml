@@ -1,0 +1,23 @@
+resource: cytosolic_eukaryotic_ribosomal_proteins
+
+primary_source:
+  database: KEGG BRITE
+  identifier: ko03011
+  name: Ribosome
+  url: https://www.kegg.jp/brite/ko03011
+  retrieved: "2026-07-07"
+
+included_branches:
+  - Ribosomal proteins/Eukaryotes/Large subunit
+  - Ribosomal proteins/Eukaryotes/Small subunit
+
+excluded_branches:
+  - Ribosomal proteins/Bacteria
+  - Ribosomal proteins/Archaea
+  - Ribosomal proteins/Mitochondria/Chloroplast
+  - Ribosomal RNAs
+
+manual_validation:
+  database: KEGG BRITE table
+  identifier: br01610
+  url: https://www.kegg.jp/kegg/annotation/br01610.html

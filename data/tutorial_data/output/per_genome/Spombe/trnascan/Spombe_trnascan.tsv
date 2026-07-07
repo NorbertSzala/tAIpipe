@@ -1,7 +1,0 @@
-seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	1	365155	365226	Pro	TGG	0	0	68.8		+	365155	365226	False	False
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	2	446000	446071	Val	CAC	0	0	64.9		+	446000	446071	False	False
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	3	957183	957254	Glu	TTC	0	0	58.7		+	957183	957254	False	False
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	4	934738	934665	Ala	AGC	0	0	57.1		-	934665	934738	False	False
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	5	718190	718119	Glu	TTC	0	0	58.7		-	718119	718190	False	False
-CU329670.1|GCA_000002945.2|first_contig_first_1000000bp	6	703147	703075	Val	TAC	0	0	72.1		-	703075	703147	False	False

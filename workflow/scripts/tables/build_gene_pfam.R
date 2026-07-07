@@ -1,0 +1,1 @@
+# Normalizes Pfam annotations into a long-format gene-to-domain mapping table. It separates multi-domain fields, removes empty and duplicated assignments, and writes one sample–gene–Pfam association per row for downstream summaries and enrichment analyses.

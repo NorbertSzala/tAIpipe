@@ -1,41 +1,96 @@
-# Results
-results/
-logs/
-.dag/
+# -----------------------------------------------------------------------------
+# Workflow outputs
+# -----------------------------------------------------------------------------
+/results/
+/logs/
+/benchmarks/
+/.dag/
+*.dag.pdf
+*.dag.png
+*.dag.svg
 
-# Large input data
-data/genome/
-data/CDS/
-data/genetic_codes/
-data/norbert_data
-data/tutorial_data/output/logs
-resources/metadata/Main_Dataset.tsv
+# Legacy/tutorial output locations
+/data/tutorial_data/output/
+/tests/output/
 
-resources/containers/*.sif
-resources/conda
-
-
-# Snakemake
-.snakemake/
+# -----------------------------------------------------------------------------
+# Snakemake runtime and local execution state
+# -----------------------------------------------------------------------------
+/.snakemake/
 *.snakemake.log
+.snakemake_timestamp
 
+# Local workflow environments and caches
+/snakemake-env/
+/resources/conda/
+
+# kofamscan
+resources/kofamscan/profiles
+
+
+# Downloaded or generated container images
+/resources/containers/*.sif
+/resources/containers/*.img
+
+# -----------------------------------------------------------------------------
+# Large external input data
+# Keep small integration-test fixtures under tests/data/ in Git.
+# -----------------------------------------------------------------------------
+/data/genome/
+/data/CDS/
+/data/gff/
+/data/proteomes/
+
+# Local/private metadata variants
+/resources/metadata/Main_Dataset.tsv
+/config/config.local.yaml
+/config/samples.local.tsv
+
+# Downloaded/generated GO resources; regenerate them from config and scripts.
+/resources/go/go-basic.obo
+/resources/go/go_terms.tsv
+/resources/go/go_edges.tsv
+
+# -----------------------------------------------------------------------------
 # Python
+# -----------------------------------------------------------------------------
 __pycache__/
-*.pyc
-.venv/
-venv/
+*.py[cod]
+*.pyo
+/.venv/
+/venv/
 .ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
 
+# -----------------------------------------------------------------------------
 # R
+# -----------------------------------------------------------------------------
 .Rhistory
 .RData
+.Ruserdata
 .Rproj.user/
 
-# OS/editor
+# -----------------------------------------------------------------------------
+# Editors and operating systems
+# -----------------------------------------------------------------------------
 .DS_Store
+Thumbs.db
 .vscode/
+.idea/
+*~
+*.swp
 
-Zymoseptoria_casestudy/
+# -----------------------------------------------------------------------------
+# Local archives and superseded exploratory material
+# -----------------------------------------------------------------------------
+/Zymoseptoria_casestudy/
+/scripts_suggestions/
+/inspiration_table.tsv
+/zipall.sh
+*.zip
 
-scripts_suggestions/
-inspiration_table.tsv
+TODO.md
+
+

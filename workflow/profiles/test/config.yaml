@@ -8,7 +8,7 @@ printshellcmds: true
 show-failed-logs: true
 use-conda: true
 use-apptainer: false
-conda-frontend: mamba
+conda-frontend: conda
 conda-prefix: resources/conda
 rerun-incomplete: true
 keep-going: false

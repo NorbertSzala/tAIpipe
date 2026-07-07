@@ -1,0 +1,1 @@
+# Tests whether genome-level codon-usage summaries differ between biological groups such as phyla or lifestyles. It records group sample sizes, effect-size estimates, confidence intervals where available, raw p-values, and adjusted p-values for each metric and comparison.

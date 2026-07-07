@@ -1,6 +1,0 @@
-seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
-EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp	1	222722	222805	Tyr	GTA	222759	222769	73.1		+	222722	222805	True	False
-EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp	2	765292	765392	Ala	CGC	765328	765356	58.9		+	765292	765392	True	False
-EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp	3	964088	964016	iMet	CAT	0	0	60.9		-	964016	964088	False	False
-EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp	4	877552	877482	Gly	GCC	0	0	55.3		-	877482	877552	False	False
-EQ966233.1|GCA_000006255.1|first_contig_first_1000000bp	7	231425	231335	Ser	CGA	231388	231380	63.6		-	231335	231425	True	False

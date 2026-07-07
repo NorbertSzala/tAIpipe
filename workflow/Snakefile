@@ -23,20 +23,26 @@ validate(config, "schemas/config.schema.yaml")
 # Helper path variables for easier acces
 DATA_CDS = config["paths"]["data_cds"]
 DATA_GENOME = config["paths"]["data_genome"]
+DATA_PROTEOME = config["paths"]["data_proteome"]
 GCODES_TRNASCANSE = config['paths']['genetic_codes_trnascanse']
 GCODES_TABLES = config['paths']['genetic_codes_tables'] # currently out of use
 
 PER_GENOME = config['paths']['per_genome']
-AGGREGATED = config['paths']['aggregated']
 LOGS = config['paths']['logs']
 
-DATA_MAINTABLE = config["paths"]["metadata_samples"]
 DATA_PLOTS = config["paths"]["plots"]
 DATA_TABLES = config["paths"]["tables"]
+DATA_QC = config['paths']['qc']
+DATA_STATISTICS = config['paths']['statistics']
 REPORT_FILE = config["paths"]["reports"]
+
+GENE_FEATURES = config["paths"]["gene_features"]
+GENOME_SUMMARY = config["paths"]["genome_summary"]
+CODON_PROFILES = config["paths"]["codon_profiles"]
 
 TEMPLATE_PATH = config['report_config']['template_path']
 
+BENCHMARKS = config['paths']['benchmarks']
 
 # ------------------------------------------------------------------------------
 # --- Samples table ------------------------------------------------------------
@@ -56,6 +62,15 @@ SAMPLES = samples_df.index.tolist()
 # ------------------------------------------------------------------------------
 # ------- Helper functions -----------------------------------------------------
 # ------------------------------------------------------------------------------
+def require_existing_path(path, label):
+    path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Required {label} does not exist: {path}"
+        )
+    return path
+
 def resolve_single_file(pattern):
     matches = glob(pattern) # get list of path to proper file based on pattern
 
@@ -75,6 +90,10 @@ def get_cds(wildcards):
     pattern = samples_df.loc[wildcards.sample, 'cds']
     return resolve_single_file(f'{DATA_CDS}/{pattern}')
 
+def get_proteome(wildcards):
+    pattern = samples_df.loc[wildcards.sample, 'proteome']
+    return resolve_single_file(f"{DATA_PROTEOME}/{pattern}")
+    
 def get_genetic_code(wildcards):
     return int(samples_df.loc[wildcards.sample, "genetic_code"])
 
@@ -113,17 +132,66 @@ def get_domain(wildcards):
 
     return domain_map[domain]
 
+def get_go_dictionary_input(wildcards):
+    if config.get("go_dictionary", {}).get("enabled", False):
+        return config["go_dictionary"]["path"]
+    return []
+
+
+# ------------------------------------------------------------------------------
+# --- Check files --------------------------------------------------------------
+# ------------------------------------------------------------------------------
+require_existing_path(DATA_CDS, "CDS directory")
+require_existing_path(DATA_GENOME, "genome directory")
+require_existing_path(GCODES_TRNASCANSE, "tRNAscan-SE genetic codes directory")
+require_existing_path(config["paths"]["metadata_dataset"], "metadata dataset file")
+
+
+# ------------------------------------------------------------------------------
+# --- Kofamscan targets --------------------------------------------------------
+# ------------------------------------------------------------------------------
+KOFAM_TARGETS = []
+if config.get("kofamscan", {}).get("enabled", False):
+    KOFAM_TARGETS = expand(
+        f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.fna", sample = SAMPLES
+    )
+
 # ------------------------------------------------------------------------------
 # --- Main Rule ----------------------------------------------------------------
 # ------------------------------------------------------------------------------
+# rule all:
+#     input:
+#         # Per sample data
+#         expand(f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv', sample = SAMPLES),
+#         # Final reports
+#         # f"{REPORT_FILE}/summary_report.html",
+#         # f"{REPORT_FILE}/summary_report.md"
+
 rule all:
     input:
-        # Per sample data
-        expand(f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv', sample = SAMPLES),
-        # Final reports
-        f"{REPORT_FILE}/summary_report.html",
-        f"{REPORT_FILE}/summary_report.md"
+        # Per-genome metrics
+        expand(
+            f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv",
+            sample=SAMPLES,
+        ),
 
+        # Per-genome QC
+        expand(
+            f"{PER_GENOME}/{{sample}}/qc/{{sample}}_trna_profile_qc.tsv",
+            sample=SAMPLES,
+        ),
+
+        KOFAM_TARGETS,
+
+        # Canonical tables
+        config["paths"]["gene_features"],
+        config["paths"]["genome_summary"],
+        config["paths"]["codon_profiles"],
+
+        # Statistics
+        config["paths"]["gene_feature_tests"],
+        config["paths"]["genome_group_tests"],
+        config["paths"]["go_enrichment"],
 
 # ------------------------------------------------------------------------------
 # ---  Include rules -----------------------------------------------------------
@@ -132,7 +200,13 @@ rule all:
 include: "rules/trnascan_rule.smk"
 include: "rules/clean_tRNAscanSE_output.smk"
 include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
+include: "rules/quality_control.smk"
 include: "rules/codon_usage_metrics_rule.smk"
-include: "rules/prepare_metadata_samples_rule.smk"
-include: "rules/aggregate_and_report.smk"
+include: "rules/kofamscan.smk"
 
+include: "rules/prepare_go_dictionary.smk"
+include: "rules/build_tables.smk"
+include: "rules/compute_statistics.smk"
+include: "rules/go_enrichment.smk"
+
+# include: "rules/aggregate_and_report.smk"

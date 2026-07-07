@@ -3,10 +3,11 @@ name: r-env
 channels:
   - conda-forge
   - bioconda
-  - defaults
 
 dependencies:
   - r-base=4.3
+  - jq
+  - yq
 
   # --- Core Data Manipulation & Bioinformatics ---
   - bioconductor-biostrings
@@ -36,3 +37,7 @@ dependencies:
   - r-rmarkdown
   - r-knitr
   - pandoc
+
+  # ---- Others ----
+  - r-lme4
+  - r-broom.mixed

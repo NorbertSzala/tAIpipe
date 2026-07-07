@@ -37,6 +37,9 @@ properties:
 
   cds:
     type: string
+  
+  proteome:
+    type: string
 
   bed:
     type: string
@@ -50,6 +53,8 @@ properties:
   include:
     anyOf:
       - type: boolean
+      - type: integer
+        enum: [0, 1]
       - type: string
         enum: ["True", "False", "true", "false", "T", "F", "t", "f", "0", "1"]
 
@@ -64,4 +69,5 @@ required:
   - lifestyle
   - genome
   - cds
+  - proteome
   - include

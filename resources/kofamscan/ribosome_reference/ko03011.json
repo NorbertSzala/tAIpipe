@@ -1,0 +1,262 @@
+{
+	"name":"ko03011",
+	"children":[
+	{
+		"name":"Ribosomal proteins",
+		"children":[
+		{
+			"name":"Eukaryotes",
+			"children":[
+			{
+				"name":"Small subunit",
+				"children":[
+				{
+					"name":"K02981  RP-S2e, RPS2; small subunit ribosomal protein S2e"
+				},
+				{
+					"name":"K02985  RP-S3e, RPS3; small subunit ribosomal protein S3e"
+				},
+				{
+					"name":"K02984  RP-S3Ae, RPS3A; small subunit ribosomal protein S3Ae"
+				},
+				{
+					"name":"K02987  RP-S4e, RPS4; small subunit ribosomal protein S4e"
+				},
+				{
+					"name":"K02989  RP-S5e, RPS5; small subunit ribosomal protein S5e"
+				},
+				{
+					"name":"K02991  RP-S6e, RPS6; small subunit ribosomal protein S6e"
+				},
+				{
+					"name":"K02993  RP-S7e, RPS7; small subunit ribosomal protein S7e"
+				},
+				{
+					"name":"K02995  RP-S8e, RPS8; small subunit ribosomal protein S8e"
+				},
+				{
+					"name":"K02997  RP-S9e, RPS9; small subunit ribosomal protein S9e"
+				},
+				{
+					"name":"K02947  RP-S10e, RPS10; small subunit ribosomal protein S10e"
+				},
+				{
+					"name":"K02949  RP-S11e, RPS11; small subunit ribosomal protein S11e"
+				},
+				{
+					"name":"K02951  RP-S12e, RPS12; small subunit ribosomal protein S12e"
+				},
+				{
+					"name":"K02953  RP-S13e, RPS13; small subunit ribosomal protein S13e"
+				},
+				{
+					"name":"K02955  RP-S14e, RPS14; small subunit ribosomal protein S14e"
+				},
+				{
+					"name":"K02958  RP-S15e, RPS15; small subunit ribosomal protein S15e"
+				},
+				{
+					"name":"K02957  RP-S15Ae, RPS15A; small subunit ribosomal protein S15Ae"
+				},
+				{
+					"name":"K02960  RP-S16e, RPS16; small subunit ribosomal protein S16e"
+				},
+				{
+					"name":"K02962  RP-S17e, RPS17; small subunit ribosomal protein S17e"
+				},
+				{
+					"name":"K02964  RP-S18e, RPS18; small subunit ribosomal protein S18e"
+				},
+				{
+					"name":"K02966  RP-S19e, RPS19; small subunit ribosomal protein S19e"
+				},
+				{
+					"name":"K02969  RP-S20e, RPS20; small subunit ribosomal protein S20e"
+				},
+				{
+					"name":"K02971  RP-S21e, RPS21; small subunit ribosomal protein S21e"
+				},
+				{
+					"name":"K02973  RP-S23e, RPS23; small subunit ribosomal protein S23e"
+				},
+				{
+					"name":"K02974  RP-S24e, RPS24; small subunit ribosomal protein S24e"
+				},
+				{
+					"name":"K02975  RP-S25e, RPS25; small subunit ribosomal protein S25e"
+				},
+				{
+					"name":"K02976  RP-S26e, RPS26; small subunit ribosomal protein S26e"
+				},
+				{
+					"name":"K02978  RP-S27e, RPS27; small subunit ribosomal protein S27e"
+				},
+				{
+					"name":"K02977  RP-S27Ae, RPS27A, UBA80; ubiquitin-small subunit ribosomal protein S27Ae"
+				},
+				{
+					"name":"K02979  RP-S28e, RPS28; small subunit ribosomal protein S28e"
+				},
+				{
+					"name":"K02980  RP-S29e, RPS29; small subunit ribosomal protein S29e"
+				},
+				{
+					"name":"K02983  RP-S30e, RPS30; small subunit ribosomal protein S30e"
+				},
+				{
+					"name":"K02998  RP-SAe, RPSA; small subunit ribosomal protein SAe"
+				}
+				]
+			},
+			{
+				"name":"Large subunit",
+				"children":[
+				{
+					"name":"K02925  RP-L3e, RPL3; large subunit ribosomal protein L3e"
+				},
+				{
+					"name":"K02930  RP-L4e, RPL4; large subunit ribosomal protein L4e"
+				},
+				{
+					"name":"K02932  RP-L5e, RPL5; large subunit ribosomal protein L5e"
+				},
+				{
+					"name":"K02934  RP-L6e, RPL6; large subunit ribosomal protein L6e"
+				},
+				{
+					"name":"K02937  RP-L7e, RPL7; large subunit ribosomal protein L7e"
+				},
+				{
+					"name":"K02936  RP-L7Ae, RPL7A; large subunit ribosomal protein L7Ae"
+				},
+				{
+					"name":"K02938  RP-L8e, RPL8; large subunit ribosomal protein L8e"
+				},
+				{
+					"name":"K02940  RP-L9e, RPL9; large subunit ribosomal protein L9e"
+				},
+				{
+					"name":"K02866  RP-L10e, RPL10; large subunit ribosomal protein L10e"
+				},
+				{
+					"name":"K02865  RP-L10Ae, RPL10A; large subunit ribosomal protein L10Ae"
+				},
+				{
+					"name":"K02868  RP-L11e, RPL11; large subunit ribosomal protein L11e"
+				},
+				{
+					"name":"K02870  RP-L12e, RPL12; large subunit ribosomal protein L12e"
+				},
+				{
+					"name":"K02873  RP-L13e, RPL13; large subunit ribosomal protein L13e"
+				},
+				{
+					"name":"K02872  RP-L13Ae, RPL13A; large subunit ribosomal protein L13Ae"
+				},
+				{
+					"name":"K02875  RP-L14e, RPL14; large subunit ribosomal protein L14e"
+				},
+				{
+					"name":"K02877  RP-L15e, RPL15; large subunit ribosomal protein L15e"
+				},
+				{
+					"name":"K02880  RP-L17e, RPL17; large subunit ribosomal protein L17e"
+				},
+				{
+					"name":"K02883  RP-L18e, RPL18; large subunit ribosomal protein L18e"
+				},
+				{
+					"name":"K02882  RP-L18Ae, RPL18A; large subunit ribosomal protein L18Ae"
+				},
+				{
+					"name":"K02885  RP-L19e, RPL19; large subunit ribosomal protein L19e"
+				},
+				{
+					"name":"K02889  RP-L21e, RPL21; large subunit ribosomal protein L21e"
+				},
+				{
+					"name":"K02891  RP-L22e, RPL22; large subunit ribosomal protein L22e"
+				},
+				{
+					"name":"K02894  RP-L23e, RPL23; large subunit ribosomal protein L23e"
+				},
+				{
+					"name":"K02893  RP-L23Ae, RPL23A; large subunit ribosomal protein L23Ae"
+				},
+				{
+					"name":"K02896  RP-L24e, RPL24; large subunit ribosomal protein L24e"
+				},
+				{
+					"name":"K02898  RP-L26e, RPL26; large subunit ribosomal protein L26e"
+				},
+				{
+					"name":"K02901  RP-L27e, RPL27; large subunit ribosomal protein L27e"
+				},
+				{
+					"name":"K02900  RP-L27Ae, RPL27A; large subunit ribosomal protein L27Ae"
+				},
+				{
+					"name":"K02903  RP-L28e, RPL28; large subunit ribosomal protein L28e"
+				},
+				{
+					"name":"K02905  RP-L29e, RPL29; large subunit ribosomal protein L29e"
+				},
+				{
+					"name":"K02908  RP-L30e, RPL30; large subunit ribosomal protein L30e"
+				},
+				{
+					"name":"K02910  RP-L31e, RPL31; large subunit ribosomal protein L31e"
+				},
+				{
+					"name":"K02912  RP-L32e, RPL32; large subunit ribosomal protein L32e"
+				},
+				{
+					"name":"K02915  RP-L34e, RPL34; large subunit ribosomal protein L34e"
+				},
+				{
+					"name":"K02918  RP-L35e, RPL35; large subunit ribosomal protein L35e"
+				},
+				{
+					"name":"K02917  RP-L35Ae, RPL35A; large subunit ribosomal protein L35Ae"
+				},
+				{
+					"name":"K02920  RP-L36e, RPL36; large subunit ribosomal protein L36e"
+				},
+				{
+					"name":"K02922  RP-L37e, RPL37; large subunit ribosomal protein L37e"
+				},
+				{
+					"name":"K02921  RP-L37Ae, RPL37A; large subunit ribosomal protein L37Ae"
+				},
+				{
+					"name":"K02923  RP-L38e, RPL38; large subunit ribosomal protein L38e"
+				},
+				{
+					"name":"K02924  RP-L39e, RPL39; large subunit ribosomal protein L39e"
+				},
+				{
+					"name":"K02927  RP-L40e, RPL40, UBA52; ubiquitin-large subunit ribosomal protein L40e"
+				},
+				{
+					"name":"K02928  RP-L41e, RPL41; large subunit ribosomal protein L41e"
+				},
+				{
+					"name":"K02929  RP-L44e, RPL44; large subunit ribosomal protein L44e"
+				},
+				{
+					"name":"K02941  RP-LP0, RPLP0; large subunit ribosomal protein LP0"
+				},
+				{
+					"name":"K02942  RP-LP1, RPLP1; large subunit ribosomal protein LP1"
+				},
+				{
+					"name":"K02943  RP-LP2, RPLP2; large subunit ribosomal protein LP2"
+				}
+				]
+			}
+			]
+		}
+		]
+	}
+	]
+}

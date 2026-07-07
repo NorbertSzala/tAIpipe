@@ -1,0 +1,1 @@
+# Builds the canonical genome_summary.tsv table containing one row per genome. It aggregates gene-level codon metrics, genome FASTA statistics, tRNA quality-control results, annotation coverage, and biological metadata into a compact dataset for between-genome analyses.

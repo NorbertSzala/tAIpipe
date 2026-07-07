@@ -1,4 +1,0 @@
-seq_name	trna_number	begin	end	trna_type	anticodon	intron_begin	intron_end	score	note	strand	start	stop	has_intron	is_pseudo
-MCFH01000001.1|GCA_002104945.1|first_contig_first_1000000bp	1	293330	293401	Thr	TGT	0	0	76.0		+	293330	293401	False	False
-MCFH01000001.1|GCA_002104945.1|first_contig_first_1000000bp	2	487124	487197	Arg	TCT	0	0	75.4		+	487124	487197	False	False
-MCFH01000001.1|GCA_002104945.1|first_contig_first_1000000bp	3	321880	321809	Thr	TGT	0	0	76.0		-	321809	321880	False	False

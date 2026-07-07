@@ -1,0 +1,1 @@
+# Builds the canonical long-format codon_profiles.tsv table. It combines codon counts, codon frequencies, RSCU values, tRNA weights, optimal-codon flags, genetic-code information, and sample metadata into one row per sample and codon.
