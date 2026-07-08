@@ -229,10 +229,10 @@ workflow/scripts/
 Important components:
 
 ```text
-workflow/rules/trnascan_rule.smk
-workflow/rules/clean_tRNAscanSE_output.smk
-workflow/rules/prepare_trna_codon_counts_to_tai_rule.smk
-workflow/rules/codon_usage_metrics_rule.smk
+workflow/rules/01_run_trnascanse.smk
+workflow/rules/02_clean_trnascanse.smk
+workflow/rules/03_build_trna_profile.smk
+workflow/rules/07_compute_codon_metrics.smk
 workflow/rules/aggregate_metrics.smk
 workflow/rules/plots.smk
 ```

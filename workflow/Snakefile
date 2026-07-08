@@ -197,16 +197,16 @@ rule all:
 # ---  Include rules -----------------------------------------------------------
 # ------------------------------------------------------------------------------
 # calculate metrics rules 
-include: "rules/trnascan_rule.smk"
-include: "rules/clean_tRNAscanSE_output.smk"
-include: "rules/prepare_trna_codon_counts_to_tai_rule.smk"
-include: "rules/quality_control.smk"
-include: "rules/codon_usage_metrics_rule.smk"
-include: "rules/kofamscan.smk"
+include: "rules/01_run_trnascanse.smk"
+include: "rules/02_clean_trnascanse.smk"
+include: "rules/03_build_trna_profile.smk"
+include: "rules/04_validate_trna_profile.smk"
+include: "rules/07_compute_codon_metrics.smk"
+include: "rules/06_kofamscan_ribosomal_reference.smk"
 
-include: "rules/prepare_go_dictionary.smk"
-include: "rules/build_tables.smk"
-include: "rules/compute_statistics.smk"
-include: "rules/go_enrichment.smk"
+include: "rules/00_prepare_go_dictionary.smk"
+include: "rules/08_build_tables.smk"
+include: "rules/09_compute_statistics.smk"
+include: "rules/10_go_enrichment.smk"
 
-# include: "rules/aggregate_and_report.smk"
+# include: "rules/99_legacy_aggregate_and_report.smk"

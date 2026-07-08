@@ -10,25 +10,24 @@ The workflow contains four sequential stages:
    creates a restricted HAL profile list.
 
 2. ``run_kofamscan_ribosome``
-   Searches each genome-specific protein FASTA against only the selected
+   Searches each genome-specific protein FASTA against the selected
    ribosomal KOfam HMM profiles.
 
 3. ``parse_kofamscan_ribosome``
-   Retains KO assignments passing predefined KOfam thresholds, maps protein
-   identifiers to gene identifiers and generates gene-level annotations and
-   quality-control metrics.
+   Retains KO assignments passing predefined KOfam thresholds and maps
+   protein identifiers to gene and CDS identifiers.
 
 4. ``extract_ribosomal_reference_cds``
-   Extracts nucleotide coding sequences for the selected ribosomal genes,
-   producing the reference FASTA used in downstream codon-usage and CAI
-   calculations.
+   Extracts nucleotide CDS records corresponding to significant ribosomal
+   protein annotations.
 
-The global ribosomal KO/HMM reference is created once and reused for every
-genome. KofamScan and downstream parsing are performed separately for each
+The global ribosomal KO/HMM reference is created once and reused for all
+genomes. KofamScan and downstream parsing are performed separately for each
 sample.
 
-The workflow assumes that protein identifiers are unique within every
-protein FASTA and can be mapped unambiguously to gene identifiers.
+The workflow assumes that protein identifiers are unique within each
+protein FASTA and can be mapped unambiguously to CDS records using the
+gene-protein mapping table.
 """
 
 KOFAM = config["kofamscan"]
@@ -43,14 +42,23 @@ RIBOSOME_HAL = KOFAM["ribosome_reference"]["hal"]
 KOFAM_THREADS = int(
     KOFAM["execution"].get("threads", 8)
 )
+
 KOFAM_MEM_MB = int(
     KOFAM["execution"].get("mem_mb", 16000)
 )
+
 KOFAM_THRESHOLD_SCALE = float(
     KOFAM["execution"].get("threshold_scale", 1.0)
 )
+
+
+# ---------------------------------------------------------------------------
+# Output path patterns
+# ---------------------------------------------------------------------------
+
 KOFAM_DETAIL = (
-    f"{PER_GENOME}/{{sample}}/kofamscan/ribosome_detail.tsv"
+    f"{PER_GENOME}/{{sample}}/kofamscan/"
+    "ribosome_detail.tsv"
 )
 
 KOFAM_HITS = (
@@ -63,7 +71,12 @@ KOFAM_GENES = (
     "ribosome_gene_annotations.tsv"
 )
 
-KOFAM_REFERENCE_IDS = (
+KOFAM_REFERENCE_GENE_IDS = (
+    f"{PER_GENOME}/{{sample}}/kofamscan/"
+    "ribosomal_reference_gene_ids.txt"
+)
+
+KOFAM_REFERENCE_CDS_IDS = (
     f"{PER_GENOME}/{{sample}}/kofamscan/"
     "ribosomal_reference_cds_ids.txt"
 )
@@ -73,25 +86,20 @@ KOFAM_REFERENCE_CDS = (
     "ribosomal_reference_cds.fna"
 )
 
-def format_sample_path(pattern, wildcards):
-    return pattern.format(sample=wildcards.sample)
+KOFAM_QC = (
+    f"{PER_GENOME}/{{sample}}/kofamscan/"
+    "ribosome_qc.tsv"
+)
 
-
-def get_proteins(wildcards):
-    return get_proteome(wildcards)
-
-
-def get_cds(wildcards):
-    return format_sample_path(
-        KOFAM["inputs"]["cds"],
-        wildcards,
-    )
+GENE_PROTEIN_MAP = (
+    f"{PER_GENOME}/{{sample}}/tables/"
+    "gene_protein_map.tsv"
+)
 
 
 def get_gene_protein_map(wildcards):
-    return (
-        f"{PER_GENOME}/{wildcards.sample}/tables/gene_protein_map.tsv"
-    )
+    """Return the expected gene-protein mapping path for a sample."""
+    return GENE_PROTEIN_MAP.format(sample=wildcards.sample)
 
 
 rule prepare_kofam_ribosomal_reference:
@@ -123,14 +131,11 @@ rule run_kofamscan_ribosome:
         ko_list=KOFAM_KO_LIST,
 
     output:
-        detail=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosome_detail.tsv"
-        ),
-    
+        detail=KOFAM_DETAIL,
+
     params:
-        threshold_scale = KOFAM_THRESHOLD_SCALE,
-        
+        threshold_scale=KOFAM_THRESHOLD_SCALE,
+
     threads:
         KOFAM_THREADS
 
@@ -141,13 +146,13 @@ rule run_kofamscan_ribosome:
         f"{LOGS}/{{sample}}/kofamscan.log"
 
     benchmark:
-        f"{BENCHMARKS}/{{sample}}//kofamscan.tsv"
+        f"{BENCHMARKS}/{{sample}}/kofamscan.tsv"
 
     conda:
         "../envs/kofamscan.yaml"
-    
+
     shell:
-        """
+        r"""
         set -euo pipefail
 
         mkdir -p \
@@ -155,7 +160,10 @@ rule run_kofamscan_ribosome:
             "$(dirname {log:q})" \
             "$(dirname {benchmark:q})"
 
-        tmpdir="$(mktemp -d "${{TMPDIR:-/tmp}}/kofamscan.XXXXXX")"
+        tmpdir="$(
+            mktemp -d \
+            "${{TMPDIR:-/tmp}}/kofamscan.{wildcards.sample}.XXXXXX"
+        )"
 
         cleanup() {{
             rm -rf "$tmpdir"
@@ -181,44 +189,30 @@ rule run_kofamscan_ribosome:
 
 rule parse_kofamscan_ribosome:
     input:
-        detail=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosome_detail.tsv"
-        ),
-        proteins=get_proteins,
+        detail=KOFAM_DETAIL,
+        proteins=get_proteome,
         mapping=get_gene_protein_map,
         ko_table=RIBOSOME_KO_TABLE,
 
     output:
-        hits=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosome_significant_hits.tsv"
-        ),
-
-        genes=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosome_gene_annotations.tsv"
-        ),
-
-        gene_ids=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosomal_reference_gene_ids.txt"
-        ),
-
-        qc=(
-            "results/per_genome/{sample}/kofamscan/"
-            "ribosome_qc.tsv"
-        ),
+        hits=KOFAM_HITS,
+        genes=KOFAM_GENES,
+        gene_ids=KOFAM_REFERENCE_GENE_IDS,
+        cds_ids=KOFAM_REFERENCE_CDS_IDS,
+        qc=KOFAM_QC,
 
     params:
         gene_column=KOFAM["columns"].get(
             "gene_id",
             "gene_id",
         ),
-
         protein_column=KOFAM["columns"].get(
             "protein_id",
             "protein_id",
+        ),
+        cds_column=KOFAM["columns"].get(
+            "cds_id",
+            "cds_id",
         ),
 
     conda:
@@ -231,17 +225,13 @@ rule parse_kofamscan_ribosome:
 rule extract_ribosomal_reference_cds:
     input:
         cds=get_cds,
-        cds_ids=(
-            f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.txt")
+        cds_ids=KOFAM_REFERENCE_CDS_IDS,
 
     output:
-        cds=(
-            "{PER_GENOME}/{{sample}}/kofamscan/"
-            "ribosomal_reference_cds.fna"
-        ),
+        cds=KOFAM_REFERENCE_CDS,
 
     conda:
         "../envs/kofamscan.yaml"
-        
+
     script:
         "../scripts/kofamscan/extract_reference_cds.py"
