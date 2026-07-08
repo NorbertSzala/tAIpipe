@@ -74,6 +74,32 @@ ribosomal_reference:
   max_reference_genes: 180
 
 
+# -----------------
+# --- Kofamscan ---
+# -----------------
+kofamscan:
+  enabled: true
+
+  database:
+    ko_list: "resources/kofamscan/ko_list"
+    profiles_dir: "resources/kofamscan/profiles"
+
+  ribosome_reference:
+    brite_json: "resources/kofamscan/ribosome_reference/ko03011.json"
+    ko_table: "resources/kofamscan/ribosome_reference/cytosolic_eukaryotic_ribosome_kos.tsv"
+    hal: "resources/kofamscan/ribosome_reference/cytosolic_eukaryotic_ribosome.hal"
+    require_thresholds: true
+
+  execution:
+    threads: 4
+    mem_mb: 8000
+    threshold_scale: 1.0
+
+  columns:
+    gene_id: "gene_id"
+    protein_id: "protein_id"
+    cds_id: "cds_id"
+
 # ---------------------------
 # --- Analysis parameters ---
 # ---------------------------

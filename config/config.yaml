@@ -99,12 +99,13 @@ kofamscan:
   columns:
     gene_id: "gene_id"
     protein_id: "protein_id"
+    cds_id: "cds_id"
 
   # Dopasuj tylko te trzy wzorce do obecnej struktury projektu.#TODO: Zerknij na to potem - czy sciezki sa prawidlowe
   inputs:
-    proteins: "results/per_genome/{sample}/proteins/proteins.faa"
-    cds: "results/per_genome/{sample}/sequences/cds.fna"
-    gene_protein_map: "results/per_genome/{sample}/tables/gene_protein_map.tsv"
+    proteins: "results/per_genome/{{sample}}/proteins/proteins.faa"
+    cds: "results/per_genome/{{sample}}/sequences/cds.fna"
+    gene_protein_map: "results/per_genome/{{sample}}/tables/gene_protein_map.tsv"
 
 
 
