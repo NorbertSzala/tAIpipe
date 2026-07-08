@@ -135,6 +135,7 @@ rule run_kofamscan_ribosome:
 
     params:
         threshold_scale=KOFAM_THRESHOLD_SCALE,
+        benchmark_dir=lambda wildcards: f"{BENCHMARKS}/{wildcards.sample}",
 
     threads:
         KOFAM_THREADS
@@ -152,13 +153,13 @@ rule run_kofamscan_ribosome:
         "../envs/kofamscan.yaml"
 
     shell:
-        r"""
+        """
         set -euo pipefail
 
         mkdir -p \
             "$(dirname {output.detail:q})" \
             "$(dirname {log:q})" \
-            "$(dirname {benchmark:q})"
+            {params.benchmark_dir:q}
 
         tmpdir="$(
             mktemp -d \

@@ -23,6 +23,9 @@ rule compute_statistics:
                 ],
             )
         ),
+        gene_covariates = ",".join(
+            config.get('statistics', {}).get('gene_covariates', ['log_protein_length_aa', "GC3s"],)
+        ),
 
         genome_metrics=",".join(
             config.get("statistics", {}).get(
@@ -59,6 +62,7 @@ rule compute_statistics:
           --gene-feature-output {output.gene_tests} \
           --genome-group-output {output.genome_tests} \
           --binary-features {params.binary_features} \
+          --gene-covariates {params.gene_covariates} \
           --genome-metrics {params.genome_metrics} \
           --group-variables {params.group_variables} \
           --fdr-method {params.fdr_method} \

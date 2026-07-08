@@ -65,13 +65,12 @@ genes <- genes %>%
   filter(
     !is.na(sample), sample != "",
     !is.na(gene_id), gene_id != "",
-    is.finite(tAI),
-    !is.na(go_terms), go_terms != ""
+    is.finite(tAI)
   ) %>%
   distinct(sample, gene_id, .keep_all = TRUE)
 
 if (nrow(genes) == 0L) {
-  stop("No genes with finite tAI and GO annotation are available.")
+  stop("No genes with finite tAI are available.")
 }
 
 ranked <- genes %>%
@@ -83,11 +82,13 @@ ranked <- genes %>%
     rank_low = row_number(),
     n_eligible_genes = n(),
     n_tail_fraction = ceiling(args$tail_fraction * n_eligible_genes),
-    n_tail = if (args$max_tail_genes > 0L) {
+    n_tail_uncapped = if (args$max_tail_genes > 0L) {
       pmin(n_tail_fraction, args$max_tail_genes)
     } else {
       n_tail_fraction
     },
+    # Prevent high and low tails from overlapping in very small genomes.
+    n_tail = pmin(n_tail_uncapped, floor(n_eligible_genes / 2)),
     high_tail = rank_high <= n_tail,
     low_tail = rank_low <= n_tail
   ) %>%

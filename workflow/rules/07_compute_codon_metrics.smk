@@ -14,6 +14,7 @@ rule codon_usage_metrics:
         codon_counts=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_codon_counts.csv",
         enc=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_enc.csv",
         rscu=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_rscu.csv",
+        reference_rscu = f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_reference_rscu.csv",
         cai=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_cai.csv",
         trna_weights=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_trna_weights.csv",
         tai=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_tai.csv",
@@ -28,6 +29,7 @@ rule codon_usage_metrics:
         sample=lambda wildcards: wildcards.sample,
         gcode=get_genetic_code,
         outdir=f"{PER_GENOME}/{{sample}}/codon_metrics",
+        min_reference_cds = config.get('ribosomal_reference', {}).get("min_reference_genes", 20)
     
     log:
         f"{LOGS}/{{sample}}/calculate_tai.log"
@@ -52,6 +54,7 @@ rule codon_usage_metrics:
             --trna {input.aaa_count} \
             --domain {params.domain} \
             --sample {params.sample} \
+            --min-reference-cds {params.min_reference_cds} \
             > {log} 2>&1
         
         """

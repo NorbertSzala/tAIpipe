@@ -97,7 +97,7 @@ rule build_genome_summary:
         "Building the canonical genome-level summary table"
 
     shell:
-        r"""
+        """
         set -euo pipefail
 
         mkdir -p \
@@ -125,6 +125,10 @@ rule build_codon_profiles:
             f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_rscu.csv",
             sample=SAMPLES,
         ),
+        reference_rscu=expand(
+            f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_reference_rscu.csv",
+            sample=SAMPLES,
+        ),
         trna_weights=expand(
             f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_trna_weights.csv",
             sample=SAMPLES,
@@ -147,7 +151,7 @@ rule build_codon_profiles:
         "Building the canonical genome-by-codon profile table"
 
     shell:
-        r"""
+        """
         set -euo pipefail
 
         mkdir -p \
