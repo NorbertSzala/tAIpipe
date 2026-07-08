@@ -9,16 +9,13 @@ For metrics description, see [`docs/metrics.md`](metrics.md)
 
 ## 1. Input architecture
 
-`tAIpipe` requires three main input components:
+Each included sample requires three sequence files:
 
-1. **Genome FASTA files**
-   Used by `tRNAscan-SE` to predict tRNA genes.
-
-2. **CDS FASTA files**
-   Used to calculate codon usage metrics, including tAI, CAI, ENC, RSCU, GC, and GC3s.
-
-3. **Sample table**
-   Defines sample identifiers, input file paths or filename patterns, genetic codes, taxonomy, lifestyle categories, and inclusion flags.
+| Input         | Used for                           | Required properties                                                                   |
+| ------------- | ---------------------------------- | ------------------------------------------------------------------------------------- |
+| Genome FASTA  | tRNA prediction and genome summary | Non-empty nucleotide FASTA; unique sequence IDs recommended                           |
+| CDS FASTA     | Codon metrics and gene metadata    | Nucleotide CDS records; unique IDs; NCBI-style header attributes strongly recommended |
+| Protein FASTA | KofamScan                          | Protein record IDs must be unique and match CDS `[protein_id=...]` values             |
 
 The workflow uses separate configuration files for test and production runs:
 
@@ -27,171 +24,168 @@ The workflow uses separate configuration files for test and production runs:
 | Test       | `config/config_test.yaml` | `config/samples_test.tsv` | `resources/test_data/`      |
 | Production | `config/config.yaml`      | `config/samples.tsv`      | `data/genome/`, `data/CDS/` |
 
+### Sample table
+
+The sample table path is configured as:
+
+```yaml
+paths:
+  metadata_dataset: config/samples.tsv
+```
+
+Required columns:
+
+| Column         | Meaning                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| `sample`       | Unique output-safe identifier matching `^[A-Za-z0-9_.-]+$`                                    |
+| `species`      | Species label copied to final tables                                                          |
+| `genetic_code` | NCBI translation table ID used by `cubar`; also selects an optional tRNAscan-SE `.gcode` file |
+| `accession`    | Assembly or dataset accession                                                                 |
+| `domain`       | `eukarya`, `eukaryota`, `bacteria` or `archaea`; used for tRNA wobble weights                 |
+| `kingdom`      | Taxonomic metadata                                                                            |
+| `phylum`       | Default genome-level grouping variable                                                        |
+| `lifestyle`    | Default genome-level grouping variable                                                        |
+| `genome`       | Filename or glob pattern relative to `paths.data_genome`                                      |
+| `cds`          | Filename or glob pattern relative to `paths.data_cds`                                         |
+| `proteome`     | Filename or glob pattern relative to `paths.data_proteome`                                    |
+| `include`      | Boolean-like value controlling sample inclusion                                               |
+
+
+#### File matching
+
+Every pattern must match exactly one file:
+
+```text
+0 matches  -> workflow stops
+1 match    -> file is used
+>1 matches -> workflow stops
+```
+
+Prefer accession-specific patterns such as:
+
+```text
+GCA_000002945.2*.fna
+```
 ---
 
-## 2. Genome FASTA files
+## 2. FASTA identifier requirements
 
-Genome FASTA files are required because tRNA genes are non-coding RNA genes and are not represented in CDS FASTA files. They are used as input for `tRNAscan-SE`.
+### CDS FASTA
 
-Typical locations:
-
-```text
-resources/test_data/genome/
-data/genome/
-```
-
-Example file:
+The mapping script expects NCBI-style attributes in CDS descriptions:
 
 ```text
-head GCA_000002945.2_first_contig_1Mbp.fna
- >contig_or_chromosome_id
-ATGCGT...
+>lcl|... [gene=abc1] [locus_tag=SPBC1] [protein_id=NP_000001.1] [protein=...]
 ```
 
----
+Identifier roles:
 
-## 3. CDS FASTA files
+| Identifier          | Source                                                  | Use                                      |
+| ------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| `seq_id` / `cds_id` | First FASTA header token (`SeqRecord.id`)               | Gene-level metric key and CDS extraction |
+| `protein_id`        | `[protein_id=...]`                                      | Links CDS to protein FASTA and KofamScan |
+| `gene_id`           | `[locus_tag=...]`, then `[gene=...]`, then `protein_id` | Canonical biological gene label          |
 
-CDS FASTA files are used to calculate codon usage and translational adaptation metrics.
+CDS records without `[protein_id=...]` are skipped by `build_gene_protein_map.py`. Because strict matching is enabled, every mapped protein ID must exist in the protein FASTA.
 
-Typical locations:
+### Protein FASTA
+
+The first token of every protein FASTA header must equal the corresponding CDS `protein_id`:
 
 ```text
-resources/test_data/CDS/
-data/CDS/
+>NP_000001.1 protein description
+MST...
 ```
 
-Example file:
+Duplicate protein FASTA IDs cause a hard failure.
 
-```text
-head GCA_000002945.2_first_contig_CDS.fna
->gene_or_cds_id
-ATGGCT...
-```
+### CDS validity
 
-The sequences should be valid coding sequences compatible with the genetic code specified in the sample table.
-
----
-
-## 4. Sample table
-
-The sample table is the main control file used by the workflow. It defines which samples are processed and where their genome/CDS files are located.
-
-Test sample table:
-
-```text
-config/samples_test.tsv
-```
-
-Only rows with:
-
-```text
-include = True
-```
-
-are processed.
-
----
-
-## 5. Required sample table columns
-
-| Column         | Description                                                                                                             |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `sample`       | Short unique sample identifier used in output paths. Example: `Spombe`.                                                 |
-| `species`      | Species name. Example: `Schizosaccharomyces_pombe`.                                                                     |
-| `genetic_code` | NCBI genetic code ID used for codon usage and tAI-related calculations. Example: `1`, `12`.                             |
-| `domain`       | Biological domain used to select the appropriate `tRNAscan-SE` mode. Expected values: `eukarya`, `bacteria`, `archaea`. |
-| `accession`    | Genome assembly accession ID. Example: `GCA_000002945.2`.                                                               |
-| `kingdom`      | Broad taxonomic group. Example: `Fungi`.                                                                                |
-| `phylum`       | Phylum-level taxonomy. Example: `Ascomycota`.                                                                           |
-| `lifestyle`    | Ecological or biological lifestyle category used for downstream grouping.                                               |
-| `genome`       | Genome FASTA filename, path, or pattern.                                                                                |
-| `cds`          | CDS FASTA filename, path, or pattern.                                                                                   |
-| `include`      | Boolean flag controlling whether the sample should be processed. Expected values: `True` or `False`.                    |
+`cubar::check_cds()` removes CDS records that are invalid under the configured genetic code. The original CDS remains represented in `gene_features.tsv`, but metrics are missing and `cds_qc_pass=false`.
 
 ---
 
-## 6. Optional sample table columns
+## 3. Genetic codes
 
-The following columns may be present but are not required by the core workflow:
+For genetic code `1`, tRNAscan-SE uses its standard code. For alternative codes, the workflow expects:
 
-| Column              | Description                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| `bed`               | Optional BED file with genomic coordinates. Reserved for downstream or auxiliary analyses. |
-| `downsampled_fasta` | Optional reference to a reduced FASTA file used during development or testing.             |
-| `first_contig`      | Optional reference to the first-contig FASTA file used for lightweight test datasets.      |
+```text
+resources/genetic_codes/trnascanse/<genetic_code>.gcode
+```
 
-These columns are useful for documenting how test data were generated, but they are not required for the main tAI/codon usage workflow.
+The file should contain only codon reassignments required by tRNAscan-SE, for example:
+
+```text
+CTG Ser S
+```
+
+The tRNAscan-SE mode itself is configured globally by `trnascanse.domain` and defaults to `-E`; the sample-level `domain` column is used during tRNA-weight estimation.
+
+## 4. KOfam resources
+
+Required configuration:
+
+```yaml
+kofamscan:
+  database:
+    ko_list: resources/kofamscan/ko_list
+    profiles_dir: resources/kofamscan/profiles
+  ribosome_reference:
+    brite_json: resources/kofamscan/ribosome_reference/ko03011.json
+```
+
+The profiles directory must contain one `Kxxxxx.hmm` file for every cytosolic eukaryotic ribosomal KO selected from the BRITE hierarchy.
+
+## Optional external annotations
+
+Set:
+
+```yaml
+paths:
+  external_annotations: path/to/annotations.tsv
+```
+
+or leave it as `null`.
+
+The table must contain `sample` and one unique join key:
+
+- `protein_id`, or
+- `seq_id`.
+
+All additional columns are preserved. `go_terms` should contain GO IDs such as `GO:0006412`, separated by any text delimiter; valid IDs are extracted and normalized. Binary columns used by default statistics are:
+
+```text
+signal_peptide_present
+tm_present
+lcr_present
+pfam_present
+```
+
+## 5. GO dictionary
+
+The workflow accepts:
+
+1. an existing valid TSV at `go_dictionary.path`, or
+2. a local OBO file at `go_dictionary.obo_path`, or
+3. a downloadable OBO URL at `go_dictionary.obo_url`.
+
+The generated dictionary contains `go_terms`, `go_name` and `go_namespace`.
 
 ---
 
-## 7. Example sample table
+## 6. Example sample table
 
 Example `config/samples_test.tsv`:
 
 ```tsv
-sample	species	genetic_code	domain	accession	kingdom	phylum	lifestyle	genome	cds	include
-Spombe	Schizosaccharomyces_pombe	1	eukarya	GCA_000002945.2	Fungi	Ascomycota	nectar_tap_saprotroph	resources/test_data/genome/GCA_000002945.2_first_contig_1Mbp.fna	resources/test_data/CDS/GCA_000002945.2_first_contig_CDS.fna	True
-Calbicans	Candida_albicans	12	eukarya	GCA_000182965.3	Fungi	Ascomycota	pathogen	resources/test_data/genome/GCA_000182965.3_first_contig_1Mbp.fna	resources/test_data/CDS/GCA_000182965.3_first_contig_CDS.fna	True
+sample	species	genetic_code	accession	domain	kingdom	phylum	lifestyle	genome	cds	proteome	include
+Ztritici	Zymoseptoria_tritici	1	GCA_000219625.1	eukarya	Fungi	Ascomycota	plant_pathogen	GCA_000219625.1*.fna	GCA_000219625.1*.fna	GCA_000219625.1*.faa	True
+Pplacenta	Postia_placenta	1	GCA_000006255.1	eukarya	Fungi	Basidiomycota	wood_saprotroph	GCA_000006255.1*.fna	GCA_000006255.1*.fna	GCA_000006255.1*.faa	True
+Spombe	Schizosaccharomyces_pombe	1	GCA_000002945.2	eukarya	Fungi	Ascomycota	nectar_tap_saprotroph	GCA_000002945.2*.fna	GCA_000002945.2*.fna	GCA_000002945.2*.faa	True
 ```
-
 ---
 
----
-
-## 8. Matching constraints
-
-The workflow intentionally uses strict file matching.
-
-- If a pattern does not match any file, Snakemake raises a `MissingInputException`.
-- 
-  ```text
-  GCA_999999999.1*.fna
-  ```
-
-
-- If a pattern matches more than one file, the workflow should stop with an explicit error.
-
-  ```text
-  GCA_0002*.fna
-  ```
-
-Each `genome` and `cds` entry should resolve to one unique FASTA file.
-
----
-
-## 9. Genetic codes
-
-The `genetic_code` column stores the NCBI genetic code ID used for each sample.
-
-For standard nuclear code:
-
-```text
-1
-```
-
-For selected non-standard codes, `tAIpipe` uses tRNAscan-SE-compatible genetic-code files from:
-
-```text
-data/genetic_codes/trnascanse/
-```
-
-Example files:
-
-```text
-12.gcode
-3.gcode
-4.gcode
-6.gcode
-```
-
-For NCBI genetic code `1`, no additional tRNAscan-SE genetic-code file is required.
-
-The .gcode file does not need to contain the complete genetic code. Instead, it should specify only the codons that differ from the standard genetic code. See the tRNAscan-SE documentation for details.
-
----
-
-## 10. Metadata used during aggregation and reports
+## 7. Metadata used during aggregation and reports
 
 The sample table contains both execution-level fields and biological grouping fields.
 
@@ -233,7 +227,7 @@ Such metadata should be merged during the aggregation/reporting stage using stab
 
 ---
 
-## 11. Test data
+## 8. Test data
 
 The repository includes a small test dataset:
 
@@ -259,40 +253,3 @@ snakemake --profile workflow/profiles/test
 ```
 
 ---
-
-## 12. Production data
-
-Production runs use:
-
-```text
-config/config.yaml
-config/samples.tsv
-```
-
-and usually read full genome/CDS files from:
-
-```text
-data/genome/
-data/CDS/
-```
-
-Before running production mode, check that all paths in `config/samples.tsv` resolve to existing files.
-
-Recommended dry run:
-
-```bash
-snakemake -n --profile workflow/profiles/production
-```
-
----
-
-## 13. Common input problems
-
-| Problem                        | Likely cause                      | Fix                                       |
-| ------------------------------ | --------------------------------- | ----------------------------------------- |
-| `MissingInputException`        | Genome or CDS path does not exist | Check `genome` and `cds` columns          |
-| Multiple files matched         | Pattern is too broad              | Use a more specific filename or full path |
-| tRNAscan-SE genetic-code error | Missing `.gcode` file             | Check `data/genetic_codes/trnascanse/`    |
-| Sample not processed           | `include` is `False`              | Set `include` to `True`                   |
-| Empty output table             | CDS file is empty or invalid      | Check CDS FASTA content                   |
-| Translation/codon warnings     | Wrong genetic code                | Verify `genetic_code` for the sample      |

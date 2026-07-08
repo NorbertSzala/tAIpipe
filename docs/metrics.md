@@ -1,89 +1,180 @@
-# Detailed Metrics Reference
+# Metrics and statistical interpretation
 
-## Metrics
+## Gene-level codon metrics
 
-### tRNA Adaptation Index (tAI)
+### tRNA Adaptation Index (`tAI`)
 
-#### Biological Purpose: 
-Estimates the relative translational elongation speed/efficiency of a gene based on how well its codon configuration matches the cellular tRNA pool availability.
+`tAI` measures how well a gene's codons match the estimated tRNA pool. The pipeline uses tRNA gene copy numbers as an abundance proxy and `cubar::est_trna_weight()` to apply domain-specific codon–anticodon pairing and wobble penalties.
 
-#### Mathematical Concept: 
-First, the absolute adaptiveness value ($W_i$) for each codon $i$ is calculated by accounting for all matching tRNAs $j$ (anti-codons) and multiplying their copy numbers by domain-specific wobble-pairing constraints:
+For codon $i$, an absolute weight is conceptually:
 
-$$W_i = \sum_{j=1}^{61} (1 - s_{ij}) G_j$$
+```math
+W_i = \sum_j (1-s_{ij})G_j
+```
 
-Where $G_j$ is the gene copy number of tRNA anticodon $j$, and $s_{ij}$ is the wobble-pairing penalty coefficient (e.g., an exact Watson-Crick match has $s_{ij} = 0$, meaning a pairing efficiency of $1 - 0 = 1$).
-  
-These absolute values are normalized into relative adaptiveness weights ($w_i$) by dividing by the maximum observed absolute value:
-$$w_i = \frac{W_i}{\max(W_i)}$$
+where $G_j$ is the copy number of a compatible tRNA and $s_{ij}$ is its pairing penalty. Relative codon weights are normalized, and gene tAI is their geometric mean across the coding sequence.
 
-The global tAI score for a specific gene $g$ containing $L$ codons is then determined by calculating the geometric mean of its constituent codon weights:
-$$\text{tAI}_g = \left( \prod_{k=1}^L w_{i_k} \right)^{\frac{1}{L}}$$
+**Interpretation:** higher values indicate stronger adaptation to the copy-number-derived tRNA pool. They do not directly measure tRNA expression or translation rate.
 
-#### Interpretation: 
-Scores range continuously between $0$ and $1$. A high tAI score indicates a highly optimized gene that utilizes codons serviced by abundant, highly efficient tRNAs, facilitating rapid translation. A low tAI score points to unoptimized configurations; these can induce local ribosomal stalling or pausing, which is often biologically required to guide precise co-translated protein folding pathways.
 
-***
+### Relative Synonymous Codon Usage (`RSCU`)
 
-### Frequency of Optimal Codons (FOP)
+For codon $i$ encoding an amino acid with $n$ synonymous codons:
 
-#### Biological Purpose: 
-Measures the direct proportion of codons inside a gene sequence that are statistically designated as "optimal" or highly efficient for translation.
+```math
+RSCU_i = \frac{X_i}{\frac{1}{n}\sum_{j=1}^{n}X_j}
+```
 
-#### Interpretation: 
-Expressed as a fraction between $0$ and $1$. Higher FOP values show that a gene relies extensively on the organism's preferred codon pool to maximize translational throughput.
+- `RSCU = 1`: expected under equal synonymous use;
+- `RSCU > 1`: overrepresented;
+- `RSCU < 1`: underrepresented.
 
-***
+The pipeline reports:
 
-### Codon Adaptation Index (CAI)
+- `genome_RSCU`: calculated from all valid CDS;
+- `reference_RSCU`: calculated from ribosomal reference CDS.
 
-#### Biological Purpose: 
-Gauges how closely a gene's synonymous codon choices mimic the expression-optimized preferences of a reference set of highly expressed, elite house-keeping genes.
 
-#### Interpretation: 
-Values range from $0$ to $1$. Higher values signify strong directional selection towards high-expression setups, a hallmark feature of highly transcribed metabolic or structural genes.
+### Codon Adaptation Index (`CAI`)
 
-***
+CAI is calculated with codon weights estimated from the sample-specific cytosolic ribosomal reference CDS set identified by KofamScan.
 
-### Effective Number of Codons (ENC)
+For a codon, the relative weight is based on its usage relative to the most used synonymous codon in the reference set. Gene CAI is the geometric mean of these weights. In other words, `CAI` for each sequence is calculated as ratio this sequence's `RSCU` to ribosomal reference sequence `RSCU`.
 
-#### Biological Purpose: 
-Quantifies the general strength of synonymous codon usage bias (CUB) within a gene sequence, operating completely independently of any external tRNA or expression reference sets.
+**Interpretation:** higher values indicate stronger similarity to codon usage in the ribosomal reference genes. CAI values are reference- and genetic-code-dependent.
 
-#### Interpretation: 
-Scores map along a scale from $20$ to $61$:
 
-An ENC of **20** signifies extreme, absolute bias, where only one single specific synonymous codon is utilized to code for each amino acid family (all other alternative synonyms are entirely excluded).
+### Effective Number of Codons (`ENC`)
 
-An ENC of **61** signifies absolute uniformity, meaning all synonymous codons are utilized equally at random distributions without any preference.
+ENC summarizes synonymous codon-use bias. Typical interpretation:
 
-**Rule of Thumb:** Lower ENC values indicate stronger, more pronounced codon usage bias.
+- values near 20: very strong bias;
+- values near 61: weak bias or nearly uniform synonymous usage.
 
-***
+### Expected ENC and `delta_ENC`
 
-### Relative Synonymous Codon Usage (RSCU)
+The expected ENC under the Wright GC3 model is:
 
-#### Biological Purpose: 
-Determines if specific individual codons within a synonymous family are overrepresented or avoided relative to a null model of equal, uniform usage among all available alternatives.
+```math
+ENC_{expected} = 2 + S + \frac{29}{S^2 + (1-S)^2}
+```
 
-#### Mathematical Concept: 
-$$\text{RSCU}_{ij} = \frac{X_{ij}}{\frac{1}{n_i} \sum_{j=1}^{n_i} X_{ij}}$$
+where $S=GC3s$.
 
-Where $X_{ij}$ is the raw count of the $j$-th codon for the $i$-th amino acid, and $n_i$ represents the total degeneracy (the number of synonymous options available for that specific amino acid family).
+```math
+delta_ENC = ENC_observed - ENC_expected
+```
 
-#### Interpretation: 
-$\text{RSCU} = 1.0$: Represents the null state of zero bias (the codon is used exactly at its expected random frequency).
+- negative `delta_ENC`: stronger codon bias than expected from GC3s alone;
+- positive `delta_ENC`: weaker bias than the model expectation;
+- values near zero: broadly compatible with the GC3 expectation.
 
-$\text{RSCU} > 1.0$: Points to positive selection or overrepresentation of that specific codon.
+This is a descriptive deviation, not a formal significance test.
 
-$\text{RSCU} < 1.0$: Points to underrepresentation or active avoidance of that specific codon.
 
-***
+### Frequency of Optimal Codons (`FOP`)
 
-### GC and GC3s Content
+FOP is calculated by `cubar::get_fop()` using the active codon table. It represents the fraction of codons classified as optimal by that implementation.
 
-#### Biological Purpose: 
-Measures overall nucleotide composition alongside focused synonymous third-position composition (`GC3s`).
+Do not confuse this value with `reference_optimal_codon` in `codon_profiles.tsv`, which explicitly marks codons with the maximum reference-derived CAI weight within a synonymous family.
 
-#### Interpretation: 
-While overall GC content tracks global chromosome architectures, **GC3s** focuses exclusively on the third position of synonymous codons. Because third-position mutations are frequently silent (they do not alter the final translated amino acid sequence), GC3s acts as a critical baseline indicator to isolate neutral background mutational pressure and genomic drift from targeted translational selection.
+### GC and GC3s
+
+- `GC`: fraction of G and C nucleotides across the coding sequence.
+- `GC3s`: GC fraction at synonymous third-codon positions as defined by the active genetic code.
+
+GC3s is useful for separating compositional pressure from additional codon-bias effects.
+
+### Amino-acid usage
+
+`*_amino_acid_usage.csv` contains per-gene amino-acid composition derived from codon counts. It is an intermediate matrix and is not merged into the canonical gene table.
+
+## Codon-level tRNA fields
+
+| Field                           | Meaning                                  |
+| ------------------------------- | ---------------------------------------- |
+| `trna_anticodon`                | Compatible anticodon assigned by `cubar` |
+| `trna_id`                       | Amino-acid–anticodon key                 |
+| `trna_copy_number` / `ac_level` | Copy-number input used for the codon     |
+| `trna_absolute_weight` / `W`    | Unnormalized codon adaptiveness          |
+| `tRNA_weight` / `w`             | Relative weight used for tAI             |
+
+## Derived within-genome variables
+
+### `tAI_z`
+
+Standard score calculated separately within each genome:
+
+```math
+z = \frac{tAI - \overline{tAI}}{SD(tAI)}
+```
+
+It allows gene-level models to compare relative tAI position across genomes with different absolute distributions.
+
+### `tAI_percentile`
+
+Within-genome rank scaled to `[0,1]`. Values near `0` identify low-tAI genes and values near `1` identify high-tAI genes.
+
+## Gene-level mixed models
+
+For every configured binary feature, the model is:
+
+```math
+tAI_z ~ feature + available covariates + (1 | sample)
+```
+
+Default covariates:
+
+```text
+log_protein_length_aa
+GC3s
+```
+
+The feature p-value is obtained from a likelihood-ratio comparison between the full model and a reduced model without the feature. `estimate` is the fixed-effect difference in within-genome tAI standard deviations for feature-present versus feature-absent genes.
+
+`status=singular_fit` means the model fitted but the random-effect structure was estimated at or near a boundary; interpret such results cautiously.
+
+## Genome-level group tests
+
+For each configured genome metric and grouping variable:
+
+- exactly two groups: Wilcoxon rank-sum test;
+- more than two groups: Kruskal–Wallis test.
+
+Effects:
+
+- Wilcoxon: median of the second factor level minus median of the first;
+- Kruskal–Wallis: epsilon-squared effect size.
+
+The factor-level order determines the sign of the two-group effect and is reported in `comparison`.
+
+## GO enrichment
+
+Genes are ranked by tAI separately within each genome. High and low tails contain:
+
+```text
+ceiling(tail_fraction × number of eligible genes)
+```
+
+subject to the optional absolute cap and a non-overlap limit of half the eligible genes.
+
+For every GO term and tail, the script builds a 2×2 table within each genome and combines informative strata using a Cochran–Mantel–Haenszel test.
+
+- `common_odds_ratio > 1`: term enriched in the selected tail;
+- `common_odds_ratio < 1`: term depleted in the selected tail;
+- confidence interval crossing `1`: effect is not clearly separated from no enrichment.
+
+The background is all eligible non-tail genes, including genes without GO annotation. This prevents the analysis from conditioning only on annotated genes.
+
+## Multiple testing
+
+`q_value` is calculated with the configured `statistics.fdr_method` or `go_enrichment.fdr_method`, defaulting to Benjamini–Hochberg (`BH`). GO p-values are adjusted separately for high- and low-tAI tails.
+
+## Main limitations
+
+- tRNA gene copy number is a proxy, not direct tRNA abundance.
+- tAI depends on wobble assumptions and genome annotation quality.
+- CAI depends on the quality and size of the KofamScan-derived ribosomal reference.
+- ENC and GC3s can be unstable for short or compositionally unusual CDS.
+- Group tests do not correct for phylogenetic non-independence.
+- GO enrichment quality depends on annotation coverage and consistency across genomes.

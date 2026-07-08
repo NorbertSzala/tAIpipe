@@ -1,8 +1,8 @@
 # 🧬→🖥️→📊 tAIpipe
 
-v0.4.0
+v0.6.0
 
-Bioinformatics pipeline for tRNA adaptation index (**tAI**), codon usage, and tRNA gene analysis across genomic and CDS datasets, with outputs designed for downstream visualization and interactive dashboards.
+`tAIpipe` is a Snakemake workflow for comparative analysis of tRNA gene repertoires, codon usage and translational adaptation. For every included genome, it predicts tRNA genes, constructs a cytosolic ribosomal reference set, calculates gene-level codon metrics and produces canonical tables for downstream statistics.
 
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![R](https://img.shields.io/badge/r-%23276DC3.svg?style=for-the-badge&logo=r&logoColor=white)
@@ -30,14 +30,14 @@ The main goal of this project is to integrate **tRNA Adaptation Index** analysis
 
 Detailed documentation is split into separate files:
 
-| File                        | Description                                      |
-| --------------------------- | ------------------------------------------------ |
-| `docs/input_format.md`      | Required inputs and sample table format          |
-| `docs/output_format.md`     | Output files and final tables                    |
-| `docs/workflow_overview.md` | Workflow logic and rule-level overview           |
-| `docs/metrics.md`           | Explanation of tAI, CAI, ENC, RSCU, GC, and GC3s |
-| `docs/troubleshooting.md`   | Common errors and fixes                          |
-| `docs/project_map.md`       | Repository structure and development notes       |
+| Guide                                                    | Contents                                     |
+| -------------------------------------------------------- | -------------------------------------------- |
+| [`docs/getting_started.md`](docs/getting_started.md)     | Installation, configuration and first run    |
+| [`docs/input_format.md`](docs/input_format.md)           | Required inputs and FASTA/header constraints |
+| [`docs/workflow_overview.md`](docs/workflow_overview.md) | Rule order and data flow                     |
+| [`docs/script_reference.md`](docs/script_reference.md)   | Input and output of every active script      |
+| [`docs/output_format.md`](docs/output_format.md)         | Output directory tree and table schemas      |
+| [`docs/metrics.md`](docs/metrics.md)                     | Metric and statistical interpretation        |
 
 ## What is **tAI**?
 
@@ -54,27 +54,56 @@ Higher **tAI** values suggest that a gene uses codons recognized by more abundan
 
 ## Requirements
 
-The workflow requires **Snakemake**. Rule-specific dependencies are managed through Conda environments defined in:
+- Snakemake
+- Conda, Mamba or Micromamba
+- Genome, CDS and protein FASTA files for every sample
+- Local KOfam `ko_list` and profile HMM database
+- KEGG BRITE `ko03011` JSON used to define cytosolic eukaryotic ribosomal proteins
 
-```text
-workflow/envs/
-```
+Rule-specific software is installed from `workflow/envs/`. The R environment installs the `cubar` package through `workflow/envs/r.post-deploy.sh`.
 
 A working Conda/Mamba/Micromamba installation is recommended.
 
 ## Quick start
 
+### 0. Download
+
 ```bash
 git clone https://github.com/NorbertSzala/tAIpipe.git
 cd tAIpipe
+```
+
+### 1. Validate the test workflow
+
+```bash
 snakemake -n --profile workflow/profiles/test
+```
+
+### 2. Run the test workflow
+
+```bash
 snakemake --profile workflow/profiles/test
 ```
 
-The test profile uses reduced input data from:
+### 3. Run the production workflow
 
-```text
-resources/test_data/
+Edit `config/config.yaml` and `config/samples.tsv` (adjust to your paths, samples), then run:
+
+```bash
+snakemake -n --profile workflow/profiles/production
+snakemake --profile workflow/profiles/production
+```
+
+A direct invocation without a profile is also supported:
+
+```bash
+snakemake \
+  --snakefile workflow/Snakefile \
+  --configfile config/config.yaml \
+  --use-conda \
+  --cores 16 \
+  --rerun-incomplete \
+  --printshellcmds
 ```
 
 ## Information flow
@@ -267,6 +296,18 @@ Main final table:
 results/aggregated/tables/all_genomes_metrics.tsv
 ```
 
+### Main outputs
+
+| File                                        | Unit                        | Purpose                                          |
+| ------------------------------------------- | --------------------------- | ------------------------------------------------ |
+| `results/tables/gene_features.tsv`          | one CDS/gene                | Gene metadata, QC and codon-usage metrics        |
+| `results/tables/genome_summary.tsv`         | one genome                  | Genome-level summaries and QC                    |
+| `results/tables/codon_profiles.tsv`         | one genome × codon          | Codon counts, RSCU, CAI weights and tRNA weights |
+| `results/statistics/gene_feature_tests.tsv` | one binary feature          | Mixed-model association with within-genome tAI   |
+| `results/statistics/genome_group_tests.tsv` | one metric × group variable | Genome-level Wilcoxon or Kruskal–Wallis tests    |
+| `results/statistics/go_enrichment.tsv`      | one GO term × tAI tail      | Genome-stratified GO enrichment                  |
+
+
 See `docs/output_format.md` for detailed output descriptions.
 
 
@@ -313,5 +354,12 @@ Contributions are welcome through pull requests or private message.
 - Integrated the main analysis steps into the Snakemake pipeline.
 - Prepared and maintained the main README and project documentation in `docs/`.
 - Prepared test-oriented workflow configuration and small example-data execution mode.
+- All plots inside `workflow/scripts` structure
+- Prepare scripts counting all used metrics, including preparation to calculate CAI (and choosing ribosomal reference set using KEGG database)
 
 #### Max Stróżyk
+- Implementation of `.html` layer with plots inside
+
+## License
+
+GPL-3.0. See `LICENSE`.
