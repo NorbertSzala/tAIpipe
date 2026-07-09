@@ -8,7 +8,9 @@
 *.dag.pdf
 *.dag.png
 *.dag.svg
-
+diagnostics/
+resources/annotations/Main_Dataset.tsv
+resources/annotations/main_dataset_annotations.tsv
 # Legacy/tutorial output locations
 /data/tutorial_data/output/
 /tests/output/
@@ -27,6 +29,7 @@
 # kofamscan
 resources/kofamscan/profiles
 
+resources/Main_Dataset.tsv
 
 # Downloaded or generated container images
 /resources/containers/*.sif

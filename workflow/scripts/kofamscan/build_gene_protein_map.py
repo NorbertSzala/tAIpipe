@@ -63,6 +63,7 @@ import csv
 import gzip
 import re
 from pathlib import Path
+import sys
 
 from Bio import SeqIO
 
@@ -110,6 +111,21 @@ def read_protein_ids(path: Path) -> set[str]:
     return protein_ids
 
 
+def setup_snakemake_log() -> None:
+    if "snakemake" not in globals():
+        return
+
+    if not snakemake.log:
+        return
+
+    log_path = Path(snakemake.log[0])
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    log_handle = log_path.open("w", encoding="utf-8")
+    sys.stdout = log_handle
+    sys.stderr = log_handle
+
+
 def select_gene_id(
     attributes: dict[str, str],
     protein_id: str,
@@ -127,11 +143,13 @@ def select_gene_id(
 
 
 def main() -> None:
+    setup_snakemake_log()
     cds_path = Path(snakemake.input.cds)
     proteins_path = Path(snakemake.input.proteins)
     output_path = Path(snakemake.output.mapping)
 
     sample = str(snakemake.params.sample)
+
     strict_match = bool(
         getattr(
             snakemake.params,
@@ -140,6 +158,21 @@ def main() -> None:
         )
     )
 
+    max_missing_fraction = float(
+        getattr(
+            snakemake.params,
+            "max_missing_proteome_fraction",
+            0.0,
+        )
+    )
+
+    max_missing_count = int(
+        getattr(
+            snakemake.params,
+            "max_missing_proteome_count",
+            0,
+        )
+    )
     protein_fasta_ids = read_protein_ids(proteins_path)
 
     rows: list[dict[str, object]] = []
@@ -197,13 +230,36 @@ def main() -> None:
             f"No CDS-to-protein mappings could be created from {cds_path}"
         )
 
-    if strict_match and missing_from_proteome:
-        preview = ", ".join(sorted(set(missing_from_proteome))[:20])
+    missing_unique = sorted(set(missing_from_proteome))
+    missing_count = len(missing_unique)
+    missing_fraction = missing_count / max(len(rows), 1)
 
-        raise RuntimeError(
-            f"{len(set(missing_from_proteome))} CDS protein identifiers "
-            f"are absent from {proteins_path}. Examples: {preview}"
+    if missing_count > 0:
+        preview = ", ".join(missing_unique[:20])
+        message = (
+            f"{missing_count} CDS protein identifiers are absent from "
+            f"{proteins_path}. "
+            f"Missing fraction: {missing_fraction:.6f}. "
+            f"Examples: {preview}"
         )
+
+        if strict_match:
+            raise RuntimeError(message)
+
+        if (
+            missing_count > max_missing_count
+            and missing_fraction > max_missing_fraction
+        ):
+            raise RuntimeError(
+                message
+                + (
+                    f" Exceeds allowed thresholds: "
+                    f"max_missing_proteome_count={max_missing_count}, "
+                    f"max_missing_proteome_fraction={max_missing_fraction}."
+                )
+            )
+
+        print("WARNING:", message)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")

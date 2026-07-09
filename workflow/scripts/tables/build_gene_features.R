@@ -13,6 +13,8 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 
+
+
 parser <- ArgumentParser(
   description = "Build the canonical gene-level feature table for tAIpipe"
 )
@@ -28,6 +30,18 @@ parser$add_argument(
   )
 )
 parser$add_argument("--output", required = TRUE)
+parser$add_argument(
+  "--require-go-terms",
+  action = "store_true",
+  help = "Fail if no valid GO identifiers are present in the final gene table."
+)
+
+parser$add_argument(
+  "--min-go-annotated-genes",
+  type = "integer",
+  default = 1L,
+  help = "Minimum number of genes with valid GO terms when --require-go-terms is used."
+)
 args <- parser$parse_args()
 
 as_flag <- function(x) {
@@ -65,18 +79,33 @@ collapse_unique <- function(x) {
 }
 
 normalize_go_terms <- function(x) {
-  if (length(x) == 0L || all(is.na(x))) {
+  if (length(x) == 0L) {
+    return(NA_character_)
+  }
+
+  values <- as.character(x)
+  values <- values[!is.na(values) & nzchar(trimws(values))]
+
+  if (length(values) == 0L) {
     return(NA_character_)
   }
 
   hits <- unlist(
     str_extract_all(
-      as.character(x),
+      values,
       regex("GO:[0-9]{7}", ignore_case = TRUE)
     ),
     use.names = FALSE
   )
-  collapse_unique(toupper(hits))
+
+  hits <- toupper(hits)
+  hits <- unique(hits[!is.na(hits) & nzchar(hits)])
+
+  if (length(hits) == 0L) {
+    return(NA_character_)
+  }
+
+  paste(sort(hits), collapse = ";")
 }
 
 extract_uniprot_ids <- function(header) {
@@ -282,6 +311,27 @@ read_optional_annotations <- function(path) {
     stop("Annotation table must contain sample column: ", path)
   }
 
+  annotation_payload_columns <- intersect(
+    names(annotations),
+    c(
+      "go_terms",
+      "uniprot_id",
+      "pfam_terms",
+      "signal_peptide_present",
+      "tm_present",
+      "lcr_present",
+      "annotation_source"
+    )
+  )
+
+  if (length(annotation_payload_columns) == 0L) {
+    stop(
+      "Annotation table contains join keys but no supported annotation columns. ",
+      "Expected at least one of: go_terms, uniprot_id, pfam_terms, ",
+      "signal_peptide_present, tm_present, lcr_present, annotation_source."
+    )
+  }
+
   if ("protein_id" %in% names(annotations)) {
     join_keys <- c("sample", "protein_id")
   } else if ("seq_id" %in% names(annotations)) {
@@ -313,12 +363,22 @@ read_optional_annotations <- function(path) {
     annotations <- annotations %>%
       mutate(go_terms_external = map_chr(go_terms, normalize_go_terms)) %>%
       select(-go_terms)
+
+    n_go <- sum(!is.na(annotations$go_terms_external))
+    if (n_go == 0L) {
+      warning(
+        "Annotation table has a go_terms column, but no valid GO identifiers ",
+        "matching GO:[0-9]{7} were found."
+      )
+    }
   } else {
     annotations$go_terms_external <- NA_character_
   }
 
   list(data = annotations, keys = join_keys)
 }
+
+
 
 required_dataset_columns <- c(
   "sample", "species", "accession", "domain", "kingdom", "phylum",
@@ -423,6 +483,15 @@ for (i in seq_len(nrow(dataset))) {
     ) %>%
     ungroup()
 
+  n_with_go <- sum(!is.na(sample_table$go_terms))
+  n_with_uniprot <- sum(!is.na(sample_table$uniprot_id))
+
+  message(
+    "Sample ", sample_id,
+    ": genes with GO terms = ", n_with_go,
+    "; genes with UniProt IDs = ", n_with_uniprot
+  )
+
   for (column_name in c(
     "signal_peptide_present",
     "tm_present",
@@ -449,7 +518,8 @@ final_table <- bind_rows(compiled) %>%
   group_by(sample) %>%
   mutate(
     tAI_z = safe_zscore(tAI),
-    tAI_percentile = safe_percentile(tAI)
+    tAI_percentile = safe_percentile(tAI),
+    log_protein_length_aa = log1p(as.numeric(protein_length_aa))
   ) %>%
   ungroup() %>%
   select(
@@ -468,6 +538,7 @@ final_table <- bind_rows(compiled) %>%
     protein_name,
     cds_length_nt,
     protein_length_aa,
+    log_protein_length_aa,
     cds_length_multiple_of_three,
     has_terminal_stop,
     cds_qc_pass,
@@ -492,6 +563,31 @@ final_table <- bind_rows(compiled) %>%
     -go_terms_header,
     -go_terms_external
   )
+
+
+# Double check
+n_go_annotated <- sum(!is.na(final_table$go_terms))
+n_unique_go <- final_table %>%
+  pull(go_terms) %>%
+  str_split(";", simplify = FALSE) %>%
+  unlist(use.names = FALSE) %>%
+  unique() %>%
+  discard(~ is.na(.x) || !nzchar(.x)) %>%
+  length()
+
+message("Rows with GO terms: ", n_go_annotated)
+message("Unique GO terms: ", n_unique_go)
+
+if (isTRUE(args$require_go_terms)) {
+  if (n_go_annotated < args$min_go_annotated_genes) {
+    stop(
+      "GO terms are required, but only ", n_go_annotated,
+      " genes have valid GO annotations. ",
+      "Provide a valid --annotation-table or disable GO enrichment."
+    )
+  }
+}
+
 
 dir.create(dirname(args$output), recursive = TRUE, showWarnings = FALSE)
 write_tsv(final_table, args$output, na = "NA")

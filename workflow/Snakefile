@@ -1,5 +1,6 @@
 
 configfile: "config/config.yaml"
+configfile: "config/statistic_config.yaml"
 
 import pandas as pd
 from glob import glob
@@ -160,7 +161,12 @@ def get_go_dictionary_input(wildcards):
         return config["go_dictionary"]["path"]
     return []
 
+GO_ENRICHMENT_OUTPUTS = []
 
+if config.get("go_enrichment", {}).get("enabled", False):
+    GO_ENRICHMENT_OUTPUTS = [
+        config["paths"]["go_enrichment"]
+    ]
 # ------------------------------------------------------------------------------
 # --- Check files --------------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -188,10 +194,25 @@ require_existing_path(
 )
 
 KOFAM_TARGETS = expand(
-    f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.fna",
+    f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.top2_per_ko.fna",
     sample=SAMPLES,
 )
 
+
+# ------------------------------------------------------------------------------
+# --- Plots as targets  --------------------------------------------------------
+# ------------------------------------------------------------------------------
+PLOT_TARGETS = []
+
+if config.get("plots", {}).get("enabled", True):
+    PLOT_TARGETS = [
+        "results/plots/tai_extremes/binary_features.png",
+        "results/plots/tai_extremes/continuous_features.png",
+        "results/plots/gene_features/tai_by_binary_features.png",
+        "results/plots/gene_features/tai_vs_continuous_features.png",
+        "results/plots/genome_metrics/genome_metrics_by_phylum.png",
+        "results/plots/codon_profiles/trna_weights_heatmap.png",
+    ]
 
 # ------------------------------------------------------------------------------
 # --- Main Rule ----------------------------------------------------------------
@@ -228,8 +249,10 @@ rule all:
         # Statistics
         config["paths"]["gene_feature_tests"],
         config["paths"]["genome_group_tests"],
-        config["paths"]["go_enrichment"],
 
+        GO_ENRICHMENT_OUTPUTS,
+
+        PLOT_TARGETS
 # ------------------------------------------------------------------------------
 # ---  Include rules -----------------------------------------------------------
 # ------------------------------------------------------------------------------
@@ -245,6 +268,8 @@ include: "rules/07_compute_codon_metrics.smk"
 include: "rules/00_prepare_go_dictionary.smk"
 include: "rules/08_build_tables.smk"
 include: "rules/09_compute_statistics.smk"
-include: "rules/10_go_enrichment.smk"
+include: "rules/10_summarize_statistics.smk"
+include: "rules/11_go_enrichment.smk"
+include: "rules/12_plots.smk"
 
 # include: "rules/99_legacy_aggregate_and_report.smk"

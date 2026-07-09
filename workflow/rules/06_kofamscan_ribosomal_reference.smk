@@ -215,6 +215,14 @@ rule parse_kofamscan_ribosome:
             "cds_id",
             "cds_id",
         ),
+        max_missing_proteome_count=config.get(
+            "gene_protein_map",
+            {},
+        ).get("max_missing_proteome_count", 200),
+        max_missing_proteome_fraction=config.get(
+            "gene_protein_map",
+            {},
+        ).get("max_missing_proteome_fraction", 0.05),
 
     conda:
         "../envs/kofamscan.yaml"
@@ -236,3 +244,38 @@ rule extract_ribosomal_reference_cds:
 
     script:
         "../scripts/kofamscan/extract_reference_cds.py"
+
+rule select_top2_ribosomal_reference_cds:
+    input:
+        hits=f"{PER_GENOME}/{{sample}}/kofamscan/ribosome_significant_hits.tsv",
+        cds=get_cds
+
+    output:
+        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.top2_per_ko.txt",
+        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.top2_per_ko.fna"
+
+    params:
+        top_n=2,
+        allow_empty=False
+
+    log:
+        stderr=f"{LOGS}/kofamscan/{{sample}}.select_top2_ribosomal_reference_cds.stderr.log"
+
+    benchmark:
+        f"{BENCHMARKS}/kofamscan/{{sample}}.select_top2_ribosomal_reference_cds.tsv"
+
+    threads: 1
+
+    resources:
+        mem_mb=4000,
+        disk_mb=20000,
+        runtime=60
+
+    conda:
+        "../envs/python.yaml"
+
+    message:
+        "Selecting top 2 ribosomal CDS sequences per KO for {wildcards.sample}."
+
+    script:
+        "../scripts/kofamscan/select_top_n_reference_cds.py"

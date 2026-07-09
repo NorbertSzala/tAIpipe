@@ -1,0 +1,12 @@
+name: tai-plotting
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-tidyverse
+  - r-yaml
+  - r-patchwork
+  - r-viridis
+  - r-ragg
+  - r-svglite

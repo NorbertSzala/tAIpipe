@@ -102,7 +102,3 @@ The workflow stops on structural inconsistencies that can invalidate results, in
 - malformed tRNA count profiles.
 
 `tRNA` threshold violations can be configured as `error`, `warn` or `ignore` through `trna_qc.mode`.
-
-## Legacy files
-
-Only files included by `workflow/Snakefile` are active. The current workflow uses numbered rules `00–10` and scripts in the corresponding subdirectories. Unnumbered rules and duplicate scripts are not executed.

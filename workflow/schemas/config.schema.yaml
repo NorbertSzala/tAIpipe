@@ -19,6 +19,7 @@ required:
   - statistics
   - go_enrichment
   - report_config
+  - gene_protein_map
 
 properties:
   paths:
@@ -379,10 +380,59 @@ properties:
           - hommel
           - bonferroni
           - none
+      tai_extremes:
+        type: object
+        additionalProperties: false
+        required:
+          - enabled
+          - group_column
+          - id_column
+          - value_column
+          - tail_fractions
+          - binary_features
+          - continuous_features
+        properties:
+          enabled:
+            type: boolean
+
+          group_column:
+            type: string
+            minLength: 1
+
+          id_column:
+            type: string
+            minLength: 1
+
+          value_column:
+            type: string
+            minLength: 1
+
+          tail_fractions:
+            type: array
+            minItems: 1
+            uniqueItems: true
+            items:
+              type: number
+              exclusiveMinimum: 0
+              exclusiveMaximum: 1
+
+          binary_features:
+            type: object
+            minProperties: 1
+            additionalProperties:
+              type: string
+              minLength: 1
+
+          continuous_features:
+            type: object
+            minProperties: 1
+            additionalProperties:
+              type: string
+              minLength: 1
 
   go_enrichment:
     type: object
-    additionalProperties: false
+    additionalProperties: true
     required:
       - tail_fraction
       - max_tail_genes
@@ -418,6 +468,13 @@ properties:
           - hommel
           - bonferroni
           - none
+      enabled:
+        type: boolean
+        description: "Whether GO enrichment should be included in the workflow."
+
+      require_go_terms:
+        type: boolean
+        description: "Whether the workflow should fail if gene_features.tsv has no valid GO annotations."
 
   report_config:
     type: object
@@ -431,3 +488,85 @@ properties:
       template_path:
         type: string
         minLength: 1
+  
+  gene_protein_map:
+    type: object
+    additionalProperties: false
+    required:
+      - strict_proteome_match
+      - max_missing_proteome_count
+      - max_missing_proteome_fraction
+    properties:
+      strict_proteome_match:
+        type: boolean
+      max_missing_proteome_count:
+        type: number
+      max_missing_proteome_fraction:
+        type: number
+        description: "What fraction of protein in proteome can be mismatched to given CDS fasta file."
+    
+  plots:
+    type: object
+    additionalProperties: false
+    required:
+      - enabled
+      - groups
+      - output_formats
+      - max_categories_without_faceting
+      - default_top_n_categories
+      - default_top_n_terms
+    properties:
+      enabled:
+        type: boolean
+        default: true
+
+      groups:
+        type: object
+        additionalProperties: false
+        required:
+          - tai_extremes
+          - gene_features
+          - genome_metrics
+          - codon_profiles
+          - go_enrichment
+          - correlations
+          - qc
+        properties:
+          tai_extremes:
+            type: boolean
+          gene_features:
+            type: boolean
+          genome_metrics:
+            type: boolean
+          codon_profiles:
+            type: boolean
+          go_enrichment:
+            type: boolean
+          correlations:
+            type: boolean
+          qc:
+            type: boolean
+
+      output_formats:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum:
+            - png
+            - pdf
+            - svg
+
+      max_categories_without_faceting:
+        type: integer
+        minimum: 2
+        description: "When the number of categories exceeds this value, plotting scripts should facet, group rare categories, or use alternative encodings."
+
+      default_top_n_categories:
+        type: integer
+        minimum: 1
+
+      default_top_n_terms:
+        type: integer
+        minimum: 1

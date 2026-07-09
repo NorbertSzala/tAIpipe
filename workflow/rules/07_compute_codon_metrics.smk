@@ -7,7 +7,7 @@ rule codon_usage_metrics:
         aaa_count=f"{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv",
         trna_qc=f"{PER_GENOME}/{{sample}}/qc/{{sample}}_trna_profile_qc.tsv",
         reference_cds = (
-            f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.fna"
+            f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.top2_per_ko.fna"
         )
 
     output:
@@ -48,7 +48,7 @@ rule codon_usage_metrics:
         
         Rscript workflow/scripts/metrics/calculate_tAI.R \
             --input {input.cds} \
-            --reference_cds {input.reference_cds} \
+            --reference-cds {input.reference_cds} \
             --outdir {params.outdir} \
             --genetic-code {params.gcode} \
             --trna {input.aaa_count} \

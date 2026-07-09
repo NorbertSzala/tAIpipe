@@ -80,8 +80,6 @@ Kofam thresholds, validates the restricted KO scope, maps proteins to genes
 and creates an auditable list of ribosomal reference genes.
 """
 
-from __future__ import annotations
-
 import csv
 import gzip
 import re
@@ -133,27 +131,88 @@ def read_gene_protein_map(
         required = {gene_column, protein_column, cds_column}
         missing = required - set(reader.fieldnames)
         if missing:
-            raise ValueError(f"Missing columns in {path}: {', '.join(sorted(missing))}")
+            raise ValueError(
+                f"Mapping table {path} lacks required columns: "
+                f"{', '.join(sorted(missing))}"
+            )
 
         for row in reader:
             gene_id = row.get(gene_column, "").strip()
             protein_id = row.get(protein_column, "").strip()
             cds_id = row.get(cds_column, "").strip()
+
             if not gene_id or not protein_id or not cds_id:
                 continue
 
-            current = {"gene_id": gene_id, "cds_id": cds_id}
+            current = {
+                "gene_id": gene_id,
+                "cds_id": cds_id,
+            }
+
             previous = mapping.get(protein_id)
             if previous is not None and previous != current:
                 raise ValueError(
                     f"Protein {protein_id} maps to multiple gene/CDS records: "
                     f"{previous} and {current}"
                 )
+
             mapping[protein_id] = current
 
     if not mapping:
         raise ValueError(f"No complete protein-to-gene/CDS mappings found in {path}")
+
     return mapping
+
+
+def filter_mapping_to_proteome(
+    protein_to_ids: dict[str, dict[str, str]],
+    protein_ids: set[str],
+    max_missing_count: int,
+    max_missing_fraction: float,
+) -> tuple[dict[str, dict[str, str]], int, float]:
+    """Remove mappings absent from the query proteome unless mismatch is severe."""
+    mapped_protein_ids = set(protein_to_ids)
+    missing_from_proteome = sorted(mapped_protein_ids - protein_ids)
+
+    missing_count = len(missing_from_proteome)
+    missing_fraction = missing_count / max(len(mapped_protein_ids), 1)
+
+    if missing_count > 0:
+        preview = ", ".join(missing_from_proteome[:20])
+        message = (
+            f"{missing_count} mapped protein IDs are absent from the query proteome. "
+            f"Missing fraction: {missing_fraction:.6f}. "
+            f"Examples: {preview}"
+        )
+
+        if (
+            missing_count > max_missing_count
+            and missing_fraction > max_missing_fraction
+        ):
+            raise RuntimeError(
+                message
+                + (
+                    f" Exceeds allowed thresholds: "
+                    f"max_missing_proteome_count={max_missing_count}, "
+                    f"max_missing_proteome_fraction={max_missing_fraction}."
+                )
+            )
+
+        print("WARNING:", message)
+
+    filtered_mapping = {
+        protein_id: ids
+        for protein_id, ids in protein_to_ids.items()
+        if protein_id in protein_ids
+    }
+
+    if not filtered_mapping:
+        raise RuntimeError(
+            "No protein-to-gene/CDS mappings remained after filtering to "
+            "protein IDs present in the query proteome."
+        )
+
+    return filtered_mapping, missing_count, missing_fraction
 
 
 def read_unique_fasta_ids(path: Path) -> set[str]:
@@ -260,21 +319,45 @@ def main() -> None:
     cds_column = str(snakemake.params.cds_column)
 
     allowed_kos = read_reference_kos(ko_table)
+
     protein_to_ids = read_gene_protein_map(
         mapping_path,
         gene_column=gene_column,
         protein_column=protein_column,
         cds_column=cds_column,
     )
+
     protein_ids = read_unique_fasta_ids(protein_fasta)
 
-    mapping_not_in_proteome = set(protein_to_ids) - protein_ids
-    if mapping_not_in_proteome:
-        preview = ", ".join(sorted(mapping_not_in_proteome)[:20])
-        raise RuntimeError(
-            f"{len(mapping_not_in_proteome)} mapped protein IDs are absent from "
-            f"the query proteome. Examples: {preview}"
+    max_missing_count = int(
+        getattr(
+            snakemake.params,
+            "max_missing_proteome_count",
+            200,
         )
+    )
+
+    max_missing_fraction = float(
+        getattr(
+            snakemake.params,
+            "max_missing_proteome_fraction",
+            0.05,
+        )
+    )
+
+    n_mapping_missing_from_proteome_total = len(set(protein_to_ids) - protein_ids)
+    n_mapping_proteins_before_filtering = len(protein_to_ids)
+
+    protein_to_ids, n_mapping_missing_from_proteome, mapping_missing_fraction = (
+        filter_mapping_to_proteome(
+            protein_to_ids=protein_to_ids,
+            protein_ids=protein_ids,
+            max_missing_count=max_missing_count,
+            max_missing_fraction=max_missing_fraction,
+        )
+    )
+
+    n_mapping_proteins_after_filtering = len(protein_to_ids)
 
     significant_hits: list[dict[str, Any]] = []
     unmapped_proteins: set[str] = set()
@@ -421,6 +504,10 @@ def main() -> None:
             "n_ribosomal_genes": len(reference_gene_ids),
             "n_reference_cds": len(reference_cds_ids),
             "n_multi_ko_proteins": multi_ko_proteins,
+            "n_mapping_proteins_before_filtering": n_mapping_proteins_before_filtering,
+            "n_mapping_proteins_after_filtering": n_mapping_proteins_after_filtering,
+            "n_mapping_missing_from_proteome": n_mapping_missing_from_proteome,
+            "mapping_missing_from_proteome_fraction": mapping_missing_fraction,
             "n_unmapped_significant_proteins": 0,
         }
     ]
@@ -430,6 +517,10 @@ def main() -> None:
         [
             "sample",
             "n_proteins_total",
+            "n_mapping_proteins_before_filtering",
+            "n_mapping_proteins_after_filtering",
+            "n_mapping_missing_from_proteome",
+            "mapping_missing_from_proteome_fraction",
             "n_reference_kos",
             "n_observed_kos",
             "ko_coverage",

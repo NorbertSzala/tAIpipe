@@ -28,6 +28,7 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 
+
 option_list <- list(
   make_option(c("-I", "--input"), type = "character", help = "Input CDS FASTA"),
   make_option(

@@ -332,33 +332,34 @@ Open an issue if you find:
 * missing codon usage metrics
 * ideas for new dashboard features
 
-Contributions are welcome through pull requests or private message.
+Contributions are welcome through pull requests or private message to Norbert Szala.
 
+## Project contributions
 
-## Participation
+### Norbert Szala
 
-#### Norbert Szala
+* Designed the main Snakemake workflow and organized the project structure.
+* Implemented the processing of tRNAscan-SE results and the preparation of tRNA codon profiles.
+* Developed the calculation of tAI and other codon usage metrics, including CAI, ENC, FOP, GC content, GC3s and RSCU.
+* Added the KofamScan-based identification of ribosomal proteins used as the CAI reference set.
+* Implemented protein, gene and CDS identifier mapping and extraction of reference ribosomal CDS sequences.
+* Added genome-level and gene-level summary tables, statistical analyses and GO enrichment analysis.
+* Prepared configuration files `config/*.yaml`, validation schemas`workflow/schemas/`, Conda environments `workflow/envs/locks/`.
+* Created and updated tutorial datasets used for testing the workflow.
+* Reorganized and renamed workflow rules to make the pipeline easier to understand and maintain.
+* Added workflow documentation, input and output descriptions, metric explanations.
+* Integrated the main analysis steps into the Snakemake pipeline.
+* Tested, debugged and cleaned the repository, including removal of outdated files and generated results.
 
-- Designed the main concept and technical structure of the workflow.
-- Implemented the Snakemake workflow organization, including:
-  - configuration files in `config/*.yaml`,
-  - execution profiles in `workflow/profiles/`,
-  - input validation schemas in `workflow/schemas/`,
-  - Conda environment definitions and lock files in `workflow/envs/locks/`,
-  - repository directory structure and output organization.
-- Implemented reproducibility-oriented workflow components, including Conda-based execution and initial Apptainer/Singularity container support.
-- Developed core data-processing scripts for converting raw inputs into codon usage and tAI-related metrics, including:
-  - parsing and cleaning `tRNAscan-SE` outputs,
-  - preparing amino acid–anticodon count tables,
-  - calculating codon usage metrics with R and the `cubar` package,
-- Integrated the main analysis steps into the Snakemake pipeline.
-- Prepared and maintained the main README and project documentation in `docs/`.
-- Prepared test-oriented workflow configuration and small example-data execution mode.
-- All plots inside `workflow/scripts` structure
-- Prepare scripts counting all used metrics, including preparation to calculate CAI (and choosing ribosomal reference set using KEGG database)
+### Max Stróżyk
 
-#### Max Stróżyk
-- Implementation of `.html` layer with plots inside
+* Developed and debugged scripts for combining sample metadata and gene annotations.
+* Improved protein identifier handling in the metadata preparation step.
+* Created and developed the main R Markdown report template.
+* Added plots, result summaries and configurable sections to the generated `.html` and `.pdf` report.
+* Helped organize the input metadata structure and standardize dataset and sample file names.
+* Helped debug the R environment, report rendering and workflow configuration.
+
 
 ## License
 
