@@ -15,7 +15,7 @@ rule build_gene_protein_map:
 
     params:
         sample=lambda wildcards: wildcards.sample,
-        strict_proteome_match=False,
+        strict_proteome_match=config.get("gene_protein_map", {}).get("strict_proteome_match", False),
         max_missing_proteome_fraction=  config.get("gene_protein_map",{}).get("max_missing_proteome_fraction", 0.05),
         max_missing_proteome_count = config.get("gene_protein_map", {}).get("max_missing_proteome_count", 200)
 

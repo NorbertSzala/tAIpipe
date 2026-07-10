@@ -9,6 +9,11 @@ PLOTTING_CONFIG = "config/plotting.yaml"
 
 R_PLOTTING_ENV = "../envs/r_plotting.yaml"
 
+CODON_HEATMAP_MIN_GROUP_N = config.get("codon_profile_plots", {}).get(
+    "heatmap_min_group_n",
+    5,
+)
+
 R_PLOTTING_UTILS = workflow.source_path("../scripts/lib/plotting_utils.R")
 R_TABLE_VALIDATION_UTILS = workflow.source_path("../scripts/lib/table_validation_utils.R")
 R_PLOT_DATA_UTILS = workflow.source_path("../scripts/lib/plot_data_utils.R")
@@ -157,12 +162,11 @@ rule plot_genome_metric_overview:
 
 
 # Plot codon and tRNA profile overview.
-# This rule creates heatmaps and variability plots from compact profile summaries.
+# This rule reads the canonical codon_profiles.tsv directly because the current
+# plotting script builds both its plot-specific summaries and figures in one pass.
 rule plot_codon_profile_overview:
     input:
-        heatmap=rules.summarize_codon_profile_plots.output.heatmap,
-        variability=rules.summarize_codon_profile_plots.output.variability,
-        reference_comparison=rules.summarize_codon_profile_plots.output.reference_comparison,
+        codon_profiles=config["paths"]["codon_profiles"],
         plotting_config=PLOTTING_CONFIG,
         plotting_utils=R_PLOTTING_UTILS,
         table_validation_utils=R_TABLE_VALIDATION_UTILS,
@@ -170,16 +174,27 @@ rule plot_codon_profile_overview:
         label_utils=R_LABEL_UTILS
 
     output:
-        trna_heatmap_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap.png",
-        trna_heatmap_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap.pdf",
-        # rscu_heatmap_png=f"{DATA_PLOTS}/codon_profiles/rscu_heatmap.png",
-        # rscu_heatmap_pdf=f"{DATA_PLOTS}/codon_profiles/rscu_heatmap.pdf",
         variability_png=f"{DATA_PLOTS}/codon_profiles/codon_usage_variability.png",
-        variability_pdf=f"{DATA_PLOTS}/codon_profiles/codon_usage_variability.pdf"
+        variability_pdf=f"{DATA_PLOTS}/codon_profiles/codon_usage_variability.pdf",
+        method=f"{DATA_PLOTS}/codon_profiles/codon_usage_variability_method.tsv",
+        heatmap_phylum_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_large_codon_x.png",
+        heatmap_phylum_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_large_codon_x.pdf",
+        heatmap_lifestyle_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_large_codon_x.png",
+        heatmap_lifestyle_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_large_codon_x.pdf",
+        heatmap_phylum_collapsed_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.png",
+        heatmap_phylum_collapsed_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.pdf",
+        heatmap_lifestyle_collapsed_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.png",
+        heatmap_lifestyle_collapsed_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.pdf"
 
     params:
-        plot_group="codon_profiles",
-        formats=config.get("plots", {}).get("output_formats", ["png", "pdf"])
+        output_dir=f"{DATA_PLOTS}/codon_profiles",
+        formats=config.get("plots", {}).get("output_formats", ["png", "pdf"]),
+        heatmap_value=config.get("codon_profile_plots", {}).get("heatmap_value", "auto"),
+        usage_value=config.get("codon_profile_plots", {}).get("usage_value", "genome_RSCU"),
+        top_n_variable_codons=config.get("codon_profile_plots", {}).get("top_n_variable_codons", 30),
+        heatmap_large_width=config.get("codon_profile_plots", {}).get("heatmap_large_width", 16.5),
+        heatmap_large_height=config.get("codon_profile_plots", {}).get("heatmap_large_height", 23.4),
+        heatmap_min_group_n=CODON_HEATMAP_MIN_GROUP_N
 
     log:
         stdout=f"{LOGS}/plots/plot_codon_profile_overview.stdout.log",
@@ -200,13 +215,26 @@ rule plot_codon_profile_overview:
     message:
         "Rendering static codon/tRNA profile heatmaps and variability plots."
 
-    script:
-        "../scripts/plots/plot_codon_profile_overview.R"
+    shell:
+        """
+        set -euo pipefail
+
+        mkdir -p {params.output_dir:q} "$(dirname {log.stdout:q})" "$(dirname {log.stderr:q})"
+
+        Rscript workflow/scripts/plots/plot_codon_profile_overview.R \
+            --codon-profiles {input.codon_profiles:q} \
+            --output-dir {params.output_dir:q} \
+            --formats {params.formats:q} \
+            --heatmap-value {params.heatmap_value:q} \
+            --usage-value {params.usage_value:q} \
+            --top-n-variable-codons {params.top_n_variable_codons} \
+            --heatmap-large-width {params.heatmap_large_width} \
+            --heatmap-large-height {params.heatmap_large_height} \
+            --heatmap-min-group-n {params.heatmap_min_group_n} \
+            > {log.stdout:q} 2> {log.stderr:q}
+        """
 
 
-# Plot GO enrichment overview.
-# This rule visualizes already-computed GO enrichment results; it does not
-# perform enrichment testing.
 rule plot_go_enrichment_overview:
     input:
         top_terms=rules.summarize_go_enrichment_plots.output.top_terms,

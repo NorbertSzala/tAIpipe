@@ -1,0 +1,59 @@
+--- workflow/rules/06_kofamscan_ribosomal_reference.smk	2026-07-10 20:54:48.009531514 +0000
++++ /mnt/data/taipipe_review_fixes/replacements/workflow/rules/06_kofamscan_ribosomal_reference.smk	2026-07-10 20:57:52.419547621 +0000
+@@ -51,6 +51,15 @@
+     KOFAM["execution"].get("threshold_scale", 1.0)
+ )
+ 
++REFERENCE_SELECTION = config.get("ribosomal_reference", {}).get("selection_strategy", "best_per_ko")
++REFERENCE_TOP_N = int(config.get("ribosomal_reference", {}).get("top_n_per_ko", 1))
++if REFERENCE_SELECTION == "best_per_ko" or REFERENCE_TOP_N == 1:
++    REFERENCE_SUFFIX = "best_per_ko"
++elif REFERENCE_SELECTION == "top_n_per_ko":
++    REFERENCE_SUFFIX = f"top{REFERENCE_TOP_N}_per_ko"
++else:
++    raise ValueError("Invalid ribosomal_reference.selection_strategy")
++
+ 
+ # ---------------------------------------------------------------------------
+ # Output path patterns
+@@ -230,24 +239,24 @@
+     script:
+         "../scripts/kofamscan/parse_kofamscan_ribosome.py"
+ 
+-rule select_best_ribosomal_reference_cds:
++rule select_ribosomal_reference_cds:
+     input:
+         hits=KOFAM_HITS,
+         cds=get_cds
+ 
+     output:
+-        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.best_per_ko.txt",
+-        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.best_per_ko.fna"
++        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.{REFERENCE_SUFFIX}.txt",
++        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna"
+ 
+     params:
+-        top_n=1,
++        top_n=REFERENCE_TOP_N,
+         allow_empty=False
+ 
+     log:
+-        stderr=f"{LOGS}/{{sample}}/kofamscan/select_best_ribosomal_reference_cds.stderr.log"
++        stderr=f"{LOGS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.stderr.log"
+ 
+     benchmark:
+-        f"{BENCHMARKS}/{{sample}}/kofamscan/select_best_ribosomal_reference_cds.tsv"
++        f"{BENCHMARKS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.tsv"
+ 
+     threads: 1
+ 
+@@ -260,7 +269,7 @@
+         "../envs/python.yaml"
+ 
+     message:
+-        "Selecting best ribosomal CDS sequence per KO for {wildcards.sample}."
++        f"Selecting ribosomal CDS reference ({REFERENCE_SUFFIX}) for {{wildcards.sample}}."
+ 
+     script:
+         "../scripts/kofamscan/select_top_n_reference_cds.py"
+\ No newline at end of file

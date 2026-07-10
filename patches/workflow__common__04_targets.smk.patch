@@ -1,0 +1,143 @@
+--- workflow/common/04_targets.smk	2026-07-10 20:54:48.018895538 +0000
++++ /mnt/data/taipipe_review_fixes/replacements/workflow/common/04_targets.smk	2026-07-10 20:57:39.722798042 +0000
+@@ -1,4 +1,5 @@
+ # Target lists only. Do not use directory() in rule all inputs.
++# Keep these paths synchronized with rule outputs in workflow/rules/*.smk.
+ 
+ GO_ENRICHMENT_OUTPUTS = []
+ if config.get("go_enrichment", {}).get("enabled", False):
+@@ -20,8 +21,22 @@
+     "KEGG BRITE ko03011 JSON",
+ )
+ 
++REFERENCE_SELECTION = config.get("ribosomal_reference", {}).get(
++    "selection_strategy", "best_per_ko"
++)
++REFERENCE_TOP_N = int(config.get("ribosomal_reference", {}).get("top_n_per_ko", 1))
++
++if REFERENCE_SELECTION == "best_per_ko" or REFERENCE_TOP_N == 1:
++    REFERENCE_SUFFIX = "best_per_ko"
++elif REFERENCE_SELECTION == "top_n_per_ko":
++    REFERENCE_SUFFIX = f"top{REFERENCE_TOP_N}_per_ko"
++else:
++    raise ValueError(
++        "ribosomal_reference.selection_strategy must be best_per_ko or top_n_per_ko"
++    )
++
+ KOFAM_TARGETS = expand(
+-    f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.best_per_ko.fna",
++    f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna",
+     sample=SAMPLES,
+ )
+ 
+@@ -68,55 +83,48 @@
+         return []
+ 
+     plot_groups = config.get("plots", {}).get("groups", {})
++    formats = config.get("plots", {}).get("output_formats", ["png", "pdf"])
+     targets = []
+ 
++    def add_plot(stem):
++        for fmt in formats:
++            targets.append(f"{stem}.{fmt}")
++
+     if plot_groups.get("tai_extremes", True):
+-        targets += [
+-            f"{DATA_PLOTS}/tai_extremes/binary_features.png",
+-            f"{DATA_PLOTS}/tai_extremes/continuous_features.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/tai_extremes/binary_features")
++        add_plot(f"{DATA_PLOTS}/tai_extremes/continuous_features")
+ 
+     if plot_groups.get("gene_features", True):
+-        targets += [
+-            f"{DATA_PLOTS}/gene_features/tai_by_binary_features.png",
+-            f"{DATA_PLOTS}/gene_features/tai_vs_continuous_features.png",
+-            f"{DATA_PLOTS}/gene_features/gene_feature_effects.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/gene_features/tai_by_binary_features")
++        add_plot(f"{DATA_PLOTS}/gene_features/tai_vs_continuous_features")
++        add_plot(f"{DATA_PLOTS}/gene_features/gene_feature_effects")
+ 
+     if plot_groups.get("genome_metrics", True):
+-        targets += [
+-            f"{DATA_PLOTS}/genome_metrics/genome_metrics_by_phylum.png",
+-            f"{DATA_PLOTS}/genome_metrics/genome_metrics_by_lifestyle.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/genome_metrics/genome_metrics_by_phylum")
++        add_plot(f"{DATA_PLOTS}/genome_metrics/genome_metrics_by_lifestyle")
+ 
+     if plot_groups.get("codon_profiles", True):
+-        targets += [
+-            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_landscape_codon_x.png",
+-            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_landscape_codon_y.png",
+-            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_landscape_codon_x.png",
+-            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_landscape_codon_y.png",
+-            f"{DATA_PLOTS}/codon_profiles/codon_usage_variability.png",
+-        ]
++        min_group_n = int(config.get("codon_profile_plots", {}).get("heatmap_min_group_n", 5))
++        add_plot(f"{DATA_PLOTS}/codon_profiles/codon_usage_variability")
++        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_large_codon_x")
++        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_large_codon_x")
++        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{min_group_n}_large_codon_x")
++        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{min_group_n}_large_codon_x")
++        targets.append(f"{DATA_PLOTS}/codon_profiles/codon_usage_variability_method.tsv")
+ 
+     if plot_groups.get("correlations", False):
+-        targets += [
+-            f"{DATA_PLOTS}/correlations/gene_level_correlation_matrix.png",
+-            f"{DATA_PLOTS}/correlations/genome_level_correlation_matrix.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/correlations/gene_level_correlation_matrix")
++        add_plot(f"{DATA_PLOTS}/correlations/genome_level_correlation_matrix")
+ 
+     if plot_groups.get("qc", False):
+-        targets += [
+-            f"{DATA_PLOTS}/qc/trna_qc_flags.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/qc/trna_qc_flags")
+ 
+     if (
+         plot_groups.get("go_enrichment", False)
+         and config.get("go_enrichment", {}).get("enabled", False)
+     ):
+-        targets += [
+-            f"{DATA_PLOTS}/go_enrichment/go_top_terms_dotplot.png",
+-            f"{DATA_PLOTS}/go_enrichment/go_odds_ratio_forest.png",
+-        ]
++        add_plot(f"{DATA_PLOTS}/go_enrichment/go_top_terms_dotplot")
++        add_plot(f"{DATA_PLOTS}/go_enrichment/go_odds_ratio_forest")
+ 
+     return targets
+ 
+@@ -125,13 +133,11 @@
+     if not config.get("script_suggestion_plots", {}).get("enabled", False):
+         return []
+ 
+-    # Use marker files. directory() is an output-only flag and must not be used
+-    # inside rule all inputs.
+     return [
+-        f"{DATA_PLOTS}/script_suggestions/features_tai/.done",
+-        f"{DATA_PLOTS}/script_suggestions/codon_trna/.done",
+-        f"{DATA_PLOTS}/script_suggestions/genome_gc_tai/.done",
+-        f"{DATA_PLOTS}/script_suggestions/correlations/.done",
++        f"{DATA_PLOTS}/script_suggestions/features_tai",
++        f"{DATA_PLOTS}/script_suggestions/codon_trna",
++        f"{DATA_PLOTS}/script_suggestions/genome_gc_tai",
++        f"{DATA_PLOTS}/script_suggestions/correlations",
+     ]
+ 
+ 
+@@ -142,10 +148,10 @@
+         config.get("go_enrichment", {}).get("enabled", False)
+         and config.get("go_plots", {}).get("enabled", False)
+     ):
+-        targets += [f"{DATA_PLOTS}/go_chosen_terms/.done"]
++        targets += [f"{DATA_PLOTS}/go_chosen_terms"]
+ 
+     if config.get("pfam_lcr_plots", {}).get("enabled", False):
+-        targets += [f"{DATA_PLOTS}/pfam_lcr_overlap/.done"]
++        targets += [f"{DATA_PLOTS}/pfam_lcr_overlap"]
+ 
+     return targets
+ 

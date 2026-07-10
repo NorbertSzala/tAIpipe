@@ -1,1 +1,0 @@
-# Fits gene-level statistical models that test whether tAI is associated with binary gene or protein features. The script accounts for genome membership and configured covariates, then reports effect estimates, uncertainty measures, model diagnostics, raw p-values, and multiple-testing-adjusted p-values.

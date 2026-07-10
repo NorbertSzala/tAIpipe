@@ -51,6 +51,15 @@ KOFAM_THRESHOLD_SCALE = float(
     KOFAM["execution"].get("threshold_scale", 1.0)
 )
 
+REFERENCE_SELECTION = config.get("ribosomal_reference", {}).get("selection_strategy", "best_per_ko")
+REFERENCE_TOP_N = int(config.get("ribosomal_reference", {}).get("top_n_per_ko", 1))
+if REFERENCE_SELECTION == "best_per_ko" or REFERENCE_TOP_N == 1:
+    REFERENCE_SUFFIX = "best_per_ko"
+elif REFERENCE_SELECTION == "top_n_per_ko":
+    REFERENCE_SUFFIX = f"top{REFERENCE_TOP_N}_per_ko"
+else:
+    raise ValueError("Invalid ribosomal_reference.selection_strategy")
+
 
 # ---------------------------------------------------------------------------
 # Output path patterns
@@ -230,39 +239,24 @@ rule parse_kofamscan_ribosome:
     script:
         "../scripts/kofamscan/parse_kofamscan_ribosome.py"
 
-
-rule extract_ribosomal_reference_cds:
+rule select_ribosomal_reference_cds:
     input:
-        cds=get_cds,
-        cds_ids=KOFAM_REFERENCE_CDS_IDS,
-
-    output:
-        cds=KOFAM_REFERENCE_CDS,
-
-    conda:
-        "../envs/kofamscan.yaml"
-
-    script:
-        "../scripts/kofamscan/extract_reference_cds.py"
-
-rule select_top2_ribosomal_reference_cds:
-    input:
-        hits=f"{PER_GENOME}/{{sample}}/kofamscan/ribosome_significant_hits.tsv",
+        hits=KOFAM_HITS,
         cds=get_cds
 
     output:
-        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.top2_per_ko.txt",
-        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.top2_per_ko.fna"
+        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.{REFERENCE_SUFFIX}.txt",
+        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna"
 
     params:
-        top_n=2,
+        top_n=REFERENCE_TOP_N,
         allow_empty=False
 
     log:
-        stderr=f"{LOGS}/kofamscan/{{sample}}.select_top2_ribosomal_reference_cds.stderr.log"
+        stderr=f"{LOGS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.stderr.log"
 
     benchmark:
-        f"{BENCHMARKS}/kofamscan/{{sample}}.select_top2_ribosomal_reference_cds.tsv"
+        f"{BENCHMARKS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.tsv"
 
     threads: 1
 
@@ -275,7 +269,7 @@ rule select_top2_ribosomal_reference_cds:
         "../envs/python.yaml"
 
     message:
-        "Selecting top 2 ribosomal CDS sequences per KO for {wildcards.sample}."
+        f"Selecting ribosomal CDS reference ({REFERENCE_SUFFIX}) for {{wildcards.sample}}."
 
     script:
         "../scripts/kofamscan/select_top_n_reference_cds.py"

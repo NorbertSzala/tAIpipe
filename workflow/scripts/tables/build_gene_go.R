@@ -1,1 +1,0 @@
-# Normalizes Gene Ontology annotations into a long-format gene-to-GO mapping table. It splits multi-value GO fields, removes empty and duplicated assignments, validates GO identifiers, and writes one sample–gene–GO association per row.

@@ -1,5 +1,6 @@
-# Central configuration for static scientific plots.
-# Keep data transformations, statistical choices and variable mappings in scripts.
+# Central visual style configuration.
+# Keep biological/statistical transformations in scripts, not here.
+
 schema_version: 1
 active_profile: publication
 
@@ -44,311 +45,43 @@ output:
   vector:
     pdf_device: cairo_pdf
     svg_device: svglite
-  filename_separator: _
-
-# Width and height are final exported dimensions, not RStudio preview dimensions.
-dimensions:
-  single_column:
-    width: 3.35
-    height: 2.70
-  double_column:
-    width: 7.10
-    height: 4.80
-  wide:
-    width: 10.0
-    height: 5.5
-  square:
-    width: 7.0
-    height: 7.0
-  tall:
-    width: 7.1
-    height: 9.0
-  tall_facets:
-    width: 8.0
-    height: 12.0
-
-layout:
-  default: single
-  presets:
-    single:
-      ncol: 1
-      nrow: null
-      guides: keep
-      legend_position: right
-    paired:
-      ncol: 2
-      nrow: 1
-      guides: collect
-      legend_position: bottom
-    stacked:
-      ncol: 1
-      nrow: null
-      guides: collect
-      legend_position: bottom
-    grid_2x2:
-      ncol: 2
-      nrow: 2
-      guides: collect
-      legend_position: bottom
-    grid_3col:
-      ncol: 3
-      nrow: null
-      guides: collect
-      legend_position: bottom
-
-facets:
-  default_ncol: 3
-  max_ncol: 4
-  min_panel_width_in: 2.1
-  min_panel_height_in: 1.7
-  strip_position: top
-  scales: fixed
-  panel_spacing_lines: 0.8
-
-# Project-wide theme. Only stable visual policy belongs here.
-theme:
-  base: minimal
-  plot_alignment: left
-  plot_title_position: plot
-  legend_position: right
-  legend_direction: vertical
-  legend_box: vertical
-  legend_key_width_lines: 1.2
-  legend_key_height_lines: 1.0
-  panel_background: white
-  plot_background: white
-  panel_border:
-    show: false
-    colour: "#333333"
-    linewidth: 0.35
-  axis_line:
-    show: true
-    colour: "#333333"
-    linewidth: 0.35
-  grid:
-    major_x: false
-    major_y: true
-    minor_x: false
-    minor_y: false
-    major_colour: "#D9D9D9"
-    major_linewidth: 0.30
-  margins_mm:
-    top: 5
-    right: 5
-    bottom: 5
-    left: 5
-
-geoms:
-  point:
-    size: 1.7
-    alpha: 0.65
-    stroke: 0.25
-  jitter:
-    width: 0.15
-    height: 0
-    size: 1.3
-    alpha: 0.45
-  line:
-    linewidth: 0.65
-    alpha: 0.90
-  smooth:
-    linewidth: 0.8
-    alpha: 0.18
-    se: true
-  boxplot:
-    width: 0.62
-    linewidth: 0.45
-    alpha: 0.75
-    outlier_shape: null
-  violin:
-    width: 0.90
-    linewidth: 0.40
-    alpha: 0.60
-    trim: false
-  bar:
-    width: 0.75
-    alpha: 0.90
-  histogram:
-    bins: 30
-    alpha: 0.55
-    position: identity
-  density:
-    linewidth: 0.70
-    alpha: 0.25
-  errorbar:
-    width: 0.15
-    linewidth: 0.50
-  reference_line:
-    linewidth: 0.55
-    linetype: dashed
-    colour: "#555555"
-  annotation:
-    size_pt: 8
-    colour: "#222222"
-
-axes:
-  expansion_continuous: [0.02, 0.05]
-  expansion_discrete: [0.05, 0.05]
-  x_text_angle: 0
-  x_text_hjust: 0.5
-  x_text_vjust: 0.5
-  scientific_threshold_high: 10000
-  scientific_threshold_low: 0.001
-
-legend:
-  title_position: top
-  text_alignment: 0
-  max_rows_bottom: 2
-  reverse: false
-
-semantic_colours:
-  text: "#222222"
-  axis: "#333333"
-  grid: "#D9D9D9"
-  missing: "#BDBDBD"
-  nonsignificant: "#B3B3B3"
-  significant: "#0072B2"
-  reference: "#555555"
-  negative: "#2166AC"
-  neutral: "#F7F7F7"
-  positive: "#B2182B"
 
 palettes:
-  qualitative:
-    # Use for two unordered states; absent stays neutral, present is highlighted.
-    binary:
-      max_categories: 2
-      interpolate: false
-      colours: ["#6B6B6B", "#0072B2"]
-
-    # Okabe-Ito: preferred for 3-8 categories.
-    okabe_ito_8:
-      max_categories: 8
-      interpolate: false
-      colours:
-        - "#E69F00"
-        - "#56B4E9"
-        - "#009E73"
-        - "#F0E442"
-        - "#0072B2"
-        - "#D55E00"
-        - "#CC79A7"
-        - "#000000"
-
-    # Petroff sequence: preferred when exactly 9-10 categories are unavoidable.
-    # Still combine colour with shape, linetype, direct labels or facets.
-    petroff_10:
-      max_categories: 10
-      interpolate: false
-      colours:
-        - "#3F90DA"
-        - "#FFA90E"
-        - "#BD1F01"
-        - "#94A4A2"
-        - "#832DB6"
-        - "#A96B59"
-        - "#E76300"
-        - "#B9AC70"
-        - "#717581"
-        - "#92DADD"
-
-    # A subdued alternative for filled areas. Maximum useful size is 9.
-    tol_muted_9:
-      max_categories: 9
-      interpolate: false
-      colours:
-        - "#332288"
-        - "#88CCEE"
-        - "#44AA99"
-        - "#117733"
-        - "#999933"
-        - "#DDCC77"
-        - "#CC6677"
-        - "#882255"
-        - "#AA4499"
-
-  ordered:
-    top_middle_bottom:
-      max_categories: 3
-      interpolate: false
-      colours:
-        Bottom: "#2166AC"
-        Middle: "#BDBDBD"
-        Top: "#B2182B"
-
   continuous:
-    sequential:
+    heatmap:
       provider: viridis
       option: C
-      begin: 0.08
-      end: 0.92
-      direction: 1
-      na_colour: "#D9D9D9"
-    sequential_print:
-      provider: viridis
-      option: E
-      begin: 0.05
-      end: 0.95
-      direction: 1
+      begin: 0.12
+      end: 0.88
       na_colour: "#D9D9D9"
     diverging:
-      provider: gradient2
       low: "#2166AC"
       mid: "#F7F7F7"
       high: "#B2182B"
       midpoint: 0
       na_colour: "#D9D9D9"
+  qualitative:
+    binary:
+      absent: "#6B6B6B"
+      present: "#0072B2"
+    okabe_ito_8:
+      - "#E69F00"
+      - "#56B4E9"
+      - "#009E73"
+      - "#F0E442"
+      - "#0072B2"
+      - "#D55E00"
+      - "#CC79A7"
+      - "#000000"
 
-# Persistent category mappings. Add exact project labels here once and reuse them.
-category_mappings:
-  signal_presence:
-    Signal absence: "#6B6B6B"
-    Signal presence: "#0072B2"
-  lcr_presence:
-    LCR absence: "#6B6B6B"
-    LCR presence: "#0072B2"
-  pfam_lcr_presence:
-    PFAM LCR absence: "#6B6B6B"
-    PFAM LCR presence: "#0072B2"
-  transmembrane_presence:
-    Transmembrane elements absence: "#6B6B6B"
-    Transmembrane elements presence: "#0072B2"
-  significance:
-    Non-significant: "#B3B3B3"
-    Significant: "#0072B2"
-  tai_extreme_group:
-    All genes: "#6B6B6B"
-    Bottom 10%: "#56B4E9"
-    Top 10%: "#E69F00"
-    Bottom 1%: "#0072B2"
-    Top 1%: "#D55E00"
-
-redundant_aesthetics:
-  shapes_10: [16, 17, 15, 18, 3, 7, 8, 0, 1, 2]
-  linetypes_6: [solid, dashed, dotted, dotdash, longdash, twodash]
-
-plot_presets:
-  default:
-    size: double_column
-    layout: single
-    legend_position: right
-  paired_distributions:
-    size: wide
-    layout: paired
-    legend_position: bottom
-  correlation_heatmap:
-    size: square
-    layout: single
-    palette: diverging
-    legend_position: right
-    axis_text_x_angle: 45
-  many_category_distribution:
-    size: double_column
-    layout: single
-    palette: petroff_10
-    legend_position: bottom
-    redundant_aesthetics: true
-  tall_genome_facets:
-    size: tall_facets
-    layout: stacked
-    legend_position: bottom
+category_labels:
+  lcr_present: "LCR"
+  pfam_present: "PFAM domains"
+  tm_present: "Transmembrane region"
+  signal_peptide_present: "Signal peptide"
+  algal_parasite: "Algal parasite"
+  animal_endosymbiont: "Animal endosymbiont"
+  animal_parasite: "Animal parasite"
+  plant_pathogen: "Plant pathogen"
+  soil_saprotroph: "Soil saprotroph"
+  unspecified_saprotroph: "Unspecified saprotroph"

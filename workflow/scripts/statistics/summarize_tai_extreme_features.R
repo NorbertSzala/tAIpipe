@@ -10,6 +10,32 @@ source("workflow/scripts/lib/plot_data_utils.R")
 
 cfg <- snakemake@params[["tai_extremes"]]
 
+default_if_null <- function(x, default) {
+  if (is.null(x) || length(x) == 0L) {
+    return(default)
+  }
+  if (length(x) == 1L && is.na(x)) {
+    return(default)
+  }
+  x
+}
+
+min_genes_per_sample <- as.integer(
+  default_if_null(cfg[["min_genes_per_sample"]], 100L)
+)
+
+min_tail_size <- as.integer(
+  default_if_null(cfg[["min_tail_size"]], 20L)
+)
+
+if (!is.finite(min_genes_per_sample) || min_genes_per_sample < 2L) {
+  stop("statistics.tai_extremes.min_genes_per_sample must be >= 2")
+}
+
+if (!is.finite(min_tail_size) || min_tail_size < 1L) {
+  stop("statistics.tai_extremes.min_tail_size must be >= 1")
+}
+
 group_column <- cfg[["group_column"]]
 id_column <- cfg[["id_column"]]
 value_column <- cfg[["value_column"]]
@@ -47,16 +73,18 @@ select_tails <- function(data, fraction) {
     arrange(.data[[value_column]], .data[[id_column]], .by_group = TRUE) |>
     mutate(
       .n_genes = n(),
-      .tail_size = pmax(1L, floor(.n_genes * fraction)),
+      .tail_size = floor(.n_genes * fraction),
       .rank = row_number(),
+      .eligible = .n_genes >= min_genes_per_sample &
+        .tail_size >= min_tail_size,
       tai_group = case_when(
-        .rank <= .tail_size ~ paste0("Bottom ", label, "%"),
-        .rank > .n_genes - .tail_size ~ paste0("Top ", label, "%"),
+        .eligible & .rank <= .tail_size ~ paste0("Bottom ", label, "%"),
+        .eligible & .rank > .n_genes - .tail_size ~ paste0("Top ", label, "%"),
         TRUE ~ NA_character_
       ),
       tail_fraction = fraction
     ) |>
-    filter(.n_genes >= 2, !is.na(tai_group)) |>
+    filter(!is.na(tai_group)) |>
     select(-starts_with(".")) |>
     ungroup()
 }

@@ -6,8 +6,9 @@ rule codon_usage_metrics:
         cds=get_cds,
         aaa_count=f"{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv",
         trna_qc=f"{PER_GENOME}/{{sample}}/qc/{{sample}}_trna_profile_qc.tsv",
-        reference_cds = (
-            f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.top2_per_ko.fna"
+        reference_cds=lambda wildcards: (
+            f"{PER_GENOME}/{wildcards.sample}/kofamscan/"
+            f"ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna"
         )
 
     output:
@@ -23,13 +24,17 @@ rule codon_usage_metrics:
         gc=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_gc.csv",
         gc3s=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_gc3s.csv",
         summary=f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv",
+        metric_qc=f"{PER_GENOME}/{{sample}}/qc/{{sample}}_metric_qc.tsv",
     
     params:
         domain=get_domain,
         sample=lambda wildcards: wildcards.sample,
         gcode=get_genetic_code,
         outdir=f"{PER_GENOME}/{{sample}}/codon_metrics",
-        min_reference_cds = config.get('ribosomal_reference', {}).get("min_reference_genes", 20)
+        min_reference_cds = config.get('ribosomal_reference', {}).get("min_reference_genes", 20),
+        min_finite_tai_fraction=config.get("trna_qc", {}).get("min_finite_tai_fraction", 0.90),
+        min_used_codon_coverage=config.get("trna_qc", {}).get("min_used_codon_coverage", 0.95),
+        qc_mode=config.get("trna_qc", {}).get("mode", "warn"),
     
     log:
         f"{LOGS}/{{sample}}/calculate_tai.log"
@@ -44,7 +49,7 @@ rule codon_usage_metrics:
         """
         set -euo pipefail 
 
-        mkdir -p {params.outdir} $(dirname {log})
+        mkdir -p {params.outdir} $(dirname {output.metric_qc}) $(dirname {log})
         
         Rscript workflow/scripts/metrics/calculate_tAI.R \
             --input {input.cds} \
@@ -55,6 +60,10 @@ rule codon_usage_metrics:
             --domain {params.domain} \
             --sample {params.sample} \
             --min-reference-cds {params.min_reference_cds} \
+            --qc-output {output.metric_qc} \
+            --min-finite-tai-fraction {params.min_finite_tai_fraction} \
+            --min-used-codon-coverage {params.min_used_codon_coverage} \
+            --qc-mode {params.qc_mode} \
             > {log} 2>&1
         
         """

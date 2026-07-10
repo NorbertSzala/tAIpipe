@@ -68,6 +68,31 @@ option_list <- list(
     default = 20L,
     dest = "min_reference_cds",
     help = "Warn when fewer valid reference CDS remain [default: %default]"
+  ),
+  make_option(
+    "--qc-output",
+    type = "character",
+    dest = "qc_output",
+    help = "Output TSV with per-sample metric QC"
+  ),
+  make_option(
+    "--min-finite-tai-fraction",
+    type = "double",
+    default = 0.90,
+    dest = "min_finite_tai_fraction"
+  ),
+  make_option(
+    "--min-used-codon-coverage",
+    type = "double",
+    default = 0.95,
+    dest = "min_used_codon_coverage"
+  ),
+  make_option(
+    "--qc-mode",
+    type = "character",
+    default = "warn",
+    dest = "qc_mode",
+    help = "error, warn, or ignore"
   )
 )
 
@@ -192,12 +217,16 @@ sample <- args$sample
 message("Loading genetic code: ", args$genetic_code)
 codon_table <- get_codon_table(gcid = as.character(args$genetic_code))
 
+all_sequences_raw <- load_cds(args$input)
+reference_sequences_raw <- load_cds(args$reference_cds)
+
 all_sequences <- filter_valid_cds(
-  load_cds(args$input), codon_table,
+  all_sequences_raw, codon_table,
   label = "All CDS"
 )
+
 reference_sequences <- filter_valid_cds(
-  load_cds(args$reference_cds), codon_table,
+  reference_sequences_raw, codon_table,
   label = "Reference CDS"
 )
 
@@ -298,6 +327,83 @@ summary_df <- tibble(
   GC3s = as.numeric(gc3s),
   tAI = as.numeric(tai)
 )
+
+finite_fraction <- function(x) {
+  x <- suppressWarnings(as.numeric(x))
+  if (length(x) == 0L) return(NA_real_)
+  mean(is.finite(x))
+}
+
+failed_checks <- character()
+
+finite_tai_fraction <- finite_fraction(tai)
+finite_cai_fraction <- finite_fraction(cai)
+finite_enc_fraction <- finite_fraction(enc)
+
+valid_cds_fraction <- length(all_sequences) / length(all_sequences_raw)
+valid_reference_cds_fraction <- length(reference_sequences) / length(reference_sequences_raw)
+
+if (!is.finite(finite_tai_fraction) ||
+    finite_tai_fraction < args$min_finite_tai_fraction) {
+  failed_checks <- c(
+    failed_checks,
+    paste0(
+      "finite_tai_fraction<",
+      args$min_finite_tai_fraction
+    )
+  )
+}
+
+if (!is.finite(used_codon_coverage) ||
+    used_codon_coverage < args$min_used_codon_coverage) {
+  failed_checks <- c(
+    failed_checks,
+    paste0(
+      "used_codon_coverage<",
+      args$min_used_codon_coverage
+    )
+  )
+}
+
+if (length(reference_sequences) < args$min_reference_cds) {
+  failed_checks <- c(
+    failed_checks,
+    paste0("n_reference_cds<", args$min_reference_cds)
+  )
+}
+
+qc_status <- if (length(failed_checks) == 0L) "PASS" else "WARN"
+
+qc_df <- tibble(
+  sample = sample,
+  n_cds_input = length(all_sequences_raw),
+  n_cds_valid = length(all_sequences),
+  valid_cds_fraction = valid_cds_fraction,
+  n_reference_cds_input = length(reference_sequences_raw),
+  n_reference_cds_valid = length(reference_sequences),
+  valid_reference_cds_fraction = valid_reference_cds_fraction,
+  finite_tai_fraction = finite_tai_fraction,
+  finite_cai_fraction = finite_cai_fraction,
+  finite_enc_fraction = finite_enc_fraction,
+  used_codon_coverage = used_codon_coverage,
+  min_finite_tai_fraction = args$min_finite_tai_fraction,
+  min_used_codon_coverage = args$min_used_codon_coverage,
+  min_reference_cds = args$min_reference_cds,
+  qc_status = qc_status,
+  qc_reasons = if (length(failed_checks) == 0L) "none" else paste(failed_checks, collapse = ";")
+)
+
+if (!is.null(args$qc_output) && nzchar(args$qc_output)) {
+  dir.create(dirname(args$qc_output), recursive = TRUE, showWarnings = FALSE)
+  write_tsv(qc_df, args$qc_output, na = "NA")
+  message("Saved metric QC: ", args$qc_output)
+}
+
+if (qc_status != "PASS" && args$qc_mode == "error") {
+  stop("Metric QC failed for sample ", sample, ": ", qc_df$qc_reasons[[1]])
+}
+
+
 summary_path <- file.path(args$outdir, paste0(sample, "_summary.tsv"))
 write_tsv(summary_df, summary_path, na = "NA")
 message("Saved: ", summary_path)

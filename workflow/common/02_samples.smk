@@ -2,7 +2,7 @@ import pandas as pd
 from snakemake.utils import validate
 
 samples_df = pd.read_csv(config["paths"]["metadata_dataset"], sep="\t")
-validate(samples_df, "schemas/metadata_dataset.schema.yaml")
+validate(samples_df, "../schemas/metadata_dataset.schema.yaml")
 
 def normalize_include(value):
     """Normalize supported boolean encodings from the validated sample sheet."""

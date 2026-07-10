@@ -4,9 +4,9 @@ Runs the statistical analyses defined for the canonical gene and genome tables. 
 
 rule compute_statistics:
     input:
-        gene_table=f"{DATA_TABLES}/gene_features.tsv",
-        genome_table=f"{DATA_TABLES}/genome_summary.tsv",
-
+        gene_table=config["paths"]["gene_features"],
+        genome_table=config["paths"]["genome_summary"]
+        
     output:
         gene_tests = config['paths']['gene_feature_tests'],
         genome_tests = config['paths']['genome_group_tests']
@@ -67,4 +67,89 @@ rule compute_statistics:
           --group-variables {params.group_variables} \
           --fdr-method {params.fdr_method} \
           > {log} 2>&1
+        """
+
+
+rule compute_gene_feature_effects_per_genome:
+    input:
+        gene_table=config["paths"]["gene_features"]
+
+    output:
+        per_genome=f"{DATA_STATISTICS}/gene_feature_per_genome_effects.tsv",
+        meta=f"{DATA_STATISTICS}/gene_feature_effect_meta_tests.tsv"
+
+    params:
+        features=",".join(config["statistics"]["binary_features"]),
+        covariates=",".join(config["statistics"].get("gene_covariates", [])),
+        min_genes=config.get("statistics", {}).get("per_genome_feature_effects", {}).get("min_genes", 100),
+        min_class_genes=config.get("statistics", {}).get("per_genome_feature_effects", {}).get("min_class_genes", 10),
+        min_genomes=config.get("statistics", {}).get("per_genome_feature_effects", {}).get("min_genomes", 5),
+        fdr_method=config["statistics"].get("fdr_method", "BH")
+
+    log:
+        f"{LOGS}/statistics/compute_gene_feature_effects_per_genome.log"
+
+    conda:
+        "../envs/r_statistics.yaml"
+
+    shell:
+        """
+        set -euo pipefail
+
+        mkdir -p "$(dirname {output.per_genome:q})" "$(dirname {log:q})"
+
+        Rscript workflow/scripts/statistics/compute_gene_feature_effects_per_genome.R \
+          --gene-table {input.gene_table:q} \
+          --features {params.features:q} \
+          --covariates {params.covariates:q} \
+          --min-genes {params.min_genes} \
+          --min-class-genes {params.min_class_genes} \
+          --min-genomes {params.min_genomes} \
+          --fdr-method {params.fdr_method:q} \
+          --per-genome-output {output.per_genome:q} \
+          --meta-output {output.meta:q} \
+          > {log:q} 2>&1
+        """
+
+
+rule compute_lifestyle_within_phylum_permutations:
+    input:
+        genome_table=config["paths"]["genome_summary"]
+
+    output:
+        f"{DATA_STATISTICS}/lifestyle_within_phylum_permutation_tests.tsv"
+
+    params:
+        responses=",".join(config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get(
+            "responses",
+            ["mean_tAI", "median_tAI", "mean_CAI", "median_CAI", "mean_GC3s", "median_GC3s", "mean_delta_ENC", "median_delta_ENC"],
+        )),
+        predictor=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("predictor", "lifestyle"),
+        strata=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("strata", "phylum"),
+        n_perm=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("n_perm", 9999),
+        seed=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("seed", 1),
+        fdr_method=config.get("statistics", {}).get("fdr_method", "BH")
+
+    log:
+        f"{LOGS}/statistics/lifestyle_within_phylum_permutation_tests.log"
+
+    conda:
+        "../envs/r_statistics.yaml"
+
+    shell:
+        """
+        set -euo pipefail
+
+        mkdir -p "$(dirname {output:q})" "$(dirname {log:q})"
+
+        Rscript workflow/scripts/statistics/restricted_lifestyle_permutations.R \
+          --genome-table {input.genome_table:q} \
+          --responses {params.responses:q} \
+          --predictor {params.predictor:q} \
+          --strata {params.strata:q} \
+          --n-perm {params.n_perm} \
+          --seed {params.seed} \
+          --fdr-method {params.fdr_method:q} \
+          --output {output:q} \
+          > {log:q} 2>&1
         """

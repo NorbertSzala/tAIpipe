@@ -186,6 +186,63 @@ safe_percentile <- function(x) {
   result
 }
 
+expected_enc_from_gc3s <- function(gc3s) {
+  values <- suppressWarnings(as.numeric(gc3s))
+  out <- rep(NA_real_, length(values))
+
+  ok <- is.finite(values) & values >= 0 & values <= 1
+  if (!any(ok)) {
+    return(out)
+  }
+
+  s <- values[ok]
+  denominator <- s^2 + (1 - s)^2
+  expected <- 2 + s + 29 / denominator
+  expected[!is.finite(expected)] <- NA_real_
+  out[ok] <- expected
+  out
+}
+read_metric_qc <- function(per_genome_dir, sample_id) {
+  path <- file.path(
+    per_genome_dir,
+    sample_id,
+    "qc",
+    paste0(sample_id, "_metric_qc.tsv")
+  )
+
+  if (!file.exists(path)) {
+    stop("Missing metric QC table: ", path)
+  }
+
+  qc <- read_tsv(path, show_col_types = FALSE, progress = FALSE)
+
+  if (nrow(qc) != 1L) {
+    stop("Expected exactly one row in metric QC table: ", path)
+  }
+
+  required <- c("sample", "qc_status", "qc_reasons")
+  missing <- setdiff(required, names(qc))
+  if (length(missing) > 0L) {
+    stop("Metric QC table lacks columns: ", paste(missing, collapse = ", "))
+  }
+
+  qc %>%
+    transmute(
+      sample = as.character(sample),
+      metric_qc_status = as.character(qc_status),
+      metric_qc_reasons = as.character(qc_reasons),
+      metric_qc_pass = qc_status == "PASS",
+      n_cds_input = as.integer(n_cds_input),
+      n_cds_valid = as.integer(n_cds_valid),
+      valid_cds_fraction = as.numeric(valid_cds_fraction),
+      n_reference_cds_valid = as.integer(n_reference_cds_valid),
+      finite_tai_fraction = as.numeric(finite_tai_fraction),
+      finite_cai_fraction = as.numeric(finite_cai_fraction),
+      finite_enc_fraction = as.numeric(finite_enc_fraction),
+      used_codon_coverage = as.numeric(used_codon_coverage)
+    )
+}
+
 parse_cds_fasta <- function(cds_file, genetic_code_id) {
   cds <- readDNAStringSet(cds_file)
   headers <- names(cds)
@@ -299,6 +356,9 @@ read_trna_qc <- function(per_genome_dir, sample_id) {
 }
 
 read_optional_annotations <- function(path) {
+  # Read optional gene/protein annotations and keep only columns that are
+  # allowed to enter gene_features.tsv. This prevents dplyr from suffixing
+  # core metadata columns such as accession/species/phylum after left_join().
   if (is.null(path) || is.na(path) || !nzchar(path)) {
     return(NULL)
   }
@@ -311,27 +371,6 @@ read_optional_annotations <- function(path) {
     stop("Annotation table must contain sample column: ", path)
   }
 
-  annotation_payload_columns <- intersect(
-    names(annotations),
-    c(
-      "go_terms",
-      "uniprot_id",
-      "pfam_terms",
-      "signal_peptide_present",
-      "tm_present",
-      "lcr_present",
-      "annotation_source"
-    )
-  )
-
-  if (length(annotation_payload_columns) == 0L) {
-    stop(
-      "Annotation table contains join keys but no supported annotation columns. ",
-      "Expected at least one of: go_terms, uniprot_id, pfam_terms, ",
-      "signal_peptide_present, tm_present, lcr_present, annotation_source."
-    )
-  }
-
   if ("protein_id" %in% names(annotations)) {
     join_keys <- c("sample", "protein_id")
   } else if ("seq_id" %in% names(annotations)) {
@@ -340,6 +379,46 @@ read_optional_annotations <- function(path) {
   } else {
     stop("Annotation table must contain protein_id or seq_id: ", path)
   }
+
+  # Supported annotation payload. Do not keep raw metadata columns such as
+  # accession/species/phylum/lifestyle/genetic_code because they already come
+  # from config/samples.tsv and would collide during the join.
+  supported_payload_columns <- c(
+    "go_terms",
+    "uniprot_id",
+    "pfam_terms",
+    "pfam_present",
+    "signal_peptide_present",
+    "tm_present",
+    "tm_count",
+    "tm_total_length",
+    "lcr_present",
+    "lcr_count",
+    "lcr_total_length",
+    "pfam_lcr_overlap_terms",
+    "pfam_lcr_overlap_count",
+    "pfam_lcr_overlap_present",
+    "annotation_source"
+  )
+
+  annotation_payload_columns <- intersect(
+    names(annotations),
+    supported_payload_columns
+  )
+
+  if (length(annotation_payload_columns) == 0L) {
+    stop(
+      "Annotation table contains join keys but no supported annotation columns. ",
+      "Expected at least one of: ",
+      paste(supported_payload_columns, collapse = ", "), "."
+    )
+  }
+
+  # Drop unsupported columns before duplicate checks and joins. This is the
+  # actual fix for the observed `accession` error: external accession is not
+  # joined into sample_table, so sample metadata accession is preserved.
+  annotations <- annotations %>%
+    select(all_of(join_keys), all_of(annotation_payload_columns))
 
   duplicate_keys <- annotations %>%
     count(across(all_of(join_keys)), name = "n") %>%
@@ -377,6 +456,7 @@ read_optional_annotations <- function(path) {
 
   list(data = annotations, keys = join_keys)
 }
+
 
 
 
@@ -426,6 +506,7 @@ for (i in seq_len(nrow(dataset))) {
   local_metadata <- parse_cds_fasta(cds_file, genetic_code_id)
   metrics <- read_metric_summary(summary_file)
   trna_qc <- read_trna_qc(args$per_genome_dir, sample_id)
+  metric_qc <- read_metric_qc(args$per_genome_dir, sample_id)
 
   sample_table <- local_metadata %>%
     left_join(metrics, by = "seq_id") %>%
@@ -439,6 +520,7 @@ for (i in seq_len(nrow(dataset))) {
     ) %>%
     select(-metric_row_present) %>%
     left_join(trna_qc, by = "sample") %>%
+    left_join(metric_qc, by = "sample") %>%
     mutate(
       species = as.character(metadata_row$species[[1]]),
       accession = as.character(metadata_row$accession[[1]]),
@@ -495,9 +577,17 @@ for (i in seq_len(nrow(dataset))) {
   for (column_name in c(
     "signal_peptide_present",
     "tm_present",
+    "tm_count",
+    "tm_total_length",
     "lcr_present",
+    "lcr_count",
+    "lcr_total_length",
     "pfam_present",
-    "pfam_terms"
+    "pfam_terms",
+    "pfam_lcr_overlap_terms",
+    "pfam_lcr_overlap_count",
+    "pfam_lcr_overlap_present",
+    "annotation_source"
   )) {
     if (!column_name %in% names(sample_table)) {
       sample_table[[column_name]] <- NA
@@ -513,13 +603,16 @@ for (i in seq_len(nrow(dataset))) {
 
   compiled[[i]] <- sample_table
 }
-
 final_table <- bind_rows(compiled) %>%
   group_by(sample) %>%
   mutate(
     tAI_z = safe_zscore(tAI),
     tAI_percentile = safe_percentile(tAI),
-    log_protein_length_aa = log1p(as.numeric(protein_length_aa))
+    log_protein_length_aa = log1p(as.numeric(protein_length_aa)),
+    protein_length = protein_length_aa,
+    ENC_expected = expected_enc_from_gc3s(GC3s),
+    delta_ENC = suppressWarnings(as.numeric(ENC)) - ENC_expected,
+    delta_ENC = if_else(is.finite(delta_ENC), delta_ENC, NA_real_)
   ) %>%
   ungroup() %>%
   select(
@@ -538,6 +631,7 @@ final_table <- bind_rows(compiled) %>%
     protein_name,
     cds_length_nt,
     protein_length_aa,
+    protein_length,
     log_protein_length_aa,
     cds_length_multiple_of_three,
     has_terminal_stop,
@@ -550,12 +644,28 @@ final_table <- bind_rows(compiled) %>%
     n_elongator_trnas,
     n_unique_anticodons,
     n_trna_amino_acids,
-    any_of(c("ENC", "CAI", "FOP", "tAI", "tAI_z", "tAI_percentile", "GC", "GC3s")),
+    metric_qc_status,
+    metric_qc_reasons,
+    metric_qc_pass,
+    finite_tai_fraction,
+    finite_cai_fraction,
+    finite_enc_fraction,
+    used_codon_coverage,
+    n_reference_cds_valid,
+    any_of(c("ENC", "ENC_expected", "delta_ENC", "CAI", "FOP", "tAI", "tAI_z", "tAI_percentile", "GC", "GC3s")),
     signal_peptide_present,
     tm_present,
     lcr_present,
     pfam_present,
     pfam_terms,
+    pfam_lcr_overlap_terms,
+    pfam_lcr_overlap_count,
+    pfam_lcr_overlap_present,
+    tm_count,
+    tm_total_length,
+    lcr_count,
+    lcr_total_length,
+    annotation_source,
     go_terms,
     everything(),
     -uniprot_id_header,

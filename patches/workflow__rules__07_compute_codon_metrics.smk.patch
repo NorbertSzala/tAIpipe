@@ -1,0 +1,14 @@
+--- workflow/rules/07_compute_codon_metrics.smk	2026-07-10 20:54:48.009155299 +0000
++++ /mnt/data/taipipe_review_fixes/replacements/workflow/rules/07_compute_codon_metrics.smk	2026-07-10 20:57:39.722939511 +0000
+@@ -6,8 +6,9 @@
+         cds=get_cds,
+         aaa_count=f"{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv",
+         trna_qc=f"{PER_GENOME}/{{sample}}/qc/{{sample}}_trna_profile_qc.tsv",
+-        reference_cds = (
+-            f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.best_per_ko.fna"
++        reference_cds=lambda wildcards: (
++            f"{PER_GENOME}/{wildcards.sample}/kofamscan/"
++            f"ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna"
+         )
+ 
+     output:

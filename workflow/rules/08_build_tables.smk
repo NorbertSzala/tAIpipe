@@ -39,6 +39,10 @@ rule build_gene_features:
         ),
         metadata_dataset=config["paths"]["metadata_dataset"],
         external_annotations=optional_external_annotations,
+        metric_qc=expand(
+            f"{PER_GENOME}/{{sample}}/qc/{{sample}}_metric_qc.tsv",
+            sample=SAMPLES,
+        ),
 
     output:
         table=config["paths"]["gene_features"],

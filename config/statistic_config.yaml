@@ -9,6 +9,9 @@ statistics:
     tail_fractions:
       - 0.10
       - 0.01
+    
+    min_genes_per_sample: 100
+    min_tail_size: 20
 
     binary_features:
       PFAM domain presence: pfam_present
