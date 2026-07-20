@@ -1,0 +1,147 @@
+paths:
+  metadata_dataset: config/samples.tsv
+  data_cds: ../FungaltAI/data/CDS
+  data_genome: ../FungaltAI/data/genome
+  data_gff: ../FungaltAI/data/gff
+  data_proteome: ../FungaltAI/data/proteome
+  genetic_codes_trnascanse: resources/genetic_codes/trnascanse
+  genetic_codes_tables: resources/genetic_codes/tables
+  external_annotations: resources/annotations/main_dataset_annotations.tsv
+  results: results
+  logs: logs
+  benchmarks: benchmarks
+  qc: results/qc
+  per_genome: results/per_genome
+  tables: results/tables
+  gene_features: results/tables/gene_features.tsv
+  genome_summary: results/tables/genome_summary.tsv
+  codon_profiles: results/tables/codon_profiles.tsv
+  gene_go: results/tables/gene_go.tsv
+  gene_pfam: results/tables/gene_pfam.tsv
+  statistics: results/statistics
+  gene_feature_tests: results/statistics/gene_feature_tests.tsv
+  genome_group_tests: results/statistics/genome_group_tests.tsv
+  go_enrichment: results/statistics/go_enrichment.tsv
+  plots: results/plots
+  reports: results/reports
+go_dictionary:
+  enabled: true
+  path: resources/go/go_terms.tsv
+  obo_path: resources/go/go-basic.obo
+  obo_url: http://current.geneontology.org/ontology/go-basic.obo
+ribosomal_reference:
+  enabled: true
+  method: kofamscan_cytosolic_eukaryotic_ribosome
+  min_reference_genes: 50
+  max_reference_genes: 180
+  selection_strategy: best_per_ko
+  top_n_per_ko: 1
+  min_ko_coverage: 0.7
+kofamscan:
+  enabled: true
+  database:
+    ko_list: resources/kofamscan/ko_list
+    profiles_dir: resources/kofamscan/profiles
+  ribosome_reference:
+    brite_json: resources/kofamscan/ribosome_reference/ko03011.json
+    ko_table: resources/kofamscan/ribosome_reference/cytosolic_eukaryotic_ribosome_kos.tsv
+    hal: resources/kofamscan/ribosome_reference/cytosolic_eukaryotic_ribosome.hal
+    require_thresholds: true
+  execution:
+    threads: 4
+    mem_mb: 8000
+    threshold_scale: 1.0
+  columns:
+    gene_id: gene_id
+    protein_id: protein_id
+    cds_id: cds_id
+  inputs:
+    proteins: results/per_genome/{{sample}}/proteins/proteins.faa
+    cds: results/per_genome/{{sample}}/sequences/cds.fna
+    gene_protein_map: results/per_genome/{{sample}}/tables/gene_protein_map.tsv
+trnascanse:
+  threads: 2
+  max_sensitivity: false
+trnascanse_clean:
+  keep_pseudo: false
+  remove_nnn: true
+trna_qc:
+  mode: warn
+  min_total_trnas: 20
+  min_unique_anticodons: 15
+  min_amino_acids: 18
+  min_finite_tai_fraction: 0.9
+  min_used_codon_coverage: 0.95
+statistics:
+  binary_features:
+  - signal_peptide_present
+  - tm_present
+  - lcr_present
+  - pfam_present
+  gene_covariates:
+  - log_protein_length_aa
+  - GC3s
+  genome_metrics:
+  - mean_tAI
+  - median_tAI
+  - mean_GC3s
+  group_variables:
+  - phylum
+  - lifestyle
+  fdr_method: BH
+go_enrichment:
+  enabled: true
+  require_go_terms: false
+  min_genes_with_go_total: 100
+  min_genes_with_go_per_sample: 10
+  tail_fraction: 0.1
+  max_tail_genes: 0
+  min_genomes_with_term: 5
+  min_informative_genomes: 3
+  min_total_genes_with_term: 10
+  fdr_method: BH
+report_config:
+  enabled: false
+  template_path: workflow/scripts/report/report_template.Rmd
+gene_protein_map:
+  strict_proteome_match: false
+  max_missing_proteome_count: 200
+  max_missing_proteome_fraction: 0.05
+plots:
+  enabled: true
+  groups:
+    tai_extremes: true
+    gene_features: true
+    genome_metrics: true
+    codon_profiles: true
+    go_enrichment: false
+    correlations: true
+    qc: true
+  output_formats:
+  - png
+  - pdf
+  max_categories_without_faceting: 8
+  default_top_n_terms: 20
+  default_top_n_categories: 12
+go_plots:
+  enabled: false
+  q_threshold: 0.05
+  min_abs_log2_or: 0.25
+  min_informative_genomes: 5
+  min_total_genes_with_term: 30
+  max_terms_per_tail_namespace: 8
+  max_plot_terms: 24
+  namespaces:
+  - biological_process
+  - molecular_function
+  - cellular_component
+pfam_lcr_plots:
+  enabled: true
+  top_n_pfam: 25
+codon_profile_plots:
+  usage_value: genome_RSCU
+  heatmap_value: auto
+  top_n_variable_codons: 30
+  heatmap_large_width: 16.5
+  heatmap_large_height: 23.4
+  heatmap_min_group_n: 5

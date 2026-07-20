@@ -1,14 +1,18 @@
-# workflow/profiles/default/config.yaml
-
 snakefile: workflow/Snakefile
 configfile: config/config.yaml
 
 cores: 32
+local-cores: 8
+
+use-conda: true
+conda-frontend: conda
+
 printshellcmds: true
 show-failed-logs: true
-use-conda: true
-conda-frontend: mamba
-use-apptainer: false
 rerun-incomplete: true
-keep-going: true
 latency-wait: 120
+
+default-resources:
+  - mem_mb=8000
+  - disk_mb=20000
+  - runtime=720

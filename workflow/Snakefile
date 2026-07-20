@@ -1,239 +1,28 @@
-
 configfile: "config/config.yaml"
 
-import pandas as pd
-from glob import glob
-from snakemake.utils import validate
-from pathlib import Path
-
-# fragment to use singularity/apptainer containers instead of conda
-# import yaml
-
-# with open("workflow/containers/containers.yaml") as f:
-#     CONTAINERS = yaml.safe_load(f)
-
-
-validate(config, "schemas/config.schema.yaml")
-
-
 # ------------------------------------------------------------------------------
-# --- Path variables -----------------------------------------------------------
+# Common setup
 # ------------------------------------------------------------------------------
 
-# Helper path variables for easier acces
-DATA_CDS = config["paths"]["data_cds"]
-DATA_GENOME = config["paths"]["data_genome"]
-DATA_PROTEOME = config["paths"]["data_proteome"]
-GCODES_TRNASCANSE = config['paths']['genetic_codes_trnascanse']
-GCODES_TABLES = config['paths']['genetic_codes_tables'] # currently out of use
-
-PER_GENOME = config['paths']['per_genome']
-LOGS = config['paths']['logs']
-
-DATA_PLOTS = config["paths"]["plots"]
-DATA_TABLES = config["paths"]["tables"]
-DATA_QC = config['paths']['qc']
-DATA_STATISTICS = config['paths']['statistics']
-REPORT_FILE = config["paths"]["reports"]
-
-GENE_FEATURES = config["paths"]["gene_features"]
-GENOME_SUMMARY = config["paths"]["genome_summary"]
-CODON_PROFILES = config["paths"]["codon_profiles"]
-
-TEMPLATE_PATH = config['report_config']['template_path']
-
-BENCHMARKS = config['paths']['benchmarks']
+include: "common/00_validate_config.smk"
+include: "common/01_paths.smk"
+include: "common/02_samples.smk"
+include: "common/03_input_functions.smk"
+include: "common/04_targets.smk"
 
 # ------------------------------------------------------------------------------
-# --- Samples table ------------------------------------------------------------
+# Main target
 # ------------------------------------------------------------------------------
-# Read metadata_dataset from tsv
-samples_df = pd.read_csv(config['paths']['metadata_dataset'], sep = '\t')
-
-# Validate metadata_dataset tsv
-validate(samples_df, "schemas/metadata_dataset.schema.yaml")
-
-def normalize_include(value):
-    """Normalize supported boolean encodings from the validated sample sheet."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)) and value in (0, 1):
-        return bool(value)
-
-    normalized = str(value).strip().lower()
-    if normalized in {"true", "t", "1", "yes", "y"}:
-        return True
-    if normalized in {"false", "f", "0", "no", "n"}:
-        return False
-    raise ValueError(f"Unsupported include value: {value!r}")
-
-samples_df["include"] = samples_df["include"].map(normalize_include)
-if samples_df["sample"].duplicated().any():
-    duplicated = samples_df.loc[samples_df["sample"].duplicated(), "sample"].tolist()
-    raise ValueError(f"Duplicated sample identifiers: {duplicated}")
-
-samples_df = samples_df.set_index("sample")
-samples_df = samples_df[samples_df["include"]]
-SAMPLES = samples_df.index.tolist()
-if not SAMPLES:
-    raise ValueError("No samples with include=true were found in the metadata table")
-
-
-
-
-
-# ------------------------------------------------------------------------------
-# ------- Helper functions -----------------------------------------------------
-# ------------------------------------------------------------------------------
-def require_existing_path(path, label):
-    path = Path(path)
-
-    if not path.exists():
-        raise FileNotFoundError(
-            f"Required {label} does not exist: {path}"
-        )
-    return path
-
-def resolve_single_file(pattern):
-    matches = glob(pattern) # get list of path to proper file based on pattern
-
-    if len(matches) == 0:
-        raise FileNotFoundError(f"No file found for pattern: {pattern}")
-    
-    if len(matches)>1:
-        raise ValueError(f'Multiple files found for pattern: {pattern}')
-    
-    return matches[0]
-
-def get_genome(wildcards):
-    pattern = samples_df.loc[wildcards.sample,'genome']
-    return resolve_single_file(f"{DATA_GENOME}/{pattern}")    
-
-def get_cds(wildcards):
-    pattern = samples_df.loc[wildcards.sample, 'cds']
-    return resolve_single_file(f'{DATA_CDS}/{pattern}')
-
-def get_proteome(wildcards):
-    pattern = samples_df.loc[wildcards.sample, 'proteome']
-    return resolve_single_file(f"{DATA_PROTEOME}/{pattern}")
-    
-def get_genetic_code(wildcards):
-    return int(samples_df.loc[wildcards.sample, "genetic_code"])
-
-def get_trnascanse_code_arg(wildcards):
-    ''' Function creates path to file with proper genetic code structure for tRNAscan-SE tool and returns argument.'''
-    genetic_code = get_genetic_code(wildcards)
-
-    if genetic_code == 1:
-        return ""
-    
-    gcode_file = Path(GCODES_TRNASCANSE)/f'{genetic_code}.gcode'
-
-    if not gcode_file.exists():
-        raise FileNotFoundError(
-            f'Not found tRNAscan-SE genetic code file in {GCODES_TRNASCANSE} location. Consider to change code or add your own file with proper structure:\n # The Alternative Yeast Nuclear Code (transl_table=12)\n# Format:  <Codon> <3-letter AA abreviation> <One letter AA abrev>\nCTG Ser S\n. ps. This file has to contain ONLY DNA, tRNA is forbidden '
-        )
-    
-    return f"-g {gcode_file}"
-
-def get_domain(wildcards):
-    """Extract and normalize domain from metadata_dataset.tsv."""
-    domain = str(samples_df.loc[wildcards.sample, "domain"]).strip().lower()
-
-    domain_map = {
-        "eukarya": "Eukarya",
-        "eukaryota": "Eukarya",
-        "bacteria": "Bacteria",
-        "archaea": "Archaea",
-    }
-
-    if domain not in domain_map:
-        raise ValueError(
-            f"Invalid domain for sample {wildcards.sample}: {domain}. "
-            "Allowed values: Eukarya, Bacteria, Archaea."
-        )
-
-    return domain_map[domain]
-
-def get_go_dictionary_input(wildcards):
-    if config.get("go_dictionary", {}).get("enabled", False):
-        return config["go_dictionary"]["path"]
-    return []
-
-
-# ------------------------------------------------------------------------------
-# --- Check files --------------------------------------------------------------
-# ------------------------------------------------------------------------------
-require_existing_path(DATA_CDS, "CDS directory")
-require_existing_path(DATA_GENOME, "genome directory")
-require_existing_path(GCODES_TRNASCANSE, "tRNAscan-SE genetic codes directory")
-require_existing_path(config["paths"]["metadata_dataset"], "metadata dataset file")
-
-
-# ------------------------------------------------------------------------------
-# --- Kofamscan targets --------------------------------------------------------
-# ------------------------------------------------------------------------------
-KOFAM_ENABLED = config.get("kofamscan", {}).get("enabled", False)
-if not KOFAM_ENABLED:
-    raise ValueError(
-        "kofamscan.enabled must be true because codon_usage_metrics requires "
-        "a ribosomal reference CDS set for CAI calculation"
-    )
-
-require_existing_path(config["kofamscan"]["database"]["ko_list"], "KOfam ko_list")
-require_existing_path(config["kofamscan"]["database"]["profiles_dir"], "KOfam profiles directory")
-require_existing_path(
-    config["kofamscan"]["ribosome_reference"]["brite_json"],
-    "KEGG BRITE ko03011 JSON",
-)
-
-KOFAM_TARGETS = expand(
-    f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.fna",
-    sample=SAMPLES,
-)
-
-
-# ------------------------------------------------------------------------------
-# --- Main Rule ----------------------------------------------------------------
-# ------------------------------------------------------------------------------
-# rule all:
-#     input:
-#         # Per sample data
-#         expand(f'{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv', sample = SAMPLES),
-#         # Final reports
-#         # f"{REPORT_FILE}/summary_report.html",
-#         # f"{REPORT_FILE}/summary_report.md"
 
 rule all:
     input:
-        # Per-genome metrics
-        expand(
-            f"{PER_GENOME}/{{sample}}/codon_metrics/{{sample}}_summary.tsv",
-            sample=SAMPLES,
-        ),
-
-        # Per-genome QC
-        expand(
-            f"{PER_GENOME}/{{sample}}/qc/{{sample}}_trna_profile_qc.tsv",
-            sample=SAMPLES,
-        ),
-
-        KOFAM_TARGETS,
-
-        # Canonical tables
-        config["paths"]["gene_features"],
-        config["paths"]["genome_summary"],
-        config["paths"]["codon_profiles"],
-
-        # Statistics
-        config["paths"]["gene_feature_tests"],
-        config["paths"]["genome_group_tests"],
-        config["paths"]["go_enrichment"],
+        WORKFLOW_TARGETS
 
 # ------------------------------------------------------------------------------
-# ---  Include rules -----------------------------------------------------------
+# Rules
 # ------------------------------------------------------------------------------
-# calculate metrics rules 
+
+include: "rules/00_prepare_go_dictionary.smk"
 include: "rules/01_run_trnascanse.smk"
 include: "rules/02_clean_trnascanse.smk"
 include: "rules/03_build_trna_profile.smk"
@@ -241,10 +30,10 @@ include: "rules/04_validate_trna_profile.smk"
 include: "rules/05_build_gene_protein_map.smk"
 include: "rules/06_kofamscan_ribosomal_reference.smk"
 include: "rules/07_compute_codon_metrics.smk"
-
-include: "rules/00_prepare_go_dictionary.smk"
 include: "rules/08_build_tables.smk"
 include: "rules/09_compute_statistics.smk"
-include: "rules/10_go_enrichment.smk"
-
-# include: "rules/99_legacy_aggregate_and_report.smk"
+include: "rules/10_summarize_statistics.smk"
+include: "rules/11_go_enrichment.smk"
+include: "rules/12_plots.smk"
+include: "rules/13_script_suggestion.plots.smk"
+include: "rules/14_go_pfam_lcr_plots.smk"

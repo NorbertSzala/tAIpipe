@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
-# Performs genome-stratified GO enrichment analysis for the high- and low-tAI gene tails. It selects tails independently within each genome, builds one 2 × 2 contingency table per informative genome and GO term, and combines the strata with the Cochran–Mantel–Haenszel test.
+# Performs genome-stratified GO enrichment analysis for the high- and low-tAI
+# tails. Tails are selected independently within each genome from the
+# GO-annotated gene universe, which avoids treating annotation absence as true
+# GO-term absence.
 
 suppressPackageStartupMessages({
   library(argparse)
@@ -30,6 +33,8 @@ parser$add_argument(
 parser$add_argument("--min-genomes-with-term", type = "integer", default = 5L)
 parser$add_argument("--min-informative-genomes", type = "integer", default = 3L)
 parser$add_argument("--min-total-genes-with-term", type = "integer", default = 10L)
+parser$add_argument("--min-genes-with-go-total", type = "integer", default = 100L)
+parser$add_argument("--min-genes-with-go-per-sample", type = "integer", default = 10L)
 parser$add_argument("--fdr-method", default = "BH")
 args <- parser$parse_args()
 
@@ -39,23 +44,35 @@ if (!is.finite(args$tail_fraction) || args$tail_fraction <= 0 || args$tail_fract
 if (args$max_tail_genes < 0L) {
   stop("--max-tail-genes must be zero or a positive integer")
 }
+if (args$min_genes_with_go_total < 1L) {
+  stop("--min-genes-with-go-total must be a positive integer")
+}
+if (args$min_genes_with_go_per_sample < 1L) {
+  stop("--min-genes-with-go-per-sample must be a positive integer")
+}
+
+extract_go_ids <- function(x) {
+  ids <- str_extract_all(toupper(as.character(x)), "GO:[0-9]{7}")[[1]]
+  ids <- unique(ids[!is.na(ids) & nzchar(ids)])
+  ids
+}
 
 required_columns <- c("sample", "tAI", "go_terms")
-genes <- read_tsv(args$gene_features, show_col_types = FALSE)
-missing_columns <- setdiff(required_columns, names(genes))
+raw_genes <- read_tsv(args$gene_features, show_col_types = FALSE)
+missing_columns <- setdiff(required_columns, names(raw_genes))
 if (length(missing_columns) > 0L) {
   stop("Gene feature table lacks columns: ", paste(missing_columns, collapse = ", "))
 }
 
-if (!"gene_id" %in% names(genes)) {
-  if ("seq_id" %in% names(genes)) {
-    genes <- genes %>% mutate(gene_id = as.character(seq_id))
+if (!"gene_id" %in% names(raw_genes)) {
+  if ("seq_id" %in% names(raw_genes)) {
+    raw_genes <- raw_genes %>% mutate(gene_id = as.character(seq_id))
   } else {
-    genes <- genes %>% mutate(gene_id = paste0("gene_", row_number()))
+    raw_genes <- raw_genes %>% mutate(gene_id = paste0("gene_", row_number()))
   }
 }
 
-genes <- genes %>%
+genes <- raw_genes %>%
   transmute(
     sample = as.character(sample),
     gene_id = as.character(gene_id),
@@ -67,13 +84,51 @@ genes <- genes %>%
     !is.na(gene_id), gene_id != "",
     is.finite(tAI)
   ) %>%
-  distinct(sample, gene_id, .keep_all = TRUE)
+  distinct(sample, gene_id, .keep_all = TRUE) %>%
+  mutate(
+    go_id_list = map(go_terms, extract_go_ids),
+    has_go = lengths(go_id_list) > 0L
+  )
 
 if (nrow(genes) == 0L) {
   stop("No genes with finite tAI are available.")
 }
 
+n_annotated_total <- sum(genes$has_go)
+if (n_annotated_total < args$min_genes_with_go_total) {
+  stop(
+    "GO enrichment requires at least ", args$min_genes_with_go_total,
+    " genes with valid GO terms after tAI filtering, but found ",
+    n_annotated_total, "."
+  )
+}
+
+sample_annotation_qc <- genes %>%
+  group_by(sample) %>%
+  summarise(
+    n_genes_finite_tai = n(),
+    n_genes_with_go = sum(has_go),
+    go_annotated_fraction = n_genes_with_go / n_genes_finite_tai,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    sample_used_for_go_enrichment = n_genes_with_go >= args$min_genes_with_go_per_sample
+  )
+
+eligible_samples <- sample_annotation_qc %>%
+  filter(sample_used_for_go_enrichment) %>%
+  pull(sample)
+
+if (length(eligible_samples) == 0L) {
+  stop(
+    "No sample has at least ", args$min_genes_with_go_per_sample,
+    " genes with valid GO terms."
+  )
+}
+
 ranked <- genes %>%
+  filter(sample %in% eligible_samples, has_go) %>%
+  select(sample, gene_id, tAI, go_id_list) %>%
   group_by(sample) %>%
   arrange(desc(tAI), gene_id, .by_group = TRUE) %>%
   mutate(rank_high = row_number()) %>%
@@ -94,9 +149,20 @@ ranked <- genes %>%
   ) %>%
   ungroup()
 
+if (nrow(ranked) == 0L) {
+  stop("No GO-annotated genes remained after sample-level GO coverage filtering.")
+}
+
+small_tail_samples <- ranked %>%
+  group_by(sample) %>%
+  summarise(n_tail = min(n_tail), n_eligible_genes = n(), .groups = "drop") %>%
+  filter(n_tail < 1L)
+if (nrow(small_tail_samples) > 0L) {
+  stop("At least one eligible sample has no selectable tail genes after filtering.")
+}
+
 go_long <- ranked %>%
-  mutate(go_id = str_extract_all(toupper(go_terms), "GO:[0-9]{7}")) %>%
-  unnest_longer(go_id) %>%
+  unnest_longer(go_id_list, values_to = "go_id") %>%
   filter(!is.na(go_id), go_id != "") %>%
   distinct(sample, gene_id, go_id, high_tail, low_tail)
 
@@ -235,6 +301,29 @@ analyse_tail <- function(tail_column, tail_name) {
     })
 }
 
+empty_results <- tibble(
+  tail = character(),
+  go_id = character(),
+  go_name = character(),
+  go_namespace = character(),
+  n_genomes_with_term = integer(),
+  n_informative_genomes = integer(),
+  total_genes_with_term = integer(),
+  n_genomes_enriched = integer(),
+  n_genomes_depleted = integer(),
+  n_genomes_neutral = integer(),
+  common_odds_ratio = double(),
+  conf_low = double(),
+  conf_high = double(),
+  statistic = double(),
+  p_value = double(),
+  status = character(),
+  q_value = double(),
+  go_universe = character(),
+  n_annotated_genes_total = integer(),
+  n_samples_in_universe = integer()
+)
+
 results <- bind_rows(
   analyse_tail("high_tail", "high_tAI"),
   analyse_tail("low_tail", "low_tAI")
@@ -242,50 +331,60 @@ results <- bind_rows(
 
 if (nrow(results) == 0L) {
   warning("No GO terms passed the configured minimum filters.")
-  results <- tibble(
-    tail = character(),
-    go_id = character(),
-    n_genomes_with_term = integer(),
-    n_informative_genomes = integer(),
-    total_genes_with_term = integer(),
-    n_genomes_enriched = integer(),
-    n_genomes_depleted = integer(),
-    n_genomes_neutral = integer(),
-    common_odds_ratio = double(),
-    conf_low = double(),
-    conf_high = double(),
-    statistic = double(),
-    p_value = double(),
-    status = character(),
-    q_value = double()
-  )
+  results <- empty_results %>% select(-go_name, -go_namespace)
 } else {
   results <- results %>%
     group_by(tail) %>%
     mutate(q_value = p.adjust(p_value, method = args$fdr_method)) %>%
-    ungroup()
+    ungroup() %>%
+    mutate(
+      go_universe = "go_annotated_genes_with_finite_tai",
+      n_annotated_genes_total = nrow(ranked),
+      n_samples_in_universe = n_distinct(ranked$sample)
+    )
 }
 
 go_dictionary <- read_tsv(args$go_dictionary, show_col_types = FALSE)
 if (all(c("go_terms", "go_name", "go_namespace") %in% names(go_dictionary))) {
-  results <- results %>%
-    left_join(
-      go_dictionary %>%
-        transmute(
-          go_id = as.character(go_terms),
-          go_name = as.character(go_name),
-          go_namespace = as.character(go_namespace)
-        ),
-      by = "go_id"
+  dictionary <- go_dictionary %>%
+    transmute(
+      go_id = toupper(as.character(go_terms)),
+      go_name = as.character(go_name),
+      go_namespace = as.character(go_namespace)
     ) %>%
+    distinct(go_id, .keep_all = TRUE)
+
+  results <- results %>%
+    left_join(dictionary, by = "go_id") %>%
+    relocate(go_name, go_namespace, .after = go_id)
+
+  missing_dictionary_terms <- results %>%
+    filter(is.na(go_name) | is.na(go_namespace)) %>%
+    distinct(go_id) %>%
+    pull(go_id)
+
+  if (length(missing_dictionary_terms) > 0L) {
+    warning(
+      "GO dictionary lacks names/namespaces for ", length(missing_dictionary_terms),
+      " enriched terms. Example IDs: ",
+      paste(head(missing_dictionary_terms, 10), collapse = ", ")
+    )
+  }
+} else {
+  results <- results %>%
+    mutate(go_name = NA_character_, go_namespace = NA_character_) %>%
     relocate(go_name, go_namespace, .after = go_id)
 }
 
 results <- results %>%
   arrange(tail, q_value, p_value, desc(abs(log(common_odds_ratio))))
 
+qc_path <- sub("\\.tsv$", "_annotation_qc.tsv", args$output)
 dir.create(dirname(args$output), recursive = TRUE, showWarnings = FALSE)
 write_tsv(results, args$output, na = "NA")
+write_tsv(sample_annotation_qc, qc_path, na = "NA")
 
 message("Saved CMH GO enrichment table: ", args$output)
+message("Saved GO annotation QC table: ", qc_path)
 message("Rows: ", nrow(results))
+message("GO universe: GO-annotated genes with finite tAI; genes = ", nrow(ranked), "; samples = ", n_distinct(ranked$sample))

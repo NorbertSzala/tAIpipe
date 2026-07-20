@@ -91,7 +91,7 @@ kofamscan:
     require_thresholds: true
 
   execution:
-    threads: 4
+    threads: 2
     mem_mb: 8000
     threshold_scale: 1.0
 
@@ -105,7 +105,7 @@ kofamscan:
 # ---------------------------
 
 trnascanse:
-  threads: 16
+  threads: 2
   # Maximum-sensitivity mode is slower but appropriate for final production.
   max_sensitivity: true
 

@@ -1,0 +1,218 @@
+# ==============================================================================
+# tAIpipe plotting style configuration
+# ==============================================================================
+# This file controls visual appearance only.
+# It should not contain biological thresholds, statistical settings or paths to
+# input datasets.
+# ==============================================================================
+
+
+# ==============================================================================
+# 1. Output defaults
+# ==============================================================================
+
+
+# Keep biological/statistical transformations in scripts, not here.
+
+schema_version: 1
+active_profile: publication
+
+profiles:
+  publication:
+    typography:
+      family: sans
+      base_size_pt: 10
+      title_size_pt: 13
+      subtitle_size_pt: 10.5
+      axis_title_size_pt: 10
+      axis_text_size_pt: 8.5
+      legend_title_size_pt: 9
+      legend_text_size_pt: 8
+      strip_text_size_pt: 8.5
+      caption_size_pt: 7.5
+      title_face: bold
+      strip_face: bold
+  presentation:
+    typography:
+      family: sans
+      base_size_pt: 14
+      title_size_pt: 20
+      subtitle_size_pt: 15
+      axis_title_size_pt: 14
+      axis_text_size_pt: 12
+      legend_title_size_pt: 12
+      legend_text_size_pt: 11
+      strip_text_size_pt: 12
+      caption_size_pt: 10
+      title_face: bold
+      strip_face: bold
+
+output:
+  directory: results/plots
+  formats: [png, pdf]
+  units: in
+  background: white
+  raster:
+    dpi: 300
+    device: ragg
+  vector:
+    pdf_device: cairo_pdf
+    svg_device: svglite
+
+
+palettes:
+  continuous:
+    heatmap:
+      provider: viridis
+      option: C
+      begin: 0.12
+      end: 0.88
+      na_colour: "#D9D9D9"
+    diverging:
+      low: "#2166AC"
+      mid: "#F7F7F7"
+      high: "#B2182B"
+      midpoint: 0
+      na_colour: "#D9D9D9"
+  qualitative:
+    binary:
+      absent: "#C9C9C9"
+      present: "#3F3F3F"
+    okabe_ito_8:
+      - "#E69F00"
+      - "#56B4E9"
+      - "#009E73"
+      - "#F0E442"
+      - "#0072B2"
+      - "#D55E00"
+      - "#CC79A7"
+      - "#000000"
+
+# Plot size profiles used by workflow/scripts/lib/plotting_utils.R.
+# Values are in inches and are intentionally explicit so plotting scripts do not
+# fail when requesting standard size aliases such as wide, square or tall.
+dimensions:
+  single:
+    width: 3.35
+    height: 2.70
+    units: in
+  double:
+    width: 7.10
+    height: 4.80
+    units: in
+  wide:
+    width: 10.00
+    height: 5.50
+    units: in
+  square:
+    width: 7.10
+    height: 7.10
+    units: in
+  tall:
+    width: 7.10
+    height: 9.00
+    units: in
+  tall_facets:
+    width: 8.00
+    height: 12.00
+    units: in
+
+category_labels:
+  lcr_present: "LCR"
+  pfam_present: "PFAM domains"
+  tm_present: "Transmembrane region"
+  signal_peptide_present: "Signal peptide"
+  algal_parasite: "Algal parasite"
+  animal_endosymbiont: "Animal endosymbiont"
+  animal_parasite: "Animal parasite"
+  plant_pathogen: "Plant pathogen"
+  soil_saprotroph: "Soil saprotroph"
+  unspecified_saprotroph: "Unspecified saprotroph"
+
+
+
+# ==============================================================================
+# 2. Figure size profiles
+# ==============================================================================
+# R plotting scripts call save_plot(..., size = "<profile>").
+# Every profile used by a script must be listed here.
+# ==============================================================================
+
+dimensions:
+  default:
+    width: 8
+    height: 6
+
+  wide:
+    width: 12
+    height: 7
+
+  tall:
+    width: 8
+    height: 10
+
+  square:
+    width: 7
+    height: 7
+
+  heatmap_large:
+    width: 16.5
+    height: 23.4
+
+
+# ==============================================================================
+# 3. Theme
+# ==============================================================================
+
+theme:
+  base_size: 11
+  base_family: sans
+
+  title_size: 13
+  subtitle_size: 11
+  axis_text_size: 9
+  legend_text_size: 9
+
+  rotate_x_text: false
+  strip_text_size: 10
+
+
+# ==============================================================================
+# 4. Colour palettes
+# ==============================================================================
+
+palettes:
+  discrete: Set2
+
+  heatmap:
+    provider: viridis
+    option: C
+    begin: 0.12
+    end: 0.88
+    na_colour: "#D9D9D9"
+
+  diverging:
+    low: "#3B4CC0"
+    mid: "#F7F7F7"
+    high: "#B40426"
+
+  qc:
+    pass: "#4DAF4A"
+    warn: "#FFB000"
+    fail: "#E41A1C"
+    missing: "#BDBDBD"
+
+
+# ==============================================================================
+# 5. Labels
+# ==============================================================================
+
+labels:
+  tAI: "tAI"
+  CAI: "CAI"
+  ENC: "ENC"
+  GC3s: "GC3s"
+  delta_ENC: "delta ENC"
+  protein_length_aa: "Protein length [aa]"
+  log_protein_length_aa: "log1p protein length [aa]"
+

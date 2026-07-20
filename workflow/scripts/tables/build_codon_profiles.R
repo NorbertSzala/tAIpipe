@@ -13,6 +13,8 @@ suppressPackageStartupMessages({
     library(tibble)
 })
 
+
+
 parser <- ArgumentParser(description = "Build canonical codon_profiles.tsv")
 parser$add_argument("--metadata-dataset", required = TRUE)
 parser$add_argument("--per-genome-dir", required = TRUE)
@@ -106,10 +108,11 @@ build_sample_profile <- function(metadata_row) {
         left_join(reference_values, by = "codon") %>%
         left_join(trna_values, by = "codon")
 
-    # Stop codons may be present in raw count tables but do not have synonymous
-    # codon/CAI/tRNA annotations. They are marked explicitly and retained.
+    genetic_code <- Biostrings::getGeneticCode(as.character(metadata_row$genetic_code[[1]]))
+    stop_codons <- names(genetic_code[genetic_code == "*"])
+
     profile <- profile %>%
-        mutate(is_stop_codon = codon %in% c("TAA", "TAG", "TGA")) %>%
+        mutate(is_stop_codon = codon %in% stop_codons) %>%
         group_by(subfam) %>%
         mutate(
             reference_optimal_codon = if (

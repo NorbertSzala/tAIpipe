@@ -1,0 +1,11 @@
+name: taipipe-ribosomal-phylogeny
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - biopython>=1.83
+  - mafft>=7.520
+  - trimal>=1.4.1
+  - iqtree>=2.3

@@ -1,6 +1,7 @@
 """
 Runs tRNAscan-SE independently for each genome. The rule applies the configured organism domain, genetic-code settings, sensitivity mode, and number of threads, and stores the raw prediction output for subsequent cleaning and counting.
 """
+
 rule run_trnascanse:
     """
     Run tRNAscanSE-2.0 on given genome .fasta files. Predict tRNA genes in genome. Default option is to omit pseudo genes
@@ -54,7 +55,8 @@ rule run_trnascanse:
     params:
         sensitivity = lambda wildcards: "--max" if config.get("trnascanse", {}).get("max_sensitivity", True) else "",
         gencode_arg = get_trnascanse_code_arg,
-        domain = lambda wildcards: config.get("trnascanse", {}).get("domain", "-E")
+        domain = get_trnascanse_domain_arg
+        
 
     message:
         "Predicting tRNA-genes using tRNAscan-SE 2.0 tool."

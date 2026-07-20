@@ -1,0 +1,9 @@
+name: tai-statistics
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base
+  - r-argparse
+  - r-tidyverse
+  - r-yaml

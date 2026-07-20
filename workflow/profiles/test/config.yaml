@@ -7,7 +7,7 @@ cores: 8
 printshellcmds: true
 show-failed-logs: true
 use-conda: true
-use-apptainer: false
+use-singularity: false
 conda-frontend: conda
 conda-prefix: resources/conda
 rerun-incomplete: true

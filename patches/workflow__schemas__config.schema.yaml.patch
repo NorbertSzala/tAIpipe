@@ -1,0 +1,857 @@
+--- workflow/schemas/config.schema.yaml	2026-07-10 20:54:48.010401857 +0000
++++ /mnt/data/taipipe_review_fixes/replacements/workflow/schemas/config.schema.yaml	2026-07-10 20:57:39.722681541 +0000
+@@ -1,348 +1,637 @@
+-$schema: "http://json-schema.org/draft-07/schema#"
+-title: "tAIpipe configuration"
++$schema: http://json-schema.org/draft-07/schema#
++title: tAIpipe configuration
+ type: object
+-additionalProperties: true
++additionalProperties: false
+ required:
+-  - paths
+-  - go_dictionary
+-  - kofamscan
+-  - trnascanse
+-  - trnascanse_clean
+-  - trna_qc
+-  - statistics
+-  - go_enrichment
+-  - report_config
+-  - gene_protein_map
+-  - plots
+-
++- paths
++- go_dictionary
++- kofamscan
++- trnascanse
++- trnascanse_clean
++- trna_qc
++- statistics
++- go_enrichment
++- report_config
++- gene_protein_map
++- plots
++- ribosomal_reference
+ properties:
+   paths:
+     type: object
+     additionalProperties: true
+     required:
+-      - metadata_dataset
+-      - data_cds
+-      - data_genome
+-      - data_gff
+-      - data_proteome
+-      - results
+-      - logs
+-      - benchmarks
+-      - per_genome
+-      - tables
+-      - gene_features
+-      - genome_summary
+-      - codon_profiles
+-      - statistics
+-      - gene_feature_tests
+-      - genome_group_tests
+-      - go_enrichment
+-      - plots
+-      - reports
+-    properties:
+-      metadata_dataset: {type: string, minLength: 1}
+-      data_cds: {type: string, minLength: 1}
+-      data_genome: {type: string, minLength: 1}
+-      data_gff: {type: string, minLength: 1}
+-      data_proteome: {type: string, minLength: 1}
++    - metadata_dataset
++    - data_cds
++    - data_genome
++    - data_gff
++    - data_proteome
++    - results
++    - logs
++    - benchmarks
++    - per_genome
++    - tables
++    - gene_features
++    - genome_summary
++    - codon_profiles
++    - statistics
++    - gene_feature_tests
++    - genome_group_tests
++    - go_enrichment
++    - plots
++    - reports
++    properties:
++      metadata_dataset:
++        type: string
++        minLength: 1
++      data_cds:
++        type: string
++        minLength: 1
++      data_genome:
++        type: string
++        minLength: 1
++      data_gff:
++        type: string
++        minLength: 1
++      data_proteome:
++        type: string
++        minLength: 1
+       external_annotations:
+-        type: [string, "null"]
+-      results: {type: string, minLength: 1}
+-      logs: {type: string, minLength: 1}
+-      benchmarks: {type: string, minLength: 1}
+-      per_genome: {type: string, minLength: 1}
+-      tables: {type: string, minLength: 1}
+-      gene_features: {type: string, minLength: 1}
+-      genome_summary: {type: string, minLength: 1}
+-      codon_profiles: {type: string, minLength: 1}
+-      statistics: {type: string, minLength: 1}
+-      gene_feature_tests: {type: string, minLength: 1}
+-      genome_group_tests: {type: string, minLength: 1}
+-      go_enrichment: {type: string, minLength: 1}
+-      plots: {type: string, minLength: 1}
+-      reports: {type: string, minLength: 1}
+-
++        type:
++        - string
++        - 'null'
++      results:
++        type: string
++        minLength: 1
++      logs:
++        type: string
++        minLength: 1
++      benchmarks:
++        type: string
++        minLength: 1
++      per_genome:
++        type: string
++        minLength: 1
++      tables:
++        type: string
++        minLength: 1
++      gene_features:
++        type: string
++        minLength: 1
++      genome_summary:
++        type: string
++        minLength: 1
++      codon_profiles:
++        type: string
++        minLength: 1
++      statistics:
++        type: string
++        minLength: 1
++      gene_feature_tests:
++        type: string
++        minLength: 1
++      genome_group_tests:
++        type: string
++        minLength: 1
++      go_enrichment:
++        type: string
++        minLength: 1
++      plots:
++        type: string
++        minLength: 1
++      reports:
++        type: string
++        minLength: 1
+   go_dictionary:
+     type: object
+     additionalProperties: true
+-    required: [enabled, path, obo_path, obo_url]
+-    properties:
+-      enabled: {type: boolean}
+-      path: {type: string, minLength: 1}
+-      obo_path: {type: string, minLength: 1}
+-      obo_url: {type: string, minLength: 1}
+-
++    required:
++    - enabled
++    - path
++    - obo_path
++    - obo_url
++    properties:
++      enabled:
++        type: boolean
++      path:
++        type: string
++        minLength: 1
++      obo_path:
++        type: string
++        minLength: 1
++      obo_url:
++        type: string
++        minLength: 1
+   ribosomal_reference:
+     type: object
+     additionalProperties: true
+     properties:
+-      enabled: {type: boolean}
+-      method: {type: string}
++      enabled:
++        type: boolean
++      method:
++        type: string
+       selection_strategy:
+         type: string
+-        enum: [best_per_ko, top_n_per_ko]
+-      top_n_per_ko: {type: integer, minimum: 1}
+-      min_ko_coverage: {type: number, minimum: 0, maximum: 1}
+-      min_reference_genes: {type: integer, minimum: 1}
+-      max_reference_genes: {type: integer, minimum: 1}
+-
++        enum:
++        - best_per_ko
++        - top_n_per_ko
++      top_n_per_ko:
++        type: integer
++        minimum: 1
++      min_ko_coverage:
++        type: number
++        minimum: 0
++        maximum: 1
++      min_reference_genes:
++        type: integer
++        minimum: 1
++      max_reference_genes:
++        type: integer
++        minimum: 1
+   kofamscan:
+     type: object
+     additionalProperties: true
+-    required: [enabled, database, ribosome_reference, execution, columns]
++    required:
++    - enabled
++    - database
++    - ribosome_reference
++    - execution
++    - columns
+     properties:
+-      enabled: {type: boolean}
++      enabled:
++        type: boolean
+       database:
+         type: object
+-        required: [ko_list, profiles_dir]
++        required:
++        - ko_list
++        - profiles_dir
+         additionalProperties: true
+         properties:
+-          ko_list: {type: string, minLength: 1}
+-          profiles_dir: {type: string, minLength: 1}
++          ko_list:
++            type: string
++            minLength: 1
++          profiles_dir:
++            type: string
++            minLength: 1
+       ribosome_reference:
+         type: object
+-        required: [brite_json, ko_table, hal, require_thresholds]
++        required:
++        - brite_json
++        - ko_table
++        - hal
++        - require_thresholds
+         additionalProperties: true
+         properties:
+-          brite_json: {type: string, minLength: 1}
+-          ko_table: {type: string, minLength: 1}
+-          hal: {type: string, minLength: 1}
+-          require_thresholds: {type: boolean}
++          brite_json:
++            type: string
++            minLength: 1
++          ko_table:
++            type: string
++            minLength: 1
++          hal:
++            type: string
++            minLength: 1
++          require_thresholds:
++            type: boolean
+       execution:
+         type: object
+-        required: [threads, mem_mb, threshold_scale]
++        required:
++        - threads
++        - mem_mb
++        - threshold_scale
+         additionalProperties: true
+         properties:
+-          threads: {type: integer, minimum: 1}
+-          mem_mb: {type: integer, minimum: 256}
+-          threshold_scale: {type: number, exclusiveMinimum: 0}
++          threads:
++            type: integer
++            minimum: 1
++          mem_mb:
++            type: integer
++            minimum: 256
++          threshold_scale:
++            type: number
++            exclusiveMinimum: 0
+       columns:
+         type: object
+-        required: [gene_id, protein_id, cds_id]
++        required:
++        - gene_id
++        - protein_id
++        - cds_id
+         additionalProperties: true
+         properties:
+-          gene_id: {type: string, minLength: 1}
+-          protein_id: {type: string, minLength: 1}
+-          cds_id: {type: string, minLength: 1}
+-
++          gene_id:
++            type: string
++            minLength: 1
++          protein_id:
++            type: string
++            minLength: 1
++          cds_id:
++            type: string
++            minLength: 1
+   trnascanse:
+     type: object
+-    required: [threads, max_sensitivity]
++    required:
++    - threads
++    - max_sensitivity
+     additionalProperties: true
+     properties:
+-      threads: {type: integer, minimum: 1}
+-      max_sensitivity: {type: boolean}
+-
++      threads:
++        type: integer
++        minimum: 1
++      max_sensitivity:
++        type: boolean
+   trnascanse_clean:
+     type: object
+-    required: [keep_pseudo, remove_nnn]
++    required:
++    - keep_pseudo
++    - remove_nnn
+     additionalProperties: true
+     properties:
+-      keep_pseudo: {type: boolean}
+-      remove_nnn: {type: boolean}
+-
++      keep_pseudo:
++        type: boolean
++      remove_nnn:
++        type: boolean
+   trna_qc:
+     type: object
+-    required: [mode, min_total_trnas, min_unique_anticodons, min_amino_acids, min_finite_tai_fraction, min_used_codon_coverage]
++    required:
++    - mode
++    - min_total_trnas
++    - min_unique_anticodons
++    - min_amino_acids
++    - min_finite_tai_fraction
++    - min_used_codon_coverage
+     additionalProperties: true
+     properties:
+-      mode: {type: string, enum: [error, warn, ignore]}
+-      min_total_trnas: {type: integer, minimum: 1}
+-      min_unique_anticodons: {type: integer, minimum: 1, maximum: 64}
+-      min_amino_acids: {type: integer, minimum: 1, maximum: 20}
+-      min_finite_tai_fraction: {type: number, minimum: 0, maximum: 1}
+-      min_used_codon_coverage: {type: number, minimum: 0, maximum: 1}
+-
++      mode:
++        type: string
++        enum:
++        - error
++        - warn
++        - ignore
++      min_total_trnas:
++        type: integer
++        minimum: 1
++      min_unique_anticodons:
++        type: integer
++        minimum: 1
++        maximum: 64
++      min_amino_acids:
++        type: integer
++        minimum: 1
++        maximum: 20
++      min_finite_tai_fraction:
++        type: number
++        minimum: 0
++        maximum: 1
++      min_used_codon_coverage:
++        type: number
++        minimum: 0
++        maximum: 1
+   statistics:
+     type: object
+-    required: [binary_features, gene_covariates, genome_metrics, group_variables, fdr_method]
++    required:
++    - binary_features
++    - gene_covariates
++    - genome_metrics
++    - group_variables
++    - fdr_method
+     additionalProperties: true
+     properties:
+       binary_features:
+         type: array
+         minItems: 1
+         uniqueItems: true
+-        items: {type: string, minLength: 1}
++        items:
++          type: string
++          minLength: 1
+       gene_covariates:
+         type: array
+         uniqueItems: true
+-        items: {type: string, minLength: 1}
++        items:
++          type: string
++          minLength: 1
+       genome_metrics:
+         type: array
+         minItems: 1
+         uniqueItems: true
+-        items: {type: string, minLength: 1}
++        items:
++          type: string
++          minLength: 1
+       group_variables:
+         type: array
+         minItems: 1
+         uniqueItems: true
+-        items: {type: string, minLength: 1}
++        items:
++          type: string
++          minLength: 1
+       fdr_method:
+         type: string
+-        enum: [BH, BY, holm, hochberg, hommel, bonferroni, none]
++        enum:
++        - BH
++        - BY
++        - holm
++        - hochberg
++        - hommel
++        - bonferroni
++        - none
+       per_genome_feature_effects:
+         type: object
+         additionalProperties: true
+         properties:
+-          enabled: {type: boolean}
+-          min_genes: {type: integer, minimum: 1}
+-          min_class_genes: {type: integer, minimum: 1}
+-          min_genomes: {type: integer, minimum: 2}
++          enabled:
++            type: boolean
++          min_genes:
++            type: integer
++            minimum: 1
++          min_class_genes:
++            type: integer
++            minimum: 1
++          min_genomes:
++            type: integer
++            minimum: 2
+       lifestyle_within_phylum_permutations:
+         type: object
+         additionalProperties: true
+         properties:
+-          enabled: {type: boolean}
+-          n_perm: {type: integer, minimum: 99}
+-          seed: {type: integer}
++          enabled:
++            type: boolean
++          n_perm:
++            type: integer
++            minimum: 99
++          seed:
++            type: integer
+       tai_extremes:
+         type: object
+         additionalProperties: true
+         properties:
+-          enabled: {type: boolean}
+-          group_column: {type: string, minLength: 1}
+-          id_column: {type: string, minLength: 1}
+-          value_column: {type: string, minLength: 1}
++          enabled:
++            type: boolean
++          group_column:
++            type: string
++            minLength: 1
++          id_column:
++            type: string
++            minLength: 1
++          value_column:
++            type: string
++            minLength: 1
+           tail_fractions:
+             type: array
+             minItems: 1
+             uniqueItems: true
+-            items: {type: number, exclusiveMinimum: 0, exclusiveMaximum: 1}
+-          min_genes_per_sample: {type: integer, minimum: 1}
+-          min_tail_size: {type: integer, minimum: 1}
++            items:
++              type: number
++              exclusiveMinimum: 0
++              exclusiveMaximum: 1
++          min_genes_per_sample:
++            type: integer
++            minimum: 1
++          min_tail_size:
++            type: integer
++            minimum: 1
+           binary_features:
+             type: object
+-            additionalProperties: {type: string, minLength: 1}
++            additionalProperties:
++              type: string
++              minLength: 1
+           continuous_features:
+             type: object
+-            additionalProperties: {type: string, minLength: 1}
+-
++            additionalProperties:
++              type: string
++              minLength: 1
+   go_enrichment:
+     type: object
+     additionalProperties: true
+-    required: [enabled, require_go_terms, tail_fraction, max_tail_genes, min_genomes_with_term, min_informative_genomes, min_total_genes_with_term, fdr_method]
+-    properties:
+-      enabled: {type: boolean}
+-      require_go_terms: {type: boolean}
+-      min_genes_with_go_total: {type: integer, minimum: 0}
+-      min_genes_with_go_per_sample: {type: integer, minimum: 0}
+-      tail_fraction: {type: number, exclusiveMinimum: 0, exclusiveMaximum: 0.5}
+-      max_tail_genes: {type: integer, minimum: 0}
+-      min_genomes_with_term: {type: integer, minimum: 1}
+-      min_informative_genomes: {type: integer, minimum: 2}
+-      min_total_genes_with_term: {type: integer, minimum: 1}
+-      fdr_method: {type: string, enum: [BH, BY, holm, hochberg, hommel, bonferroni, none]}
+-
++    required:
++    - enabled
++    - require_go_terms
++    - tail_fraction
++    - max_tail_genes
++    - min_genomes_with_term
++    - min_informative_genomes
++    - min_total_genes_with_term
++    - fdr_method
++    properties:
++      enabled:
++        type: boolean
++      require_go_terms:
++        type: boolean
++      min_genes_with_go_total:
++        type: integer
++        minimum: 0
++      min_genes_with_go_per_sample:
++        type: integer
++        minimum: 0
++      tail_fraction:
++        type: number
++        exclusiveMinimum: 0
++        exclusiveMaximum: 0.5
++      max_tail_genes:
++        type: integer
++        minimum: 0
++      min_genomes_with_term:
++        type: integer
++        minimum: 1
++      min_informative_genomes:
++        type: integer
++        minimum: 2
++      min_total_genes_with_term:
++        type: integer
++        minimum: 1
++      fdr_method:
++        type: string
++        enum:
++        - BH
++        - BY
++        - holm
++        - hochberg
++        - hommel
++        - bonferroni
++        - none
+   report_config:
+     type: object
+     additionalProperties: true
+-    required: [enabled, template_path]
++    required:
++    - enabled
++    - template_path
+     properties:
+-      enabled: {type: boolean}
+-      template_path: {type: string, minLength: 1}
+-
++      enabled:
++        type: boolean
++      template_path:
++        type: string
++        minLength: 1
+   gene_protein_map:
+     type: object
+     additionalProperties: true
+-    required: [strict_proteome_match, max_missing_proteome_count, max_missing_proteome_fraction]
+-    properties:
+-      strict_proteome_match: {type: boolean}
+-      max_missing_proteome_count: {type: number, minimum: 0}
+-      max_missing_proteome_fraction: {type: number, minimum: 0, maximum: 1}
+-
++    required:
++    - strict_proteome_match
++    - max_missing_proteome_count
++    - max_missing_proteome_fraction
++    properties:
++      strict_proteome_match:
++        type: boolean
++      max_missing_proteome_count:
++        type: number
++        minimum: 0
++      max_missing_proteome_fraction:
++        type: number
++        minimum: 0
++        maximum: 1
+   plots:
+     type: object
+-    additionalProperties: true
+-    required: [enabled, groups, output_formats, max_categories_without_faceting, default_top_n_categories, default_top_n_terms]
++    additionalProperties: false
++    required:
++    - enabled
++    - groups
++    - output_formats
++    - max_categories_without_faceting
++    - default_top_n_categories
++    - default_top_n_terms
+     properties:
+-      enabled: {type: boolean}
++      enabled:
++        type: boolean
+       groups:
+         type: object
+-        required: [tai_extremes, gene_features, genome_metrics, codon_profiles, go_enrichment, correlations, qc]
+-        additionalProperties: true
++        required:
++        - tai_extremes
++        - gene_features
++        - genome_metrics
++        - codon_profiles
++        - go_enrichment
++        - correlations
++        - qc
++        additionalProperties: false
+         properties:
+-          tai_extremes: {type: boolean}
+-          gene_features: {type: boolean}
+-          genome_metrics: {type: boolean}
+-          codon_profiles: {type: boolean}
+-          go_enrichment: {type: boolean}
+-          correlations: {type: boolean}
+-          qc: {type: boolean}
++          tai_extremes:
++            type: boolean
++          gene_features:
++            type: boolean
++          genome_metrics:
++            type: boolean
++          codon_profiles:
++            type: boolean
++          go_enrichment:
++            type: boolean
++          correlations:
++            type: boolean
++          qc:
++            type: boolean
+       output_formats:
+         type: array
+         minItems: 1
+         uniqueItems: true
+-        items: {type: string, enum: [png, pdf, svg]}
+-      max_categories_without_faceting: {type: integer, minimum: 2}
+-      default_top_n_categories: {type: integer, minimum: 1}
+-      default_top_n_terms: {type: integer, minimum: 1}
+-
++        items:
++          type: string
++          enum:
++          - png
++          - pdf
++          - svg
++      max_categories_without_faceting:
++        type: integer
++        minimum: 2
++      default_top_n_categories:
++        type: integer
++        minimum: 1
++      default_top_n_terms:
++        type: integer
++        minimum: 1
+   plot_style:
+     type: object
+     additionalProperties: true
+-
+   script_suggestion_plots:
+     type: object
+     additionalProperties: true
+     properties:
+-      enabled: {type: boolean}
+-      feature_metric: {type: string, minLength: 1}
+-      top_fraction: {type: number, exclusiveMinimum: 0, exclusiveMaximum: 0.5}
+-      chosen_go_terms: {type: string}
+-      correlation_method: {type: string, enum: [spearman, pearson, kendall]}
+-      max_violin_rows_per_group: {type: integer, minimum: 1000}
+-      max_scatter_rows: {type: integer, minimum: 1000}
++      enabled:
++        type: boolean
++      feature_metric:
++        type: string
++        minLength: 1
++      top_fraction:
++        type: number
++        exclusiveMinimum: 0
++        exclusiveMaximum: 0.5
++      chosen_go_terms:
++        type: string
++      correlation_method:
++        type: string
++        enum:
++        - spearman
++        - pearson
++        - kendall
++      max_violin_rows_per_group:
++        type: integer
++        minimum: 1000
++      max_scatter_rows:
++        type: integer
++        minimum: 1000
+       gene_correlation_variables:
+         type: array
+-        items: {type: string}
++        items:
++          type: string
+       genome_correlation_variables:
+         type: array
+-        items: {type: string}
+-
++        items:
++          type: string
+   go_plots:
+     type: object
+     additionalProperties: true
+     properties:
+-      enabled: {type: boolean}
+-      q_threshold: {type: number, minimum: 0, maximum: 1}
+-      min_abs_log2_or: {type: number, minimum: 0}
+-      min_informative_genomes: {type: integer, minimum: 1}
+-      min_total_genes_with_term: {type: integer, minimum: 1}
+-      max_terms_per_tail_namespace: {type: integer, minimum: 1}
+-      max_plot_terms: {type: integer, minimum: 1}
++      enabled:
++        type: boolean
++      q_threshold:
++        type: number
++        minimum: 0
++        maximum: 1
++      min_abs_log2_or:
++        type: number
++        minimum: 0
++      min_informative_genomes:
++        type: integer
++        minimum: 1
++      min_total_genes_with_term:
++        type: integer
++        minimum: 1
++      max_terms_per_tail_namespace:
++        type: integer
++        minimum: 1
++      max_plot_terms:
++        type: integer
++        minimum: 1
+       namespaces:
+         type: array
+-        items: {type: string}
+-
++        items:
++          type: string
+   pfam_lcr_plots:
+     type: object
+     additionalProperties: true
+     properties:
+-      enabled: {type: boolean}
+-      top_n_pfam: {type: integer, minimum: 1}
+-      pfam_description_table: {type: string}
+-
+-codon_profile_plots:
+-  type: object
+-  additionalProperties: true
+-  properties:
+-    usage_value:
+-      type: string
+-      minLength: 1
+-      description: "Column used for codon_usage_variability. Recommended: genome_RSCU."
+-    heatmap_value:
+-      type: string
+-      minLength: 1
+-      description: "Column used for tRNA heatmaps, or auto."
+-    top_n_variable_codons:
+-      type: integer
+-      minimum: 1
+-    heatmap_large_width:
+-      type: number
+-      minimum: 1
+-    heatmap_large_height:
+-      type: number
+-      minimum: 1
+-    heatmap_min_group_n:
+-      type: integer
+-      minimum: 1
++      enabled:
++        type: boolean
++      top_n_pfam:
++        type: integer
++        minimum: 1
++      pfam_description_table:
++        type: string
++  codon_profile_plots:
++    type: object
++    additionalProperties: false
++    properties:
++      usage_value:
++        type: string
++        minLength: 1
++        description: 'Column used for codon_usage_variability. Recommended: genome_RSCU.'
++      heatmap_value:
++        type: string
++        minLength: 1
++        description: Column used for tRNA heatmaps, or auto.
++      top_n_variable_codons:
++        type: integer
++        minimum: 1
++      heatmap_large_width:
++        type: number
++        minimum: 1
++      heatmap_large_height:
++        type: number
++        minimum: 1
++      heatmap_min_group_n:
++        type: integer
++        minimum: 1

@@ -13,6 +13,8 @@ suppressPackageStartupMessages({
   library(tibble)
 })
 
+
+
 parser <- ArgumentParser(
   description = "Build the canonical gene-level feature table for tAIpipe"
 )
@@ -28,6 +30,18 @@ parser$add_argument(
   )
 )
 parser$add_argument("--output", required = TRUE)
+parser$add_argument(
+  "--require-go-terms",
+  action = "store_true",
+  help = "Fail if no valid GO identifiers are present in the final gene table."
+)
+
+parser$add_argument(
+  "--min-go-annotated-genes",
+  type = "integer",
+  default = 1L,
+  help = "Minimum number of genes with valid GO terms when --require-go-terms is used."
+)
 args <- parser$parse_args()
 
 as_flag <- function(x) {
@@ -65,18 +79,33 @@ collapse_unique <- function(x) {
 }
 
 normalize_go_terms <- function(x) {
-  if (length(x) == 0L || all(is.na(x))) {
+  if (length(x) == 0L) {
+    return(NA_character_)
+  }
+
+  values <- as.character(x)
+  values <- values[!is.na(values) & nzchar(trimws(values))]
+
+  if (length(values) == 0L) {
     return(NA_character_)
   }
 
   hits <- unlist(
     str_extract_all(
-      as.character(x),
+      values,
       regex("GO:[0-9]{7}", ignore_case = TRUE)
     ),
     use.names = FALSE
   )
-  collapse_unique(toupper(hits))
+
+  hits <- toupper(hits)
+  hits <- unique(hits[!is.na(hits) & nzchar(hits)])
+
+  if (length(hits) == 0L) {
+    return(NA_character_)
+  }
+
+  paste(sort(hits), collapse = ";")
 }
 
 extract_uniprot_ids <- function(header) {
@@ -155,6 +184,63 @@ safe_percentile <- function(x) {
 
   result[finite] <- (rank(x[finite], ties.method = "average") - 1) / (n - 1)
   result
+}
+
+expected_enc_from_gc3s <- function(gc3s) {
+  values <- suppressWarnings(as.numeric(gc3s))
+  out <- rep(NA_real_, length(values))
+
+  ok <- is.finite(values) & values >= 0 & values <= 1
+  if (!any(ok)) {
+    return(out)
+  }
+
+  s <- values[ok]
+  denominator <- s^2 + (1 - s)^2
+  expected <- 2 + s + 29 / denominator
+  expected[!is.finite(expected)] <- NA_real_
+  out[ok] <- expected
+  out
+}
+read_metric_qc <- function(per_genome_dir, sample_id) {
+  path <- file.path(
+    per_genome_dir,
+    sample_id,
+    "qc",
+    paste0(sample_id, "_metric_qc.tsv")
+  )
+
+  if (!file.exists(path)) {
+    stop("Missing metric QC table: ", path)
+  }
+
+  qc <- read_tsv(path, show_col_types = FALSE, progress = FALSE)
+
+  if (nrow(qc) != 1L) {
+    stop("Expected exactly one row in metric QC table: ", path)
+  }
+
+  required <- c("sample", "qc_status", "qc_reasons")
+  missing <- setdiff(required, names(qc))
+  if (length(missing) > 0L) {
+    stop("Metric QC table lacks columns: ", paste(missing, collapse = ", "))
+  }
+
+  qc %>%
+    transmute(
+      sample = as.character(sample),
+      metric_qc_status = as.character(qc_status),
+      metric_qc_reasons = as.character(qc_reasons),
+      metric_qc_pass = qc_status == "PASS",
+      n_cds_input = as.integer(n_cds_input),
+      n_cds_valid = as.integer(n_cds_valid),
+      valid_cds_fraction = as.numeric(valid_cds_fraction),
+      n_reference_cds_valid = as.integer(n_reference_cds_valid),
+      finite_tai_fraction = as.numeric(finite_tai_fraction),
+      finite_cai_fraction = as.numeric(finite_cai_fraction),
+      finite_enc_fraction = as.numeric(finite_enc_fraction),
+      used_codon_coverage = as.numeric(used_codon_coverage)
+    )
 }
 
 parse_cds_fasta <- function(cds_file, genetic_code_id) {
@@ -270,6 +356,9 @@ read_trna_qc <- function(per_genome_dir, sample_id) {
 }
 
 read_optional_annotations <- function(path) {
+  # Read optional gene/protein annotations and keep only columns that are
+  # allowed to enter gene_features.tsv. This prevents dplyr from suffixing
+  # core metadata columns such as accession/species/phylum after left_join().
   if (is.null(path) || is.na(path) || !nzchar(path)) {
     return(NULL)
   }
@@ -290,6 +379,46 @@ read_optional_annotations <- function(path) {
   } else {
     stop("Annotation table must contain protein_id or seq_id: ", path)
   }
+
+  # Supported annotation payload. Do not keep raw metadata columns such as
+  # accession/species/phylum/lifestyle/genetic_code because they already come
+  # from config/samples.tsv and would collide during the join.
+  supported_payload_columns <- c(
+    "go_terms",
+    "uniprot_id",
+    "pfam_terms",
+    "pfam_present",
+    "signal_peptide_present",
+    "tm_present",
+    "tm_count",
+    "tm_total_length",
+    "lcr_present",
+    "lcr_count",
+    "lcr_total_length",
+    "pfam_lcr_overlap_terms",
+    "pfam_lcr_overlap_count",
+    "pfam_lcr_overlap_present",
+    "annotation_source"
+  )
+
+  annotation_payload_columns <- intersect(
+    names(annotations),
+    supported_payload_columns
+  )
+
+  if (length(annotation_payload_columns) == 0L) {
+    stop(
+      "Annotation table contains join keys but no supported annotation columns. ",
+      "Expected at least one of: ",
+      paste(supported_payload_columns, collapse = ", "), "."
+    )
+  }
+
+  # Drop unsupported columns before duplicate checks and joins. This is the
+  # actual fix for the observed `accession` error: external accession is not
+  # joined into sample_table, so sample metadata accession is preserved.
+  annotations <- annotations %>%
+    select(all_of(join_keys), all_of(annotation_payload_columns))
 
   duplicate_keys <- annotations %>%
     count(across(all_of(join_keys)), name = "n") %>%
@@ -313,12 +442,23 @@ read_optional_annotations <- function(path) {
     annotations <- annotations %>%
       mutate(go_terms_external = map_chr(go_terms, normalize_go_terms)) %>%
       select(-go_terms)
+
+    n_go <- sum(!is.na(annotations$go_terms_external))
+    if (n_go == 0L) {
+      warning(
+        "Annotation table has a go_terms column, but no valid GO identifiers ",
+        "matching GO:[0-9]{7} were found."
+      )
+    }
   } else {
     annotations$go_terms_external <- NA_character_
   }
 
   list(data = annotations, keys = join_keys)
 }
+
+
+
 
 required_dataset_columns <- c(
   "sample", "species", "accession", "domain", "kingdom", "phylum",
@@ -366,6 +506,7 @@ for (i in seq_len(nrow(dataset))) {
   local_metadata <- parse_cds_fasta(cds_file, genetic_code_id)
   metrics <- read_metric_summary(summary_file)
   trna_qc <- read_trna_qc(args$per_genome_dir, sample_id)
+  metric_qc <- read_metric_qc(args$per_genome_dir, sample_id)
 
   sample_table <- local_metadata %>%
     left_join(metrics, by = "seq_id") %>%
@@ -379,6 +520,7 @@ for (i in seq_len(nrow(dataset))) {
     ) %>%
     select(-metric_row_present) %>%
     left_join(trna_qc, by = "sample") %>%
+    left_join(metric_qc, by = "sample") %>%
     mutate(
       species = as.character(metadata_row$species[[1]]),
       accession = as.character(metadata_row$accession[[1]]),
@@ -423,12 +565,29 @@ for (i in seq_len(nrow(dataset))) {
     ) %>%
     ungroup()
 
+  n_with_go <- sum(!is.na(sample_table$go_terms))
+  n_with_uniprot <- sum(!is.na(sample_table$uniprot_id))
+
+  message(
+    "Sample ", sample_id,
+    ": genes with GO terms = ", n_with_go,
+    "; genes with UniProt IDs = ", n_with_uniprot
+  )
+
   for (column_name in c(
     "signal_peptide_present",
     "tm_present",
+    "tm_count",
+    "tm_total_length",
     "lcr_present",
+    "lcr_count",
+    "lcr_total_length",
     "pfam_present",
-    "pfam_terms"
+    "pfam_terms",
+    "pfam_lcr_overlap_terms",
+    "pfam_lcr_overlap_count",
+    "pfam_lcr_overlap_present",
+    "annotation_source"
   )) {
     if (!column_name %in% names(sample_table)) {
       sample_table[[column_name]] <- NA
@@ -444,12 +603,16 @@ for (i in seq_len(nrow(dataset))) {
 
   compiled[[i]] <- sample_table
 }
-
 final_table <- bind_rows(compiled) %>%
   group_by(sample) %>%
   mutate(
     tAI_z = safe_zscore(tAI),
-    tAI_percentile = safe_percentile(tAI)
+    tAI_percentile = safe_percentile(tAI),
+    log_protein_length_aa = log1p(as.numeric(protein_length_aa)),
+    protein_length = protein_length_aa,
+    ENC_expected = expected_enc_from_gc3s(GC3s),
+    delta_ENC = suppressWarnings(as.numeric(ENC)) - ENC_expected,
+    delta_ENC = if_else(is.finite(delta_ENC), delta_ENC, NA_real_)
   ) %>%
   ungroup() %>%
   select(
@@ -468,6 +631,8 @@ final_table <- bind_rows(compiled) %>%
     protein_name,
     cds_length_nt,
     protein_length_aa,
+    protein_length,
+    log_protein_length_aa,
     cds_length_multiple_of_three,
     has_terminal_stop,
     cds_qc_pass,
@@ -479,12 +644,28 @@ final_table <- bind_rows(compiled) %>%
     n_elongator_trnas,
     n_unique_anticodons,
     n_trna_amino_acids,
-    any_of(c("ENC", "CAI", "FOP", "tAI", "tAI_z", "tAI_percentile", "GC", "GC3s")),
+    metric_qc_status,
+    metric_qc_reasons,
+    metric_qc_pass,
+    finite_tai_fraction,
+    finite_cai_fraction,
+    finite_enc_fraction,
+    used_codon_coverage,
+    n_reference_cds_valid,
+    any_of(c("ENC", "ENC_expected", "delta_ENC", "CAI", "FOP", "tAI", "tAI_z", "tAI_percentile", "GC", "GC3s")),
     signal_peptide_present,
     tm_present,
     lcr_present,
     pfam_present,
     pfam_terms,
+    pfam_lcr_overlap_terms,
+    pfam_lcr_overlap_count,
+    pfam_lcr_overlap_present,
+    tm_count,
+    tm_total_length,
+    lcr_count,
+    lcr_total_length,
+    annotation_source,
     go_terms,
     everything(),
     -uniprot_id_header,
@@ -492,6 +673,31 @@ final_table <- bind_rows(compiled) %>%
     -go_terms_header,
     -go_terms_external
   )
+
+
+# Double check
+n_go_annotated <- sum(!is.na(final_table$go_terms))
+n_unique_go <- final_table %>%
+  pull(go_terms) %>%
+  str_split(";", simplify = FALSE) %>%
+  unlist(use.names = FALSE) %>%
+  unique() %>%
+  discard(~ is.na(.x) || !nzchar(.x)) %>%
+  length()
+
+message("Rows with GO terms: ", n_go_annotated)
+message("Unique GO terms: ", n_unique_go)
+
+if (isTRUE(args$require_go_terms)) {
+  if (n_go_annotated < args$min_go_annotated_genes) {
+    stop(
+      "GO terms are required, but only ", n_go_annotated,
+      " genes have valid GO annotations. ",
+      "Provide a valid --annotation-table or disable GO enrichment."
+    )
+  }
+}
+
 
 dir.create(dirname(args$output), recursive = TRUE, showWarnings = FALSE)
 write_tsv(final_table, args$output, na = "NA")

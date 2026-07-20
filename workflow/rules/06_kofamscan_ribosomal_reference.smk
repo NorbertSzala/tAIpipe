@@ -51,6 +51,15 @@ KOFAM_THRESHOLD_SCALE = float(
     KOFAM["execution"].get("threshold_scale", 1.0)
 )
 
+REFERENCE_SELECTION = config.get("ribosomal_reference", {}).get("selection_strategy", "best_per_ko")
+REFERENCE_TOP_N = int(config.get("ribosomal_reference", {}).get("top_n_per_ko", 1))
+if REFERENCE_SELECTION == "best_per_ko" or REFERENCE_TOP_N == 1:
+    REFERENCE_SUFFIX = "best_per_ko"
+elif REFERENCE_SELECTION == "top_n_per_ko":
+    REFERENCE_SUFFIX = f"top{REFERENCE_TOP_N}_per_ko"
+else:
+    raise ValueError("Invalid ribosomal_reference.selection_strategy")
+
 
 # ---------------------------------------------------------------------------
 # Output path patterns
@@ -215,6 +224,14 @@ rule parse_kofamscan_ribosome:
             "cds_id",
             "cds_id",
         ),
+        max_missing_proteome_count=config.get(
+            "gene_protein_map",
+            {},
+        ).get("max_missing_proteome_count", 200),
+        max_missing_proteome_fraction=config.get(
+            "gene_protein_map",
+            {},
+        ).get("max_missing_proteome_fraction", 0.05),
 
     conda:
         "../envs/kofamscan.yaml"
@@ -222,17 +239,37 @@ rule parse_kofamscan_ribosome:
     script:
         "../scripts/kofamscan/parse_kofamscan_ribosome.py"
 
-
-rule extract_ribosomal_reference_cds:
+rule select_ribosomal_reference_cds:
     input:
-        cds=get_cds,
-        cds_ids=KOFAM_REFERENCE_CDS_IDS,
+        hits=KOFAM_HITS,
+        cds=get_cds
 
     output:
-        cds=KOFAM_REFERENCE_CDS,
+        ids=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds_ids.{REFERENCE_SUFFIX}.txt",
+        fasta=f"{PER_GENOME}/{{sample}}/kofamscan/ribosomal_reference_cds.{REFERENCE_SUFFIX}.fna"
+
+    params:
+        top_n=REFERENCE_TOP_N,
+        allow_empty=False
+
+    log:
+        stderr=f"{LOGS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.stderr.log"
+
+    benchmark:
+        f"{BENCHMARKS}/{{sample}}/kofamscan/select_ribosomal_reference_cds.{REFERENCE_SUFFIX}.tsv"
+
+    threads: 1
+
+    resources:
+        mem_mb=4000,
+        disk_mb=20000,
+        runtime=60
 
     conda:
-        "../envs/kofamscan.yaml"
+        "../envs/python.yaml"
+
+    message:
+        f"Selecting ribosomal CDS reference ({REFERENCE_SUFFIX}) for {{wildcards.sample}}."
 
     script:
-        "../scripts/kofamscan/extract_reference_cds.py"
+        "../scripts/kofamscan/select_top_n_reference_cds.py"

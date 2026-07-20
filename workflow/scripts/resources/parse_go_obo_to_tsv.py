@@ -77,7 +77,7 @@ def tsv_is_valid(path: Path) -> bool:
 
 
 def download_obo(url: str, output_path: Path) -> None:
-    """Download GO OBO file to the requested local path"""
+    """Download GO OBO file to the requested local path."""
     if not url:
         raise ValueError("OBO file is missing and no --obo-url was provided.")
 
@@ -86,7 +86,27 @@ def download_obo(url: str, output_path: Path) -> None:
     print(f"Downloading GO OBO from: {url}", file=sys.stderr)
     print(f"Saving to: {output_path}", file=sys.stderr)
 
-    urllib.request.urlretrieve(url, output_path)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": (
+                "tAIpipe/1.0 "
+                "(Gene Ontology dictionary preparation; "
+                "https://github.com/NorbertSzala/tAIpipe)"
+            )
+        },
+    )
+
+    temporary_path = output_path.with_suffix(output_path.suffix + ".tmp")
+
+    with urllib.request.urlopen(request, timeout=60) as response:
+        with temporary_path.open("wb") as out:
+            out.write(response.read())
+
+    if temporary_path.stat().st_size == 0:
+        raise RuntimeError(f"Downloaded OBO file is empty: {temporary_path}")
+
+    temporary_path.replace(output_path)
 
 
 def parse_go_obo(input_obo: Path, output_tsv: Path) -> None:

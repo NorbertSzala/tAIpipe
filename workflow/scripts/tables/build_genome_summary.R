@@ -10,6 +10,7 @@ suppressPackageStartupMessages({
     library(tibble)
 })
 
+
 parser <- ArgumentParser(description = "Build canonical genome_summary.tsv")
 parser$add_argument("--gene-features", required = TRUE)
 parser$add_argument("--metadata-dataset", required = TRUE)
@@ -184,12 +185,18 @@ qc_tables <- map_dfr(metadata$sample, function(sample_id) {
         args$per_genome_dir, sample_id, "kofamscan", "ribosome_qc.tsv"
     )
 
+    metric_path <- file.path(
+        args$per_genome_dir, sample_id, "qc", paste0(sample_id, "_metric_qc.tsv")
+    )
+
     trna_qc <- read_one_row_qc(trna_path, "trna_")
     kofam_qc <- read_one_row_qc(kofam_path, "kofam_")
+    metric_qc <- read_one_row_qc(metric_path, "metric_")
 
     base <- tibble(sample = sample_id)
     if (nrow(trna_qc) == 1L) base <- left_join(base, trna_qc, by = "sample")
     if (nrow(kofam_qc) == 1L) base <- left_join(base, kofam_qc, by = "sample")
+    if (nrow(metric_qc) == 1L) base <- left_join(base, metric_qc, by = "sample")
     base
 })
 

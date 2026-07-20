@@ -4,19 +4,29 @@ Defines the rules that construct the canonical analysis tables used by downstrea
 
 import shlex
 
-ANNOTATION_TABLE = config.get('paths', {}).get('external_annotations')
+ANNOTATION_TABLE = config.get("paths", {}).get("external_annotations", "")
+GO_ENRICHMENT_ENABLED = config.get("go_enrichment", {}).get("enabled", False)
+REQUIRE_GO_TERMS = config.get("go_enrichment", {}).get("require_go_terms", GO_ENRICHMENT_ENABLED)
+
 
 def optional_external_annotations(wildcards):
     return [ANNOTATION_TABLE] if ANNOTATION_TABLE else []
 
+
 def external_annotation_argument(wildcards):
     if not ANNOTATION_TABLE:
         return ""
-    return (f"--annotation_table "
-            f"{shlex.quote(ANNOTATION_TABLE)}")
+
+    return (
+        "--annotation-table "
+        f"{shlex.quote(ANNOTATION_TABLE)}"
+    )
+
+
+def require_go_argument(wildcards):
+    return "--require-go-terms" if REQUIRE_GO_TERMS else ""
 
 """Build the canonical gene-level feature table."""
-
 rule build_gene_features:
     input:
         summaries=expand(
@@ -29,6 +39,10 @@ rule build_gene_features:
         ),
         metadata_dataset=config["paths"]["metadata_dataset"],
         external_annotations=optional_external_annotations,
+        metric_qc=expand(
+            f"{PER_GENOME}/{{sample}}/qc/{{sample}}_metric_qc.tsv",
+            sample=SAMPLES,
+        ),
 
     output:
         table=config["paths"]["gene_features"],
@@ -37,15 +51,13 @@ rule build_gene_features:
         per_genome_dir=PER_GENOME,
         cds_dir=DATA_CDS,
         annotation_arg=external_annotation_argument,
+        require_go_arg=require_go_argument,
 
     log:
         f"{LOGS}/tables/build_gene_features.log"
 
     conda:
         "../envs/r.yaml"
-
-    message:
-        "Building the canonical gene-level feature table"
 
     shell:
         """
@@ -60,6 +72,7 @@ rule build_gene_features:
             --per-genome-dir {params.per_genome_dir:q} \
             --cds-dir {params.cds_dir:q} \
             {params.annotation_arg} \
+            {params.require_go_arg} \
             --output {output.table:q} \
             > {log:q} 2>&1
         """
