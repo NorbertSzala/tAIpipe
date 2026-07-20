@@ -5,6 +5,7 @@
 rule plot_codon_profile_overview:
     input:
         codon_profiles=config["paths"]["codon_profiles"],
+        genome_summary=config["paths"]["genome_summary"],
         plotting_config=PLOTTING_CONFIG,
         plotting_utils=R_PLOTTING_UTILS,
         table_validation_utils=R_TABLE_VALIDATION_UTILS,
@@ -52,6 +53,7 @@ rule plot_codon_profile_overview:
 
         Rscript workflow/scripts/plots/plot_codon_profile_overview.R \
             --codon-profiles {input.codon_profiles:q} \
+            --genome-summary {input.genome_summary:q} \
             --output-dir {params.output_dir:q} \
             --formats {params.formats:q} \
             --heatmap-value {params.heatmap_value:q} \
@@ -62,3 +64,4 @@ rule plot_codon_profile_overview:
             --heatmap-min-group-n {params.heatmap_min_group_n} \
             > {log.stdout:q} 2> {log.stderr:q}
         """
+

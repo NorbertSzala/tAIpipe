@@ -30,7 +30,7 @@ rule compute_statistics:
         genome_metrics=",".join(
             config.get("statistics", {}).get(
                 "genome_metrics",
-                ["mean_tAI", "median_tAI", "mean_GC3s", "median_delta_ENC"],
+                ["mean_tAI", "mean_CAI", "mean_GC", "mean_GC3s", "mean_ENC", "mean_delta_ENC"],
             )
         ),
 
@@ -122,7 +122,7 @@ rule compute_lifestyle_within_phylum_permutations:
     params:
         responses=",".join(config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get(
             "responses",
-            ["mean_tAI", "median_tAI", "mean_CAI", "median_CAI", "mean_GC3s", "median_GC3s", "mean_delta_ENC", "median_delta_ENC"],
+            ["mean_tAI", "mean_CAI", "mean_GC", "mean_GC3s", "mean_ENC", "mean_delta_ENC"],
         )),
         predictor=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("predictor", "lifestyle"),
         strata=config.get("statistics", {}).get("lifestyle_within_phylum_permutations", {}).get("strata", "phylum"),

@@ -1,8 +1,36 @@
-# Central visual style configuration.
-# Keep biological/statistical transformations in scripts, not here.
+# ==============================================================================
+# tAIpipe plotting style configuration
+# ==============================================================================
+# This file controls visual appearance only.
+# It should not contain biological thresholds, statistical settings or paths to
+# input datasets.
+# ==============================================================================
 
 schema_version: 1
 active_profile: publication
+
+# ==============================================================================
+# 1. Output defaults
+# ==============================================================================
+
+output:
+  directory: results/plots
+  formats:
+    - png
+    - pdf
+  units: in
+  background: white
+  raster:
+    dpi: 300
+    device: ragg
+  vector:
+    pdf_device: cairo_pdf
+    svg_device: svglite
+
+
+# ==============================================================================
+# 2. Typography profiles
+# ==============================================================================
 
 profiles:
   publication:
@@ -19,6 +47,7 @@ profiles:
       caption_size_pt: 7.5
       title_face: bold
       strip_face: bold
+
   presentation:
     typography:
       family: sans
@@ -34,19 +63,123 @@ profiles:
       title_face: bold
       strip_face: bold
 
-output:
-  directory: results/plots
-  formats: [png, pdf]
-  units: in
-  background: white
-  raster:
-    dpi: 300
-    device: ragg
-  vector:
-    pdf_device: cairo_pdf
-    svg_device: svglite
+
+# ==============================================================================
+# 3. Legacy-compatible theme block
+# ==============================================================================
+# Some older plotting scripts still read config$theme directly.
+# Keep this block for backward compatibility.
+# ==============================================================================
+
+theme:
+  base_size: 12
+  base_family: sans
+  title_size: 15
+  subtitle_size: 12
+  axis_text_size: 10.5
+  legend_text_size: 10
+  rotate_x_text: false
+  strip_text_size: 10
+
+
+# ==============================================================================
+# 4. Figure size profiles
+# ==============================================================================
+# R plotting scripts call save_plot(..., size = "<profile>").
+# Every size alias used by scripts must be listed here.
+# ==============================================================================
+
+dimensions:
+  default:
+    width: 8
+    height: 6
+    units: in
+
+  single:
+    width: 3.35
+    height: 2.70
+    units: in
+
+  double:
+    width: 7.10
+    height: 4.80
+    units: in
+
+  wide:
+    width: 10.00
+    height: 5.50
+    units: in
+
+  square:
+    width: 7.10
+    height: 7.10
+    units: in
+
+  correlation_large:
+    width: 11.50
+    height: 10.50
+    units: in
+
+  tall:
+    width: 7.10
+    height: 9.00
+    units: in
+
+  tall_facets:
+    width: 8.00
+    height: 12.00
+    units: in
+
+  heatmap_large:
+    width: 16.50
+    height: 23.4
+    units: in
+
+  go_wide_tall:
+    width: 14.50
+    height: 10.00
+    units: in
+
+  go_extra_wide:
+    width: 17.50
+    height: 11.20
+    units: in
+
+  genome_metrics:
+    width: 11.00
+    height: 9.20
+    units: in
+
+
+# ==============================================================================
+# 5. Colour palettes
+# ==============================================================================
+# Contains both new structured palettes and legacy keys used by older scripts.
+# ==============================================================================
 
 palettes:
+  discrete: Set2
+
+  heatmap:
+    provider: viridis
+    option: C
+    begin: 0.12
+    end: 0.88
+    na_colour: "#D9D9D9"
+
+  diverging:
+    low: "#2166AC"
+    mid: "#F7F7F7"
+    high: "#B2182B"
+    midpoint: 0
+    na_colour: "#D9D9D9"
+
+  qc:
+    pass: "#4DAF4A"
+    warn: "#FFB000"
+    fail: "#E41A1C"
+    missing: "#BDBDBD"
+
   continuous:
     heatmap:
       provider: viridis
@@ -54,16 +187,27 @@ palettes:
       begin: 0.12
       end: 0.88
       na_colour: "#D9D9D9"
+    inferno:
+      provider: viridis
+      option: inferno
+      begin: 0.05
+      end: 0.95
+      na_colour: "#D9D9D9"
     diverging:
       low: "#2166AC"
       mid: "#F7F7F7"
       high: "#B2182B"
       midpoint: 0
       na_colour: "#D9D9D9"
+
   qualitative:
     binary:
-      absent: "#6B6B6B"
-      present: "#0072B2"
+      absent: "#B8B8B8"
+      present: "#1F4E79"
+    go_namespace:
+      biological_process: "#4D4D4D"
+      molecular_function: "#969696"
+      cellular_component: "#BDBDBD"
     okabe_ito_8:
       - "#E69F00"
       - "#56B4E9"
@@ -74,14 +218,53 @@ palettes:
       - "#CC79A7"
       - "#000000"
 
+
+# ==============================================================================
+# 6. Labels
+# ==============================================================================
+
+labels:
+  tAI: "tAI"
+  tAI_z: "tAI z-score"
+  CAI: "CAI"
+  ENC: "ENC"
+  GC: "GC"
+  GC3s: "GC3s"
+  delta_ENC: "delta ENC"
+  protein_length_aa: "Protein length [aa]"
+  log_protein_length_aa: "log1p protein length [aa]"
+  lcr_total_length: "Total LCR length [aa]"
+  tm_total_length: "Total transmembrane length [aa]"
+  mean_tAI: "Mean tAI"
+  mean_CAI: "Mean CAI"
+  mean_GC: "Mean GC"
+  mean_GC3s: "Mean GC3s"
+  mean_ENC: "Mean ENC"
+  mean_delta_ENC: "Mean delta ENC"
+  pfam_present: "PFAM domains"
+  lcr_present: "LCR"
+  tm_present: "Transmembrane region"
+  signal_peptide_present: "Signal peptide"
+
+
+# ==============================================================================
+# 7. Category labels
+# ==============================================================================
+
 category_labels:
   lcr_present: "LCR"
   pfam_present: "PFAM domains"
   tm_present: "Transmembrane region"
   signal_peptide_present: "Signal peptide"
+
   algal_parasite: "Algal parasite"
   animal_endosymbiont: "Animal endosymbiont"
   animal_parasite: "Animal parasite"
+  arbuscular_mycorrhizal: "Arbuscular mycorrhizal"
+  ectomycorrhizal: "Ectomycorrhizal"
+  endophyte: "Endophyte"
+  lichenized: "Lichenized"
+  mycoparasite: "Mycoparasite"
   plant_pathogen: "Plant pathogen"
   soil_saprotroph: "Soil saprotroph"
   unspecified_saprotroph: "Unspecified saprotroph"

@@ -10,3 +10,4 @@ dependencies:
   - r-viridis
   - r-ragg
   - r-svglite
+  - r-latex2exp

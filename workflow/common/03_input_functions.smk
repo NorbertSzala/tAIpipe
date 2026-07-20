@@ -116,8 +116,18 @@ def build_plot_targets():
         ]
 
     if plot_groups.get("codon_profiles", True):
+        min_group_n = int(config.get("codon_profile_plots", {}).get("heatmap_min_group_n", 5))
         targets += [
-            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap.png",
+            f"{DATA_PLOTS}/codon_profiles/codon_usage_variability.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_large_codon_x.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_large_codon_x.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{min_group_n}_large_codon_x.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{min_group_n}_large_codon_x.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_phylum.png",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_lifestyle.png",
+            f"{DATA_PLOTS}/codon_profiles/codon_usage_variability_method.tsv",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_method.tsv",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_annotation_association.tsv",
         ]
 
     if plot_groups.get("correlations", False):
@@ -150,12 +160,12 @@ def build_other_targets():
         and config.get("go_plots", {}).get("enabled", False)
     ):
         targets += [
-            f"{DATA_PLOTS}/go_chosen_terms",
+            f"{DATA_PLOTS}/go_chosen_terms/plot_manifest.tsv",
         ]
 
     if config.get("pfam_lcr_plots", {}).get("enabled", False):
         targets += [
-            f"{DATA_PLOTS}/pfam_lcr_overlap",
+            f"{DATA_PLOTS}/pfam_lcr_overlap/plot_manifest.tsv",
         ]
 
     return targets

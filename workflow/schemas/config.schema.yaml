@@ -15,6 +15,11 @@ required:
 - gene_protein_map
 - plots
 - ribosomal_reference
+- script_suggestion_plots
+- codon_profile_plots
+- go_plots
+- pfam_lcr_plots
+- plot_style
 properties:
   paths:
     type: object
@@ -28,11 +33,16 @@ properties:
     - results
     - logs
     - benchmarks
+    - qc
     - per_genome
     - tables
+    - genetic_codes_trnascanse
+    - genetic_codes_tables
     - gene_features
     - genome_summary
     - codon_profiles
+    - gene_go
+    - gene_pfam
     - statistics
     - gene_feature_tests
     - genome_group_tests
@@ -68,6 +78,15 @@ properties:
       benchmarks:
         type: string
         minLength: 1
+      qc:
+        type: string
+        minLength: 1
+      genetic_codes_trnascanse:
+        type: string
+        minLength: 1
+      genetic_codes_tables:
+        type: string
+        minLength: 1
       per_genome:
         type: string
         minLength: 1
@@ -81,6 +100,12 @@ properties:
         type: string
         minLength: 1
       codon_profiles:
+        type: string
+        minLength: 1
+      gene_go:
+        type: string
+        minLength: 1
+      gene_pfam:
         type: string
         minLength: 1
       statistics:
@@ -124,6 +149,14 @@ properties:
   ribosomal_reference:
     type: object
     additionalProperties: true
+    required:
+    - enabled
+    - method
+    - min_reference_genes
+    - max_reference_genes
+    - selection_strategy
+    - top_n_per_ko
+    - min_ko_coverage
     properties:
       enabled:
         type: boolean
@@ -156,6 +189,7 @@ properties:
     - ribosome_reference
     - execution
     - columns
+    - inputs
     properties:
       enabled:
         type: boolean
@@ -226,6 +260,23 @@ properties:
           cds_id:
             type: string
             minLength: 1
+      inputs:
+        type: object
+        required:
+        - proteins
+        - cds
+        - gene_protein_map
+        additionalProperties: true
+        properties:
+          proteins:
+            type: string
+            minLength: 1
+          cds:
+            type: string
+            minLength: 1
+          gene_protein_map:
+            type: string
+            minLength: 1
   trnascanse:
     type: object
     required:
@@ -264,6 +315,7 @@ properties:
         type: string
         enum:
         - error
+        - fail
         - warn
         - ignore
       min_total_trnas:
@@ -491,29 +543,40 @@ properties:
       groups:
         type: object
         required:
-        - tai_extremes
-        - gene_features
-        - genome_metrics
-        - codon_profiles
-        - go_enrichment
-        - correlations
-        - qc
+          - tai_extremes
+          - gene_features
+          - genome_metrics
+          - codon_profiles
+          - go_enrichment
+          - correlations
+          - qc
+          - script_suggestions
         additionalProperties: false
         properties:
           tai_extremes:
             type: boolean
+            description: "Enable plots comparing top/bottom tAI gene tails."
           gene_features:
             type: boolean
+            description: "Enable gene-feature overview plots."
           genome_metrics:
             type: boolean
+            description: "Enable genome-level metric plots by metadata groups."
           codon_profiles:
             type: boolean
+            description: "Enable codon/tRNA profile plots."
           go_enrichment:
             type: boolean
+            description: "Enable GO enrichment overview plots."
           correlations:
             type: boolean
+            description: "Enable gene-level and genome-level correlation plots."
           qc:
             type: boolean
+            description: "Enable technical QC summary plots."
+          script_suggestions:
+            type: boolean
+            description: "Enable optional legacy/script-suggestion-compatible exploratory plots."
       output_formats:
         type: array
         minItems: 1
@@ -536,41 +599,137 @@ properties:
   plot_style:
     type: object
     additionalProperties: true
+    required:
+      - config_file
+    properties:
+      config_file:
+        type: string
+        minLength: 1
+      heatmap_palette:
+        type: object
+        additionalProperties: true
+        properties:
+          provider:
+            type: string
+            minLength: 1
+          option:
+            type: string
+            minLength: 1
+          begin:
+            type: number
+            minimum: 0
+            maximum: 1
+          end:
+            type: number
+            minimum: 0
+            maximum: 1
+          na_colour:
+            type: string
+            minLength: 1
   script_suggestion_plots:
     type: object
-    additionalProperties: true
+    additionalProperties: false
+    required:
+      - enabled
+      - families
+      - feature_metric
+      - top_fraction
+      - chosen_go_terms
+      - correlation_method
+      - max_violin_rows_per_group
+      - max_scatter_rows
+      - gene_correlation_variables
+      - genome_correlation_variables
     properties:
       enabled:
         type: boolean
+        description: "Whether to enable the optional script-suggestion-compatible exploratory plot layer."
+
+      families:
+        type: object
+        additionalProperties: false
+        required:
+          - features_tai
+          - codon_trna
+          - genome_gc_tai
+          - correlations
+          - go_term_features
+        properties:
+          features_tai:
+            type: boolean
+          codon_trna:
+            type: boolean
+          genome_gc_tai:
+            type: boolean
+          correlations:
+            type: boolean
+            description: "Enable legacy correlation copies; normally false because canonical matrices supersede them."
+          go_term_features:
+            type: boolean
+
       feature_metric:
         type: string
         minLength: 1
+        enum:
+          - tAI
+          - CAI
+          - ENC
+          - delta_ENC
+          - GC
+          - GC3s
+        description: "Gene-level metric used on the y-axis for exploratory feature/tail plots. Recommended: tAI."
+
       top_fraction:
         type: number
         exclusiveMinimum: 0
-        exclusiveMaximum: 0.5
+        maximum: 0.5
+        description: "Fraction of genes used for top/bottom tail plots, selected within each genome."
+
       chosen_go_terms:
-        type: string
+        type:
+          - string
+          - "null"
+        description: "Canonical chosen-GO-term TSV produced from go_enrichment.tsv, or null to disable chosen-GO-term subset plots."
+        not:
+          enum:
+            - XXXXX
+            - "XXXXX"
+
       correlation_method:
         type: string
         enum:
-        - spearman
-        - pearson
-        - kendall
+          - spearman
+          - pearson
+          - kendall
+        description: "Correlation method for exploratory correlation plots. Spearman is recommended for non-normal biological features."
+
       max_violin_rows_per_group:
         type: integer
         minimum: 1000
+        description: "Maximum number of rows sampled per group for large violin plots."
+
       max_scatter_rows:
         type: integer
         minimum: 1000
+        description: "Maximum number of rows sampled for large scatter plots."
+
       gene_correlation_variables:
         type: array
+        minItems: 2
+        uniqueItems: true
         items:
           type: string
+          minLength: 1
+        description: "Gene-level numeric variables used in exploratory correlation plots."
+
       genome_correlation_variables:
         type: array
+        minItems: 2
+        uniqueItems: true
         items:
           type: string
+          minLength: 1
+        description: "Genome-level numeric variables used in exploratory correlation plots."
   go_plots:
     type: object
     additionalProperties: true
@@ -609,11 +768,23 @@ properties:
       top_n_pfam:
         type: integer
         minimum: 1
+      min_group_n:
+        type: integer
+        minimum: 1
+        description: "Minimum number of genomes required to keep a phylum/lifestyle group separate; smaller groups are collapsed into Other."
       pfam_description_table:
         type: string
+        minLength: 1
   codon_profile_plots:
     type: object
     additionalProperties: false
+    required:
+      - usage_value
+      - heatmap_value
+      - top_n_variable_codons
+      - heatmap_large_width
+      - heatmap_large_height
+      - heatmap_min_group_n
     properties:
       usage_value:
         type: string

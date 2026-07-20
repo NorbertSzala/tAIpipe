@@ -18,6 +18,7 @@ R_PLOTTING_UTILS = workflow.source_path("../scripts/lib/plotting_utils.R")
 R_TABLE_VALIDATION_UTILS = workflow.source_path("../scripts/lib/table_validation_utils.R")
 R_PLOT_DATA_UTILS = workflow.source_path("../scripts/lib/plot_data_utils.R")
 R_LABEL_UTILS = workflow.source_path("../scripts/lib/label_utils.R")
+R_PLOT_STYLE_HELPERS = workflow.source_path("../scripts/lib/plot_style_helpers.R")
 
 
 # Plot tAI-tail feature summaries.
@@ -167,6 +168,7 @@ rule plot_genome_metric_overview:
 rule plot_codon_profile_overview:
     input:
         codon_profiles=config["paths"]["codon_profiles"],
+        genome_summary=config["paths"]["genome_summary"],
         plotting_config=PLOTTING_CONFIG,
         plotting_utils=R_PLOTTING_UTILS,
         table_validation_utils=R_TABLE_VALIDATION_UTILS,
@@ -184,11 +186,17 @@ rule plot_codon_profile_overview:
         heatmap_phylum_collapsed_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.png",
         heatmap_phylum_collapsed_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.pdf",
         heatmap_lifestyle_collapsed_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.png",
-        heatmap_lifestyle_collapsed_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.pdf"
+        heatmap_lifestyle_collapsed_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{CODON_HEATMAP_MIN_GROUP_N}_large_codon_x.pdf",
+        dendrogram_phylum_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_phylum.png",
+        dendrogram_phylum_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_phylum.pdf",
+        dendrogram_lifestyle_png=f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_lifestyle.png",
+        dendrogram_lifestyle_pdf=f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_lifestyle.pdf",
+        dendrogram_method=f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_method.tsv",
+        annotation_association=f"{DATA_PLOTS}/codon_profiles/trna_weights_annotation_association.tsv"
 
     params:
         output_dir=f"{DATA_PLOTS}/codon_profiles",
-        formats=config.get("plots", {}).get("output_formats", ["png", "pdf"]),
+        formats=",".join(config.get("plots", {}).get("output_formats", ["png", "pdf"])),
         heatmap_value=config.get("codon_profile_plots", {}).get("heatmap_value", "auto"),
         usage_value=config.get("codon_profile_plots", {}).get("usage_value", "genome_RSCU"),
         top_n_variable_codons=config.get("codon_profile_plots", {}).get("top_n_variable_codons", 30),
@@ -223,6 +231,7 @@ rule plot_codon_profile_overview:
 
         Rscript workflow/scripts/plots/plot_codon_profile_overview.R \
             --codon-profiles {input.codon_profiles:q} \
+            --genome-summary {input.genome_summary:q} \
             --output-dir {params.output_dir:q} \
             --formats {params.formats:q} \
             --heatmap-value {params.heatmap_value:q} \
@@ -365,3 +374,4 @@ rule plot_qc_overview:
 
     script:
         "../scripts/plots/plot_qc_overview.R"
+

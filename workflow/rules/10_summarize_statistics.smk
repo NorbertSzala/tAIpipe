@@ -244,7 +244,7 @@ rule summarize_correlation_plots:
         ),
         genome_variables=config.get("plots", {}).get(
             "genome_correlation_variables",
-            ["mean_tAI", "median_tAI", "mean_GC3s", "median_delta_ENC"]
+            ["mean_tAI", "mean_CAI", "mean_GC", "mean_GC3s", "mean_ENC", "mean_delta_ENC"]
         ),
         method=config.get("plots", {}).get("correlation_method", "spearman")
 
@@ -309,4 +309,4 @@ rule summarize_qc_plots:
         "Collecting per-genome tRNA profile QC summaries for plotting."
 
     script:
-        "../scripts/statistics/summarize_qc_plots.R"
+        "../scripts/statistics/summarize_qc_plots.R"    

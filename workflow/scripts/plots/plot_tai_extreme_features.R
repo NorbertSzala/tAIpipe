@@ -44,15 +44,15 @@ binary_plot <- binary %>% left_join(binary_p, by = "feature") %>%
   geom_violin(trim = FALSE, alpha = 0.65, na.rm = TRUE) +
   geom_boxplot(width = 0.10, outlier.alpha = 0.25, alpha = 0.85, na.rm = TRUE) +
   geom_text(
-    data = binary_p, aes(x = Inf, y = Inf, label = format_p_value(p)),
+    data = binary_p, aes(x = Inf, y = Inf, label = sig_label(p)),
     inherit.aes = FALSE, hjust = 1.05, vjust = 1.4, size = 3.0
   ) +
-  facet_wrap(vars(feature), scales = "free_y") +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0, 100, 25)) +
+  facet_wrap(vars(feature), scales = "fixed") +
   labs(
     x = NULL,
     y = "Genes with feature [%]",
-    title = "Binary features in tAI distribution tails",
-    subtitle = "Within each genome, bottom/top tails are the 10% and 1% proteins with lowest/highest tAI. p-values: Kruskal-Wallis on per-genome summaries."
+    title = tex_label("Binary features in $\\mathrm{tAI}$ distribution tails")
   ) +
   project_theme(cfg) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "none")
@@ -62,15 +62,14 @@ continuous_plot <- continuous %>% left_join(continuous_p, by = "feature") %>%
   geom_violin(trim = FALSE, alpha = 0.65, na.rm = TRUE) +
   geom_boxplot(width = 0.10, outlier.alpha = 0.25, alpha = 0.85, na.rm = TRUE) +
   geom_text(
-    data = continuous_p, aes(x = Inf, y = Inf, label = format_p_value(p)),
+    data = continuous_p, aes(x = Inf, y = Inf, label = sig_label(p)),
     inherit.aes = FALSE, hjust = 1.05, vjust = 1.4, size = 3.0
   ) +
   facet_wrap(vars(feature), scales = "free_y") +
   labs(
     x = NULL,
     y = "Per-genome median feature value",
-    title = "Continuous features in tAI distribution tails",
-    subtitle = "Bottom 1% can have stronger outliers than bottom 10% because it is a stricter subset of the same ordered distribution."
+    title = tex_label("Continuous features in $\\mathrm{tAI}$ distribution tails")
   ) +
   project_theme(cfg) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "none")

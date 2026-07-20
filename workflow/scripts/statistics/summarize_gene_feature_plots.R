@@ -2,43 +2,80 @@ suppressPackageStartupMessages({
   library(readr)
   library(dplyr)
   library(purrr)
+  library(tidyr)
 })
 
 source("workflow/scripts/lib/table_validation_utils.R")
 source("workflow/scripts/lib/plot_data_utils.R")
 
 statistics_cfg <- snakemake@params[["statistics"]]
-
 binary_features <- statistics_cfg[["binary_features"]]
 continuous_features <- statistics_cfg[["gene_covariates"]]
 
-feature_labels <- setNames(binary_features, binary_features)
-
+required <- unique(c("sample", "gene_id", "tAI", binary_features, continuous_features))
 genes <- read_tsv_checked(
   snakemake@input[["gene_features"]],
-  required_columns = unique(c("sample", "gene_id", "tAI", binary_features, continuous_features)),
+  required_columns = required,
   table_name = "gene_features.tsv"
-)
+) %>%
+  mutate(tAI = suppressWarnings(as.numeric(tAI)))
 
-binary_map <- setNames(binary_features, vapply(binary_features, identity, character(1)))
-continuous_map <- setNames(continuous_features, vapply(continuous_features, identity, character(1)))
+# Binary plot summary: one raw-tAI median for each genome × feature × status.
+# This preserves the genome as the independent visual unit and keeps raw tAI on
+# its natural non-negative scale.
+binary_summary <- purrr::map_dfr(binary_features, function(feature_name) {
+  genes %>%
+    transmute(
+      sample = as.character(sample),
+      feature = feature_name,
+      status = coerce_binary_feature(.data[[feature_name]], feature_name),
+      tAI = tAI
+    ) %>%
+    filter(!is.na(status), is.finite(tAI)) %>%
+    group_by(sample, feature, status) %>%
+    summarise(
+      n_genes = n(),
+      value = median(tAI, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      status = if_else(status, "Present", "Absent"),
+      feature_type = "binary",
+      statistic = "per_genome_median_tAI"
+    )
+})
 
-binary_summary <- summarize_binary_by_group(
-  genes,
-  group_cols = "sample",
-  feature_map = binary_map
-)
+# Continuous plot summary: one within-genome Spearman coefficient for each
+# continuous feature. Spearman is robust to nonlinear monotonic relationships
+# and has the same value for raw tAI and any monotonic rescaling of tAI.
+continuous_summary <- purrr::map_dfr(continuous_features, function(feature_name) {
+  genes %>%
+    transmute(
+      sample = as.character(sample),
+      feature = feature_name,
+      tAI = tAI,
+      x = suppressWarnings(as.numeric(.data[[feature_name]]))
+    ) %>%
+    filter(is.finite(tAI), is.finite(x)) %>%
+    group_by(sample, feature) %>%
+    summarise(
+      n_genes = n(),
+      value = if (n() >= 10L && n_distinct(x) >= 3L && n_distinct(tAI) >= 3L) {
+        suppressWarnings(stats::cor(tAI, x, method = "spearman", use = "complete.obs"))
+      } else {
+        NA_real_
+      },
+      .groups = "drop"
+    ) %>%
+    mutate(
+      status = NA_character_,
+      feature_type = "continuous",
+      statistic = "within_genome_spearman_rho_tAI_vs_feature"
+    )
+})
 
-continuous_summary <- summarize_numeric_by_group(
-  genes,
-  group_cols = "sample",
-  feature_map = continuous_map
-)
-
-distribution_summary <- bind_rows(
-  binary_summary |> mutate(feature_type = "binary"),
-  continuous_summary |> mutate(feature_type = "continuous")
-)
+distribution_summary <- bind_rows(binary_summary, continuous_summary) %>%
+  select(feature_type, statistic, sample, feature, status, n_genes, value)
 
 gene_tests <- read_tsv_checked(
   snakemake@input[["gene_tests"]],

@@ -5,7 +5,7 @@
 # -----------------------------------------------------------------------------
 # Purpose
 #   Recreate the GO-term subset plots from scripts_suggestions/usefull_scripts/
-#   goterms_plots.R, using the canonical gene_features.tsv table.
+#   goterms_plots.R as one combined feature grid using gene_features.tsv.
 #
 # Critical constraint
 #   The original script uses a hand-made chosen_GOterms.tsv. The current project
@@ -31,7 +31,7 @@ suppressPackageStartupMessages({
   library(purrr)
 })
 
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0L) y else x
+source("workflow/scripts/lib/plot_style_helpers.R")
 
 parse_args <- function() {
   args <- commandArgs(trailingOnly = TRUE)
@@ -69,6 +69,21 @@ output_dir <- args$output_dir
 metric <- args$metric
 formats <- str_split(args$formats, ",", simplify = FALSE)[[1]] |> trimws()
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+unlink(file.path(output_dir, c(
+  "GOterms_domain_boxplot.png", "GOterms_domain_boxplot.pdf",
+  "GOterms_LCRpres_boxplot.png", "GOterms_LCRpres_boxplot.pdf",
+  "GOterms_signal_presence_boxplot.png", "GOterms_signal_presence_boxplot.pdf",
+  "GOterms_TM_presence_boxplot.png", "GOterms_TM_presence_boxplot.pdf",
+  "GOterms_PFAM_LCR_presence_boxplot.png", "GOterms_PFAM_LCR_presence_boxplot.pdf",
+  "GOterms_domain_violin.png", "GOterms_domain_violin.pdf",
+  "GOterms_LCRpres_violin.png", "GOterms_LCRpres_violin.pdf",
+  "GOterms_signal_presence_violin.png", "GOterms_signal_presence_violin.pdf",
+  "GOterms_TM_presence_violin.png", "GOterms_TM_presence_violin.pdf",
+  "GOterms_PFAM_LCR_presence_violin.png", "GOterms_PFAM_LCR_presence_violin.pdf",
+  "GOterms_LCRlen_scatter.png", "GOterms_LCRlen_scatter.pdf",
+  "GOterms_LCRlen_TRIMMED_scatter.png", "GOterms_LCRlen_TRIMMED_scatter.pdf",
+  "GOterms_TM_len_scatter.png", "GOterms_TM_len_scatter.pdf"
+)), force = TRUE)
 
 write_xxxxx_and_exit <- function(reason) {
   path <- file.path(output_dir, "XXXXX_GO_TERMS_INPUT_REQUIRED.txt")
@@ -98,8 +113,8 @@ read_chosen_go_terms <- function(path) {
   # reading raw lines.
   tab <- tryCatch(readr::read_tsv(path, show_col_types = FALSE, progress = FALSE), error = function(e) NULL)
   if (!is.null(tab) && ncol(tab) > 0L) {
-    go_col <- intersect(c("go_id", "go_term", "term", "go_terms", "GO", "id"), names(tab))[[1]]
-    if (!is.na(go_col)) return(extract_go_ids(tab[[go_col]]))
+    candidates <- intersect(c("go_id", "go_term", "term", "go_terms", "GO", "id"), names(tab))
+    if (length(candidates) > 0L) return(extract_go_ids(tab[[candidates[[1]]]]))
   }
   extract_go_ids(readLines(path, warn = FALSE))
 }
@@ -146,64 +161,106 @@ add_missing <- function(plot, reason) {
 
 plot_binary_pair <- function(column, label, stem) {
   if (!column %in% names(subset_genes)) {
-    add_missing(stem, paste("missing column:", column))
-    return(invisible(NULL))
+    add_missing(stem, paste("missing column:", column)); return(invisible(NULL))
   }
   df <- subset_genes |>
     transmute(presence = coerce_binary(.data[[column]]), value = .metric) |>
     filter(!is.na(presence), is.finite(value)) |>
     mutate(presence = factor(if_else(presence, "Present", "Absent"), levels = c("Absent", "Present")))
   if (n_distinct(df$presence) < 2L) {
-    add_missing(stem, "fewer than two presence groups")
-    return(invisible(NULL))
+    add_missing(stem, "fewer than two presence groups"); return(invisible(NULL))
   }
-  p_box <- ggplot(df, aes(presence, value, fill = presence)) +
-    geom_boxplot(outlier.shape = NA, alpha = 0.8) +
-    geom_jitter(width = 0.15, size = 0.5, alpha = 0.35) +
-    labs(x = label, y = metric, title = paste("Selected GO genes:", metric, "by", label)) +
-    theme_minimal(base_size = 11) + theme(legend.position = "none")
-  p_violin <- ggplot(df, aes(presence, value, fill = presence)) +
-    geom_violin(trim = FALSE, alpha = 0.75) +
-    geom_boxplot(width = 0.16, outlier.shape = NA, alpha = 0.85) +
-    labs(x = label, y = metric, title = paste("Selected GO genes:", metric, "by", label)) +
-    theme_minimal(base_size = 11) + theme(legend.position = "none")
-  save_plot_multi(p_box, paste0(stem, "_boxplot"), width = 7.2, height = 5.2)
-  save_plot_multi(p_violin, paste0(stem, "_violin"), width = 7.2, height = 5.2)
+  counts <- df |> count(presence, name = "n")
+  counts <- counts %>%
+    mutate(
+      count_x = if_else(presence == "Absent", 0.82, 1.18),
+      count_label = format(n, scientific = FALSE, trim = TRUE, big.mark = "")
+    )
+  df <- df %>%
+    mutate(
+      feature = label,
+      split_side = split_side_from_level(presence, "Absent")
+    )
+  ggplot(
+    df,
+    aes(x = 1, y = value, fill = presence, group = presence, split_side = split_side)
+  ) +
+    geom_split_violin_project(trim = TRUE, alpha = 0.75, width = 0.94, scale = "width",
+                              colour = "grey30", linewidth = 0.25) +
+    geom_boxplot(
+      aes(group = presence), width = 0.08, position = position_dodge(width = 0.18),
+      outlier.shape = NA, alpha = 0.88, fill = "white"
+    ) +
+    geom_text(
+      data = counts, aes(x = count_x, y = -Inf, label = count_label),
+      inherit.aes = FALSE, vjust = 2.0, size = 2.7, colour = "grey25"
+    ) +
+    scale_x_continuous(breaks = NULL) +
+    scale_fill_manual(values = binary_grey_values(levels(df$presence)), drop = FALSE) +
+    coord_cartesian(clip = "off") +
+    labs(x = NULL, y = metric_axis_label(metric), fill = NULL, title = label) +
+    theme_minimal(base_size = 11) +
+    theme(
+      legend.position = "bottom", plot.title = element_text(size = 11.5, face = "bold", hjust = 0.5),
+      plot.margin = margin(6, 6, 20, 6)
+    )
 }
 
 plot_numeric_pair <- function(column, label, stem, trimmed = FALSE) {
   if (!column %in% names(subset_genes)) {
-    add_missing(stem, paste("missing column:", column))
-    return(invisible(NULL))
+    add_missing(stem, paste("missing column:", column)); return(invisible(NULL))
   }
   df <- subset_genes |>
     transmute(x = suppressWarnings(as.numeric(.data[[column]])), value = .metric) |>
-    filter(is.finite(x), is.finite(value))
+    filter(is.finite(x), x > 0, is.finite(value))
   if (nrow(df) < 20L || length(unique(df$x)) < 2L) {
-    add_missing(stem, "too few finite non-constant values")
-    return(invisible(NULL))
+    add_missing(stem, "too few positive, finite, non-constant values"); return(invisible(NULL))
   }
   if (trimmed) {
     hi <- quantile(df$x, 0.99, na.rm = TRUE)
     df <- df |> filter(x <= hi)
   }
+  ann <- lm_annotation(df$x, df$value)
   p <- ggplot(df, aes(x, value)) +
-    geom_point(alpha = 0.25, size = 0.6) +
-    geom_smooth(method = "loess", se = FALSE, formula = y ~ x) +
-    labs(x = label, y = metric, title = paste("Selected GO genes:", metric, "vs", label)) +
-    theme_minimal(base_size = 11)
-  save_plot_multi(p, stem, width = 7.2, height = 5.2)
+    geom_point(alpha = 0.22, size = 0.55, colour = "#1F4E79") +
+    geom_smooth(method = "lm", formula = y ~ x, se = TRUE, colour = "grey25", linewidth = 0.8) +
+    annotate_top_right(ann, size = 3.1) +
+    labs(x = label, y = metric_axis_label(metric), title = paste("Selected GO genes vs", label),
+         subtitle = NULL) +
+    theme_minimal(base_size = 12)
+  p_full <- add_marginal_densities(
+    p, df |> mutate(distribution = "Selected GO genes"), x, value, distribution,
+    c("Selected GO genes" = "#1F4E79"), top_height = 1.35, right_width = 1.35
+  )
+  p_full
 }
 
-# Old plot names preserved where possible.
-plot_binary_pair("pfam_present", "PFAM/domain present", "GOterms_domain")
-plot_binary_pair("lcr_present", "LCR present", "GOterms_LCRpres")
-plot_binary_pair("signal_peptide_present", "Signal peptide present", "GOterms_signal_presence")
-plot_binary_pair("tm_present", "TM present", "GOterms_TM_presence")
-plot_binary_pair("pfam_lcr_present", "PFAM-LCR overlap", "GOterms_PFAM_LCR_presence") # XXXXX if absent.
-plot_numeric_pair("lcr_total_length", "Total LCR length [aa]", "GOterms_LCRlen_scatter")
-plot_numeric_pair("lcr_total_length", "Total LCR length [aa]", "GOterms_LCRlen_TRIMMED_scatter", trimmed = TRUE)
-plot_numeric_pair("tm_total_length", "Total TM length [aa]", "GOterms_TM_len_scatter")
+# Binary split violins and continuous relationships are collected into one grid
+# so the legacy layer no longer emits seven partially redundant standalone files.
+feature_plots <- Filter(Negate(is.null), list(
+  plot_binary_pair("pfam_present", "PFAM/domain present", "GOterms_domain"),
+  plot_binary_pair("lcr_present", "LCR present", "GOterms_LCRpres"),
+  plot_binary_pair("signal_peptide_present", "Signal peptide present", "GOterms_signal_presence"),
+  plot_binary_pair("tm_present", "TM present", "GOterms_TM_presence"),
+  plot_binary_pair("pfam_lcr_present", "PFAM-LCR overlap", "GOterms_PFAM_LCR_presence"),
+  plot_numeric_pair("lcr_total_length", "Total LCR length [aa]", "GOterms_LCRlen_scatter"),
+  plot_numeric_pair("lcr_total_length", "Total LCR length [aa]", "GOterms_LCRlen_TRIMMED_scatter", trimmed = TRUE),
+  plot_numeric_pair("tm_total_length", "Total TM length [aa]", "GOterms_TM_len_scatter")
+))
+if (length(feature_plots) > 0L) {
+  if (!requireNamespace("patchwork", quietly = TRUE)) {
+    stop("Package 'patchwork' is required for the combined GO-term feature grid.")
+  }
+  feature_grid <- patchwork::wrap_plots(feature_plots, ncol = 2, guides = "collect") +
+    patchwork::plot_annotation(
+      title = "Selected GO genes: structural features and tAI",
+      subtitle = "Split violins show absence (left, grey) and presence (right, blue); continuous panels show linear trends."
+    ) &
+    theme(legend.position = "bottom")
+  save_plot_multi(feature_grid, "GOterms_feature_overview_grid", width = 15.5, height = 19.0)
+} else {
+  add_missing("GOterms_feature_overview_grid", "no feature panel could be generated")
+}
 
 readr::write_tsv(tibble(go_id = chosen_go), file.path(output_dir, "selected_go_terms_used.tsv"))
 if (nrow(missing_plots) == 0L) missing_plots <- tibble(plot = "none", reason = "all possible GO-term feature plots generated")

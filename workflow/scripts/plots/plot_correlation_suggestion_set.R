@@ -118,18 +118,83 @@ cor_long <- function(df, vars, method) {
     )
 }
 
-plot_cor <- function(d, title, stem, width = 8, height = 7) {
-  if (nrow(d) == 0L) return(invisible(NULL))
+build_symmetric_correlation_matrix <- function(d) {
+  vars <- sort(unique(c(as.character(d$variable_x), as.character(d$variable_y))))
+  mat <- matrix(NA_real_, nrow = length(vars), ncol = length(vars), dimnames = list(vars, vars))
+  for (i in seq_len(nrow(d))) {
+    x <- as.character(d$variable_x[[i]])
+    y <- as.character(d$variable_y[[i]])
+    value <- suppressWarnings(as.numeric(d$correlation[[i]]))
+    if (!is.finite(value)) next
+    mat[x, y] <- value
+    if (!is.finite(mat[y, x])) mat[y, x] <- value
+  }
+  for (i in seq_along(vars)) {
+    for (j in seq_along(vars)) {
+      if (!is.finite(mat[i, j]) && is.finite(mat[j, i])) mat[i, j] <- mat[j, i]
+    }
+  }
+  mat <- (mat + t(mat)) / 2
+  diag(mat) <- 1
+  mat
+}
 
-  p <- ggplot(d, aes(x = variable_x_label, y = variable_y_label, fill = correlation)) +
-    geom_tile() +
-    geom_text(aes(label = sprintf("%.2f", correlation)), size = 3.3) +
-    scale_fill_gradient2(low = "#2166AC", mid = "#F7F7F7", high = "#B2182B", midpoint = 0, limits = c(-1, 1)) +
-    labs(x = NULL, y = NULL, fill = paste0(method, " r"), title = title) +
-    theme_minimal(base_size = 12) +
+plot_cor <- function(d, title, stem, width = 10.5, height = 9.5, cell_text_size = 3.7) {
+  if (nrow(d) == 0L) return(invisible(NULL))
+  d <- d %>%
+    transmute(
+      variable_x = as.character(variable_x),
+      variable_y = as.character(variable_y),
+      correlation = suppressWarnings(as.numeric(correlation))
+    ) %>%
+    filter(!is.na(variable_x), !is.na(variable_y), is.finite(correlation))
+
+  mat <- build_symmetric_correlation_matrix(d)
+  order_vars <- cluster_correlation_variables(mat)
+  ordered <- mat[order_vars, order_vars, drop = FALSE]
+  display_rows <- rev(order_vars)
+
+  pdat <- tidyr::expand_grid(
+    row_variable = display_rows,
+    column_variable = order_vars
+  ) %>%
+    mutate(
+      matrix_row_index = match(row_variable, order_vars),
+      display_row_index = match(row_variable, display_rows),
+      column_index = match(column_variable, order_vars),
+      correlation = ordered[cbind(matrix_row_index, column_index)]
+    ) %>%
+    filter(column_index <= length(order_vars) - display_row_index + 1L) %>%
+    mutate(
+      column_variable = factor(column_variable, levels = order_vars),
+      row_variable = factor(row_variable, levels = rev(display_rows))
+    )
+
+  legend_label <- switch(
+    method,
+    spearman = math_labels("spearman_rho"),
+    pearson = math_labels("pearson_r"),
+    kendall = math_labels("kendall_tau")
+  )
+
+  p <- ggplot(pdat, aes(x = column_variable, y = row_variable, fill = correlation)) +
+    geom_tile(colour = "white", linewidth = 0.55) +
+    geom_text(aes(label = sprintf("%.2f", correlation)), size = cell_text_size, fontface = "bold") +
+    scale_fill_gradient2(
+      low = "#2166AC", mid = "#F7F7F7", high = "#B2182B",
+      midpoint = 0, limits = c(-1, 1), na.value = "grey92"
+    ) +
+    scale_x_discrete(labels = correlation_plain_labels, drop = FALSE) +
+    scale_y_discrete(labels = correlation_plain_labels, drop = FALSE) +
+    coord_fixed() +
+    labs(x = NULL, y = NULL, fill = legend_label, title = title, subtitle = NULL) +
+    theme_minimal(base_size = 14) +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 11),
-      axis.text.y = element_text(size = 11)
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 12.5),
+      axis.text.y = element_text(size = 12.5),
+      plot.title = element_text(size = 17, face = "bold"),
+      legend.position = "bottom",
+      panel.grid = element_blank()
     )
 
   save_plot_pair(p, stem, args$output_dir, width, height, formats)
@@ -148,8 +213,8 @@ genome_vars <- genome_status %>% filter(status == "used") %>% pull(variable)
 gene_cor <- cor_long(genes, gene_vars, method)
 genome_cor <- cor_long(genomes, genome_vars, method)
 
-plot_cor(gene_cor, "Gene-level correlations", "gene_level_correlation_heatmap", 9, 8)
-plot_cor(genome_cor, "Genome-level correlations", "genome_level_correlation_heatmap", 9, 8)
+plot_cor(gene_cor, "Gene-level correlations", "gene_level_correlation_heatmap", 12.0, 10.8, cell_text_size = 3.8)
+plot_cor(genome_cor, "Genome-level correlations", "genome_level_correlation_heatmap", 13.0, 11.8, cell_text_size = 3.4)
 
 readr::write_tsv(gene_cor, file.path(args$output_dir, "gene_level_correlation_heatmap_data.tsv"))
 readr::write_tsv(genome_cor, file.path(args$output_dir, "genome_level_correlation_heatmap_data.tsv"))

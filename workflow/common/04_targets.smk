@@ -77,6 +77,12 @@ if config.get("statistics", {}).get("per_genome_feature_effects", {}).get("enabl
         f"{DATA_STATISTICS}/gene_feature_effect_meta_tests.tsv",
     ]
 
+if config.get("pfam_lcr_plots", {}).get("enabled", False):
+    STATISTICS_TARGETS += [
+        f"{DATA_STATISTICS}/pfam_tai_tail_enrichment.tsv",
+        f"{DATA_STATISTICS}/pfam_tai_tail_enrichment_qc.tsv",
+    ]
+
 
 def build_plot_targets():
     if not config.get("plots", {}).get("enabled", True):
@@ -110,7 +116,13 @@ def build_plot_targets():
         add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_large_codon_x")
         add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_phylum_count{min_group_n}_large_codon_x")
         add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_heatmap_by_lifestyle_count{min_group_n}_large_codon_x")
-        targets.append(f"{DATA_PLOTS}/codon_profiles/codon_usage_variability_method.tsv")
+        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_phylum")
+        add_plot(f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_heatmap_by_lifestyle")
+        targets += [
+            f"{DATA_PLOTS}/codon_profiles/codon_usage_variability_method.tsv",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_dendrogram_method.tsv",
+            f"{DATA_PLOTS}/codon_profiles/trna_weights_annotation_association.tsv",
+        ]
 
     if plot_groups.get("correlations", False):
         add_plot(f"{DATA_PLOTS}/correlations/gene_level_correlation_matrix")
@@ -130,16 +142,36 @@ def build_plot_targets():
 
 
 def build_script_suggestion_plot_targets():
+    if not config.get("plots", {}).get("enabled", True):
+        return []
+
+    plot_groups = config.get("plots", {}).get("groups", {})
+    if not plot_groups.get("script_suggestions", False):
+        return []
+
     if not config.get("script_suggestion_plots", {}).get("enabled", False):
         return []
 
-    targets = [
-        f"{DATA_PLOTS}/script_suggestions/features_tai",
-        f"{DATA_PLOTS}/script_suggestions/go_term_features",
-        f"{DATA_PLOTS}/script_suggestions/codon_trna",
-        f"{DATA_PLOTS}/script_suggestions/genome_gc_tai",
-        f"{DATA_PLOTS}/script_suggestions/correlations",
-    ]
+    families = config.get("script_suggestion_plots", {}).get("families", {})
+    targets = []
+    if families.get("features_tai", True):
+        targets.append(f"{DATA_PLOTS}/script_suggestions/features_tai")
+    if families.get("codon_trna", True):
+        targets.append(f"{DATA_PLOTS}/script_suggestions/codon_trna")
+    if families.get("genome_gc_tai", True):
+        targets.append(f"{DATA_PLOTS}/script_suggestions/genome_gc_tai")
+    if families.get("correlations", False):
+        targets.append(f"{DATA_PLOTS}/script_suggestions/correlations")
+
+    # Chosen GO-term plots are optional because they require an explicit,
+    # biologically justified GO-term list. Null/XXXXX/auto means disabled.
+    chosen_go_terms = config.get("script_suggestion_plots", {}).get("chosen_go_terms", None)
+    if (
+        families.get("go_term_features", True)
+        and chosen_go_terms is not None
+        and str(chosen_go_terms).strip() not in ["", "XXXXX", "auto"]
+    ):
+        targets.append(f"{DATA_PLOTS}/script_suggestions/go_term_features")
 
     return targets
 
@@ -151,10 +183,10 @@ def build_other_targets():
         config.get("go_enrichment", {}).get("enabled", False)
         and config.get("go_plots", {}).get("enabled", False)
     ):
-        targets += [f"{DATA_PLOTS}/go_chosen_terms"]
+        targets += [f"{DATA_PLOTS}/go_chosen_terms/plot_manifest.tsv"]
 
     if config.get("pfam_lcr_plots", {}).get("enabled", False):
-        targets += [f"{DATA_PLOTS}/pfam_lcr_overlap"]
+        targets += [f"{DATA_PLOTS}/pfam_lcr_overlap/plot_manifest.tsv"]
 
     return targets
 

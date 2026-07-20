@@ -4,5 +4,6 @@ channels:
   - bioconda
 dependencies:
   - r-base
+  - r-argparse
   - r-tidyverse
   - r-yaml

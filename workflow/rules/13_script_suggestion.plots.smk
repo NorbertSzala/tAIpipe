@@ -11,19 +11,33 @@
 
 SCRIPT_SUGGESTION_PLOT_ROOT = f"{DATA_PLOTS}/script_suggestions"
 
+CODON_TRNA_AUDIT_SAMPLES = [
+    sample for sample in SAMPLES
+    if sample in {
+        "Serpula_lacrymans_var_lacrymans_S7_9",
+        "Zymoseptoria_tritici_IPO323",
+    }
+]
 
-def script_suggestion_chosen_go_terms(wildcards):
-    configured = config.get("script_suggestion_plots", {}).get(
-        "chosen_go_terms",
-        f"{DATA_STATISTICS}/chosen_GOterms.tsv",
-    )
+
+def configured_chosen_go_terms():
+    configured = config.get("script_suggestion_plots", {}).get("chosen_go_terms", None)
     if configured is None or str(configured).strip() in ["", "XXXXX", "auto"]:
-        return f"{DATA_STATISTICS}/chosen_GOterms.tsv"
-    return configured
+        return None
+    return str(configured)
+
+
+def optional_chosen_go_terms_input(wildcards):
+    configured = configured_chosen_go_terms()
+    if configured is None:
+        return []
+    return [configured]
+
 
 rule plot_script_suggestion_feature_tai:
     input:
-        gene_features=config["paths"]["gene_features"]
+        gene_features=config["paths"]["gene_features"],
+        plot_style_helpers=R_PLOT_STYLE_HELPERS
     output:
         outdir=directory(f"{SCRIPT_SUGGESTION_PLOT_ROOT}/features_tai")
     params:
@@ -32,8 +46,6 @@ rule plot_script_suggestion_feature_tai:
         top_fraction=config.get("script_suggestion_plots", {}).get("top_fraction", 0.10),
         min_genes_per_sample=config.get("statistics", {}).get("tai_extremes", {}).get("min_genes_per_sample", 100),
         min_tail_size=config.get("statistics", {}).get("tai_extremes", {}).get("min_tail_size", 20),
-        max_violin_rows_per_group=config.get("script_suggestion_plots", {}).get("max_violin_rows_per_group", 50000),
-        max_scatter_rows=config.get("script_suggestion_plots", {}).get("max_scatter_rows", 100000),
         formats=config.get("plots", {}).get("output_formats", ["png", "pdf"])
     conda:
         R_PLOTTING_ENV
@@ -44,12 +56,14 @@ rule plot_script_suggestion_feature_tai:
 rule plot_script_suggestion_go_term_features:
     input:
         gene_features=config["paths"]["gene_features"],
-        chosen_go_terms=script_suggestion_chosen_go_terms
+        chosen_go_terms=optional_chosen_go_terms_input,
+        plot_style_helpers=R_PLOT_STYLE_HELPERS
     output:
         outdir=directory(f"{SCRIPT_SUGGESTION_PLOT_ROOT}/go_term_features")
     params:
         output_dir=f"{SCRIPT_SUGGESTION_PLOT_ROOT}/go_term_features",
         metric=config.get("script_suggestion_plots", {}).get("feature_metric", "tAI"),
+        chosen_go_terms=configured_chosen_go_terms() or "XXXXX",
         formats=config.get("plots", {}).get("output_formats", ["png", "pdf"])
     conda:
         R_PLOTTING_ENV
@@ -59,11 +73,22 @@ rule plot_script_suggestion_go_term_features:
 
 rule plot_script_suggestion_codon_trna:
     input:
-        codon_profiles=config["paths"]["codon_profiles"]
+        codon_profiles=config["paths"]["codon_profiles"],
+        genome_summary=config["paths"]["genome_summary"],
+        trna_count_tables=expand(
+            f"{PER_GENOME}/{{sample}}/counted_codons/{{sample}}_aaa_counts.tsv",
+            sample=CODON_TRNA_AUDIT_SAMPLES,
+        ),
+        clean_trnascan_tables=expand(
+            f"{PER_GENOME}/{{sample}}/trnascan/{{sample}}_trnascan.tsv",
+            sample=CODON_TRNA_AUDIT_SAMPLES,
+        ),
+        plot_style_helpers=R_PLOT_STYLE_HELPERS
     output:
         outdir=directory(f"{SCRIPT_SUGGESTION_PLOT_ROOT}/codon_trna")
     params:
         output_dir=f"{SCRIPT_SUGGESTION_PLOT_ROOT}/codon_trna",
+        trna_audit_samples=CODON_TRNA_AUDIT_SAMPLES,
         formats=config.get("plots", {}).get("output_formats", ["png", "pdf"])
     conda:
         R_PLOTTING_ENV
@@ -73,7 +98,8 @@ rule plot_script_suggestion_codon_trna:
 
 rule plot_script_suggestion_genome_gc_tai:
     input:
-        genome_summary=config["paths"]["genome_summary"]
+        genome_summary=config["paths"]["genome_summary"],
+        plot_style_helpers=R_PLOT_STYLE_HELPERS
     output:
         outdir=directory(f"{SCRIPT_SUGGESTION_PLOT_ROOT}/genome_gc_tai")
     params:
@@ -88,7 +114,8 @@ rule plot_script_suggestion_genome_gc_tai:
 rule plot_script_suggestion_correlations:
     input:
         gene_features=config["paths"]["gene_features"],
-        genome_summary=config["paths"]["genome_summary"]
+        genome_summary=config["paths"]["genome_summary"],
+        plot_style_helpers=R_PLOT_STYLE_HELPERS
     output:
         outdir=directory(f"{SCRIPT_SUGGESTION_PLOT_ROOT}/correlations")
     params:

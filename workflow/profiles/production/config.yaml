@@ -1,7 +1,7 @@
 snakefile: workflow/Snakefile
 configfile: config/config.yaml
 
-cores: 64
+cores: 32
 local-cores: 8
 
 use-conda: true

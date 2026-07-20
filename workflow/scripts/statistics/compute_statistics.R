@@ -25,7 +25,7 @@ parser$add_argument("--gene-feature-output", required = TRUE)
 parser$add_argument("--genome-group-output", required = TRUE)
 parser$add_argument("--binary-features", default = "signal_peptide_present,tm_present,lcr_present,pfam_present")
 parser$add_argument("--gene-covariates", default = "log_protein_length_aa,GC3s")
-parser$add_argument("--genome-metrics", default = "mean_tAI,median_tAI,mean_GC3s")
+parser$add_argument("--genome-metrics", default = "mean_tAI,mean_CAI,mean_GC,mean_GC3s,mean_ENC,mean_delta_ENC")
 parser$add_argument("--group-variables", default = "phylum,lifestyle")
 parser$add_argument("--fdr-method", default = "BH")
 parser$add_argument("--min-genes-per-sample", type = "integer", default = 100L)
@@ -129,6 +129,9 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     return(empty_gene_result(feature_name, "insufficient_informative_genomes", nrow(d), n_genomes))
   }
 
+  # Compute the signed-rank p-value independently of the CI. Requesting a
+  # confidence interval can fail for degenerate/tie-heavy data even when the
+  # signed-rank statistic itself is still available.
   test <- tryCatch(
     stats::wilcox.test(per_genome$effect, mu = 0, exact = FALSE),
     error = function(e) e
@@ -137,9 +140,29 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     return(empty_gene_result(feature_name, paste0("wilcox_error: ", conditionMessage(test)), nrow(d), n_genomes))
   }
 
-  se <- stats::sd(per_genome$effect, na.rm = TRUE) / sqrt(n_genomes)
-  est <- stats::median(per_genome$effect, na.rm = TRUE)
-  ci <- stats::quantile(per_genome$effect, probs = c(0.025, 0.975), na.rm = TRUE, names = FALSE)
+  ci_test <- tryCatch(
+    suppressWarnings(stats::wilcox.test(
+      per_genome$effect, mu = 0, exact = FALSE,
+      conf.int = TRUE, conf.level = 0.95
+    )),
+    error = function(e) NULL
+  )
+
+  # Wilcoxon with conf.int=TRUE returns the Hodges-Lehmann pseudomedian and its
+  # 95% CI. The previous implementation stored the 2.5th/97.5th percentiles of
+  # genome effects in conf_low/conf_high; those described the spread of genome
+  # effects and were not confidence limits for the central effect.
+  est <- if (!is.null(ci_test$estimate) && is.finite(unname(ci_test$estimate))) {
+    unname(ci_test$estimate)
+  } else {
+    stats::median(per_genome$effect, na.rm = TRUE)
+  }
+  ci <- if (!is.null(ci_test$conf.int) && length(ci_test$conf.int) == 2L) {
+    unname(ci_test$conf.int)
+  } else {
+    c(NA_real_, NA_real_)
+  }
+  se <- NA_real_  # no conventional standard error is reported for this non-parametric pseudomedian
 
   tibble(
     analysis = "gene_feature_per_genome_median_difference",
@@ -154,7 +177,7 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     n_genes = as.integer(nrow(d)),
     n_genomes = as.integer(n_genomes),
     covariates = "not_used_in_fast_per_genome_summary",
-    model_formula = "per-genome median(tAI_z | present) - median(tAI_z | absent); Wilcoxon signed-rank against 0",
+    model_formula = "per-genome median(tAI_z | present) - median(tAI_z | absent); Hodges-Lehmann pseudomedian with 95% Wilcoxon CI; signed-rank test against 0",
     status = "ok"
   )
 }

@@ -1,3 +1,7 @@
+`%||%` <- function(x, y) {
+  if (is.null(x) || length(x) == 0L || all(is.na(x))) y else x
+}
+
 # Shared static plotting utilities for ggplot2-based scripts.
 
 read_plot_config <- function(path) {
@@ -119,8 +123,25 @@ get_size_profile <- function(cfg, size = "wide") {
   profiles <- get_nested(cfg, c("dimensions"), default = list())
   profile <- profiles[[size]]
 
+  # Backward-compatible defaults. Older config/plotting.yaml files did not
+  # define dimensions even though several plotting scripts request standard
+  # aliases such as "wide", "square" and "tall". Failing here stops otherwise
+  # valid plotting jobs, so use conservative publication-size defaults and keep
+  # config-provided values authoritative when present.
   if (is.null(profile)) {
-    stop("Size profile not found in plotting config: ", size, call. = FALSE)
+    defaults <- list(
+      single = list(width = 3.35, height = 2.70, units = "in"),
+      double = list(width = 7.10, height = 4.80, units = "in"),
+      wide = list(width = 10.00, height = 5.50, units = "in"),
+      square = list(width = 7.10, height = 7.10, units = "in"),
+      tall = list(width = 7.10, height = 9.00, units = "in"),
+      tall_facets = list(width = 8.00, height = 12.00, units = "in")
+    )
+    profile <- defaults[[size]]
+  }
+
+  if (is.null(profile)) {
+    stop("Size profile not found in plotting config and no fallback exists: ", size, call. = FALSE)
   }
 
   profile
@@ -206,3 +227,13 @@ recommended_facet_size <- function(cfg, n_panels, ncol = NULL, panel_width = 3.2
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }
+
+
+format_p_value <- function(x) {
+    dplyr::case_when(
+        is.na(x) ~ "p = NA",
+        x < 0.001 ~ paste0("p = ", format(x, scientific = TRUE, digits = 2)),
+        TRUE ~ paste0("p = ", formatC(x, format = "f", digits = 3))
+    )
+}
+

@@ -7,6 +7,7 @@ suppressPackageStartupMessages({
 
 source(snakemake@input[["plotting_utils"]])
 source("workflow/scripts/lib/table_validation_utils.R")
+source("workflow/scripts/lib/plot_style_helpers.R")
 
 
 cfg <- read_plot_config(snakemake@input[["plotting_config"]])
@@ -27,7 +28,7 @@ qc_long <- qc |>
 qc_plot <- ggplot(qc_long, aes(x = qc_metric, fill = as.character(status))) +
   geom_bar(position = "stack") +
   coord_flip() +
-  labs(x = NULL, y = "Count", fill = "Status", title = "tRNA QC flags") +
+  labs(x = NULL, y = "Count", fill = "Status", title = tex_label("$\\mathrm{tRNA}$ QC flags")) +
   project_theme(cfg)
 
 save_plot(qc_plot, snakemake@output[["qc_png"]], cfg, size = "wide")

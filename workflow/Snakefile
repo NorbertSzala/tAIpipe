@@ -1,5 +1,4 @@
 configfile: "config/config.yaml"
-configfile: "config/statistic_config.yaml"
 
 # ------------------------------------------------------------------------------
 # Common setup
