@@ -50,6 +50,7 @@ unlink(file.path(args$output_dir, c("codon_variation_across_organisms_normalized
                                     "codon_profiles_per_genome.pdf")), force = TRUE)
 
 save_multi <- function(p, stem, width, height) {
+  p <- prepare_plot_for_export(p)
   for (fmt in formats[nzchar(formats)]) {
     ggsave(file.path(args$output_dir, paste0(stem, ".", fmt)), p,
            width = width, height = height, dpi = 300, limitsize = FALSE)
@@ -854,22 +855,24 @@ if (
           ".\nCodons are reverse complements of predicted anticodons; initiator, undetermined and pseudogene records are excluded."
         )
       ) +
-      theme_minimal(base_size = 14) +
+      theme_minimal(base_size = 17) +
       theme(
-        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 9.5),
-        axis.text.y = element_text(size = 12.5),
-        axis.title = element_text(size = 13.5),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 15.5),
+        axis.text.y = element_text(size = 16),
+        axis.title = element_text(size = 17),
         legend.position = "bottom",
-        legend.title = element_text(size = 12.5, face = "bold"),
-        legend.text = element_text(size = 12.0),
-        plot.title = element_text(size = 18, face = "bold"),
-        plot.subtitle = element_text(size = 12.2, lineheight = 1.08)
+        legend.title = element_text(size = 15.5, face = "bold"),
+        legend.text = element_text(size = 15),
+        legend.key.width = grid::unit(0.9, "cm"),
+        legend.spacing.x = grid::unit(0.35, "cm"),
+        plot.title = element_text(size = 22, face = "bold"),
+        plot.subtitle = element_text(size = 15, lineheight = 1.08)
       )
     save_multi(
       p_audit,
       "selected_genomes_trna_gene_copy_distribution",
-      22.0,
-      8.0
+      13.2,
+      15.8
     )
   }
 } else {

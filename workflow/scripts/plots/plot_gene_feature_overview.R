@@ -37,16 +37,20 @@ continuous <- summary %>% filter(feature_type == "continuous", is.finite(value))
 # Split violins compare presence/absence within the same biological feature;
 # unrelated annotations are separated into facets rather than overlaid.
 if (nrow(binary) > 0L) {
+  format_compact_count <- function(x) {
+    if (!is.finite(x)) return("n = NA")
+    if (x >= 1e6) return(paste0("n = ", formatC(x / 1e6, format = "f", digits = 2), " M"))
+    if (x >= 1e3) return(paste0("n = ", formatC(x / 1e3, format = "f", digits = 1), " k"))
+    paste0("n = ", formatC(x, format = "f", digits = 0))
+  }
+
   counts_long <- binary %>%
     group_by(feature, status) %>%
     summarise(n_genes = sum(suppressWarnings(as.numeric(n_genes)), na.rm = TRUE), .groups = "drop") %>%
     mutate(
       facet_label = feature,
-      label_x = if_else(as.character(status) == "Absent", 0.72, 1.28),
-      count_label = paste0(
-        as.character(status), "\nn = ",
-        format(n_genes, scientific = FALSE, trim = TRUE, big.mark = ",")
-      )
+      label_x = if_else(as.character(status) == "Absent", 0.74, 1.26),
+      count_label = vapply(n_genes, format_compact_count, character(1))
     )
   binary <- binary %>%
     mutate(
@@ -63,16 +67,16 @@ if (nrow(binary) > 0L) {
       data = counts_long,
       aes(x = label_x, y = -Inf, label = count_label),
       inherit.aes = FALSE,
-      vjust = 2.30,
-      size = 4.05,
+      vjust = 1.35,
+      size = 4.45,
       lineheight = 1.05,
       colour = "grey25"
     ) +
     facet_grid(. ~ facet_label, scales = "free_x", space = "free_x") +
     scale_fill_manual(values = binary_grey_values(c("Absent", "Present")), drop = FALSE) +
     scale_x_continuous(breaks = NULL) +
-    scale_y_continuous(expand = expansion(mult = c(0.02, 0.05))) +
-    coord_cartesian(ylim = c(0, NA), clip = "off") +
+    scale_y_continuous(expand = expansion(mult = c(0.11, 0.05))) +
+    coord_cartesian(clip = "off") +
     labs(
       x = NULL,
       y = "Per-genome median tAI",
@@ -83,12 +87,16 @@ if (nrow(binary) > 0L) {
     project_theme(cfg) +
     theme(
       axis.text.x = element_blank(), axis.ticks.x = element_blank(),
-      axis.text.y = element_text(size = 13.5),
-      strip.text = element_text(face = "bold", size = 13.2),
-      legend.position = "bottom", plot.title = element_text(size = 18, face = "bold"),
-      legend.text = element_text(size = 12.8),
-      plot.subtitle = element_text(size = 12.5),
-      plot.margin = margin(8, 9, 46, 9)
+      axis.text.y = element_text(size = 15.5),
+      axis.title = element_text(size = 16),
+      strip.text = element_text(face = "bold", size = 15.5),
+      legend.position = "bottom",
+      legend.text = element_text(size = 14.5),
+      legend.key.width = grid::unit(0.85, "cm"),
+      legend.spacing.x = grid::unit(0.40, "cm"),
+      plot.title = element_text(size = 20, face = "bold"),
+      plot.subtitle = element_text(size = 14),
+      plot.margin = margin(8, 9, 58, 9)
     )
 } else {
   binary_plot <- ggplot() + theme_void() + labs(title = "No binary-feature tAI summaries available")
@@ -120,23 +128,23 @@ if (nrow(continuous) > 0L) {
   continuous_plot <- ggplot() + theme_void() + labs(title = "No continuous-feature correlation summaries available")
 }
 
-# Effects: per genome, median tAI_z(present) minus median tAI_z(absent). Point and
-# interval summarize the distribution across genomes with a signed-rank model.
+# Effects: per genome, median tAI_z(present) minus median tAI_z(absent). The point
+# is the median across genomes and the interval is the interquartile range.
 effects <- effects %>%
   mutate(
     estimate = suppressWarnings(as.numeric(estimate)),
-    conf_low = suppressWarnings(as.numeric(conf_low)),
-    conf_high = suppressWarnings(as.numeric(conf_high)),
+    iqr_low = suppressWarnings(as.numeric(iqr_low)),
+    iqr_high = suppressWarnings(as.numeric(iqr_high)),
     q_value = if ("q_value" %in% names(.)) suppressWarnings(as.numeric(q_value)) else NA_real_
   ) %>%
   filter(is.finite(estimate)) %>%
   arrange(estimate) %>%
   mutate(feature = factor(feature, levels = unique(feature)))
 
-if (all(c("conf_low", "conf_high") %in% names(effects))) {
+if (all(c("iqr_low", "iqr_high") %in% names(effects))) {
   effects_plot <- ggplot(effects, aes(x = feature, y = estimate)) +
     geom_hline(yintercept = 0, linewidth = 0.45, linetype = "dashed", colour = "grey45") +
-    geom_errorbar(aes(ymin = conf_low, ymax = conf_high), width = 0.12,
+    geom_errorbar(aes(ymin = iqr_low, ymax = iqr_high), width = 0.12,
                   linewidth = 0.75, colour = "#1F4E79") +
     geom_point(size = 3.0, shape = 21, fill = "white", colour = "#1F4E79", stroke = 1.0)
 } else {
@@ -151,10 +159,15 @@ effects_plot <- effects_plot +
     x = NULL,
     y = "Difference in median tAI z-score [present - absent]",
     title = "Genome-level effects of binary gene features",
-    subtitle = "Point: Hodges-Lehmann pseudomedian; interval: 95% Wilcoxon CI; dashed line: no common shift"
+    subtitle = "Point: median across genomes; interval: interquartile range; dashed line: no shift"
   ) +
   project_theme(cfg) +
-  theme(plot.subtitle = element_text(size = 10), plot.title = element_text(size = 15, face = "bold"))
+  theme(
+    axis.text = element_text(size = 14.5),
+    axis.title = element_text(size = 15.5),
+    plot.subtitle = element_text(size = 12.5),
+    plot.title = element_text(size = 18, face = "bold")
+  )
 
 save_plot(binary_plot, snakemake@output[["binary_png"]], cfg, size = "go_wide_tall")
 save_plot(binary_plot, snakemake@output[["binary_pdf"]], cfg, size = "go_wide_tall")

@@ -454,7 +454,7 @@ results/
 | `results/tables/gene_features.tsv` | one original CDS per sample | Identifiers, sequence QC, codon metrics, within-genome tAI variables and joined annotations |
 | `results/tables/genome_summary.tsv` | one included genome | Assembly summaries, metric distributions, annotation fractions and tRNA/KOfam QC |
 | `results/tables/codon_profiles.tsv` | one genome × DNA codon | Codon counts/frequencies, genome and reference RSCU, CAI weights and tRNA weights |
-| `results/statistics/gene_feature_tests.tsv` | one configured binary feature | Mixed-model association with within-genome standardized tAI |
+| `results/statistics/gene_feature_tests.tsv` | one configured binary feature | Median and IQR of per-genome median tAI differences, with a signed-rank test against zero |
 | `results/statistics/genome_group_tests.tsv` | one metric × grouping variable | Wilcoxon or Kruskal-Wallis genome-level comparison |
 | `results/statistics/gene_feature_per_genome_effects.tsv` | one genome × feature | Within-genome effect estimate and eligibility diagnostics |
 | `results/statistics/lifestyle_within_phylum_permutation_tests.tsv` | one response | Lifestyle effect tested by permutations restricted within phylum |

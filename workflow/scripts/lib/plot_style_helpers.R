@@ -479,7 +479,88 @@ annotate_top_right <- function(label, size = 3.0) {
   )
 }
 
+remove_generated_plot_annotations <- function(plot) {
+  if (inherits(plot, "patchwork")) {
+    plot <- plot + patchwork::plot_annotation(
+      title = NULL,
+      subtitle = NULL,
+      caption = NULL,
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_blank(),
+        plot.subtitle = ggplot2::element_blank(),
+        plot.caption = ggplot2::element_blank(),
+        plot.tag = ggplot2::element_blank()
+      )
+    )
+    return(
+      plot & ggplot2::theme(
+        plot.title = ggplot2::element_blank(),
+        plot.subtitle = ggplot2::element_blank(),
+        plot.caption = ggplot2::element_blank(),
+        plot.tag = ggplot2::element_blank()
+      )
+    )
+  }
+  if (inherits(plot, "ggplot")) {
+    return(
+      plot +
+        ggplot2::labs(
+          title = NULL,
+          subtitle = NULL,
+          caption = NULL,
+          tag = NULL,
+          alt = NULL,
+          alt_insight = NULL
+        ) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_blank(),
+          plot.subtitle = ggplot2::element_blank(),
+          plot.caption = ggplot2::element_blank(),
+          plot.tag = ggplot2::element_blank()
+        )
+    )
+  }
+  plot
+}
+
+# Increase text only after a plot has been built. This preserves the relative
+# sizes specified by individual plotting scripts while adding two points to all
+# visible text, including axes, legends, facet strips and statistical labels.
+increase_grob_font_size <- function(grob, points = 2) {
+  if (inherits(grob, "text")) {
+    font_size <- grob$gp$fontsize
+    if (!is.null(font_size) && all(is.finite(font_size))) {
+      grob$gp$fontsize <- font_size + points
+    }
+  }
+
+  if (!is.null(grob$children)) {
+    for (i in seq_along(grob$children)) {
+      grob$children[[i]] <- increase_grob_font_size(grob$children[[i]], points)
+    }
+  }
+  if (!is.null(grob$grobs)) {
+    for (i in seq_along(grob$grobs)) {
+      grob$grobs[[i]] <- increase_grob_font_size(grob$grobs[[i]], points)
+    }
+  }
+  grob
+}
+
+prepare_plot_for_export <- function(plot, font_increase = 2) {
+  plot <- remove_generated_plot_annotations(plot)
+  grob <- if (inherits(plot, "patchwork")) {
+    patchwork::patchworkGrob(plot)
+  } else if (inherits(plot, "ggplot")) {
+    ggplot2::ggplotGrob(plot)
+  } else {
+    plot
+  }
+  increase_grob_font_size(grob, font_increase)
+}
+
 save_plot_pair <- function(plot, stem, output_dir, width, height, formats = c("png", "pdf"), dpi = 300) {
+  plot <- prepare_plot_for_export(plot)
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   for (fmt in formats) {
     path <- file.path(output_dir, paste0(stem, ".", fmt))
@@ -732,4 +813,3 @@ cluster_correlation_variables <- function(cor_mat) {
   hc <- stats::hclust(d, method = "complete")
   hc$labels[hc$order]
 }
-

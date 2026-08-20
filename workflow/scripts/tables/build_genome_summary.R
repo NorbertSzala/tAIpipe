@@ -49,6 +49,12 @@ safe_median <- function(x) {
     if (length(x) == 0L) NA_real_ else median(x)
 }
 
+safe_sum <- function(x) {
+    x <- suppressWarnings(as.numeric(x))
+    x <- x[is.finite(x)]
+    if (length(x) == 0L) NA_real_ else sum(x)
+}
+
 safe_fraction <- function(x) {
     if (length(x) == 0L) {
         return(NA_real_)
@@ -85,12 +91,16 @@ summarize_genome_fasta <- function(sample_id, genome_path) {
     )
     canonical <- sum(counts[c("A", "C", "G", "T")])
     total <- sum(width(genome))
+    contig_lengths <- sort(as.numeric(width(genome)), decreasing = TRUE)
+    l50 <- which(cumsum(contig_lengths) >= total / 2)[[1]]
 
     tibble(
         sample = sample_id,
         genome_file = normalizePath(genome_path, mustWork = TRUE),
         n_contigs = length(genome),
         genome_size_bp = as.numeric(total),
+        n50_bp = contig_lengths[[l50]],
+        l50 = l50,
         genome_gc = if (canonical > 0) {
             as.numeric((counts[["G"]] + counts[["C"]]) / canonical)
         } else {
@@ -127,7 +137,7 @@ if (length(missing_gene) > 0L) {
 for (column in c(
     "FOP", "GC", "delta_ENC", "metrics_available", "cds_qc_pass",
     "signal_peptide_present", "tm_present", "lcr_present", "pfam_present",
-    "go_terms", "trna_qc_pass"
+    "go_terms", "trna_qc_pass", "protein_length_aa"
 )) {
     if (!column %in% names(genes)) genes[[column]] <- NA
 }
@@ -136,6 +146,8 @@ gene_summary <- genes %>%
     group_by(sample) %>%
     summarise(
         n_genes = n(),
+        n_proteins = sum(is.finite(suppressWarnings(as.numeric(protein_length_aa)))),
+        proteome_length_aa = safe_sum(protein_length_aa),
         n_genes_with_metrics = sum(as.logical(metrics_available), na.rm = TRUE),
         fraction_genes_with_metrics = safe_fraction(metrics_available),
         fraction_cds_qc_pass = safe_fraction(cds_qc_pass),

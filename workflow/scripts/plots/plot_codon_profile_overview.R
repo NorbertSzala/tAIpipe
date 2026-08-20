@@ -322,23 +322,23 @@ prepare_heatmap_df <- function(group_col, min_count = NULL) {
 }
 
 heatmap_theme <- function() {
-  theme_minimal(base_size = 14) +
+  theme_minimal(base_size = 12) +
     theme(
       panel.grid = element_blank(),
       panel.border = element_rect(colour = "grey72", fill = NA, linewidth = 0.25),
-      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 14.2, face = "bold"),
-      axis.text.y = element_text(size = 14.0),
+      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 24, face = "bold"),
+      axis.text.y = element_text(size = 18),
       axis.title.y = element_blank(),
-      strip.text.x = element_text(size = 12.3, face = "bold"),
-      strip.text.y.left = element_text(size = 11.8, face = "bold", angle = 90, hjust = 0.5, lineheight = 1.0),
+      strip.text.x = element_text(size = 18, face = "bold"),
+      strip.text.y.left = element_text(size = 16, face = "bold", angle = 90, hjust = 0.5, lineheight = 1.0),
       strip.background = element_rect(fill = "grey94", colour = "grey70", linewidth = 0.25),
       strip.placement = "outside",
       legend.position = "bottom",
       panel.spacing.x = grid::unit(0.38, "lines"),
       panel.spacing.y = grid::unit(0.85, "lines"),
-      legend.title = element_text(size = 13, face = "bold"),
-      legend.text = element_text(size = 11.5),
-      plot.title = element_text(size = 18, face = "bold"),
+      legend.title = element_text(size = 18, face = "bold"),
+      legend.text = element_text(16),
+      plot.title = element_text(size = 26, face = "bold"),
       plot.margin = margin(8, 8, 8, 8)
     )
 }
@@ -403,8 +403,8 @@ make_large_heatmap <- function(group_col, suffix, min_count = NULL) {
     labs(x = NULL, y = NULL, fill = "Mean tAI") +
     heatmap_theme() +
     theme(
-      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 12.8, face = "bold"),
-      axis.text.y = element_text(size = 14.0),
+      axis.text.x = element_text(angle = 0, hjust = 0.5, size = 18, face = "bold"),
+      axis.text.y = element_text(size = 18),
       strip.text.x = element_blank(), strip.background.x = element_blank(),
       legend.position = "bottom",
       plot.margin = margin(8, 4, 8, 8)
@@ -414,12 +414,10 @@ make_large_heatmap <- function(group_col, suffix, min_count = NULL) {
     stop("Package 'patchwork' is required for the tAI-annotated heatmaps.")
   }
   p <- (p_tai | p_heat) +
-    patchwork::plot_layout(widths = c(4.8, 25), guides = "collect") +
-    patchwork::plot_annotation(
-      title = paste0("tRNA weights by codon and genome, grouped by ", clean_label(group_name))
-    ) &
+    patchwork::plot_layout(widths = c(6.5, 25), guides = "collect") +
+    patchwork::plot_annotation() &
     theme(
-      plot.title = element_text(size = 19, face = "bold"),
+      plot.title = element_text(size = 28, face = "bold"),
       legend.position = "bottom", legend.box = "vertical"
     )
 

@@ -611,17 +611,18 @@ if (file.exists(args$pfam_tail_enrichment)) {
           formatC(display_limit, digits = 2, format = "fg"), " are clipped for display only."
         )
       ) +
-      theme_minimal(base_size = 14) +
+      theme_minimal(base_size = 15) +
       theme(
-        axis.text.y = element_text(size = 12.3, lineheight = 1.03),
-        axis.text.x = element_text(size = 12.5),
-        strip.text = element_text(size = 13.0, face = "bold"),
+        axis.text.y = element_text(size = 13.3, lineheight = 1.03),
+        axis.text.x = element_text(size = 13.5),
+        axis.title = element_text(size = 14.5),
+        strip.text = element_text(size = 14.0, face = "bold"),
         strip.background = element_rect(fill = "grey94", colour = "grey60", linewidth = 0.3),
         legend.position = "bottom", legend.box = "vertical",
-        legend.title = element_text(size = 13.5, face = "bold"),
-        legend.text = element_text(size = 13.0),
-        plot.title = element_text(size = 18, face = "bold"),
-        plot.subtitle = element_text(size = 11.8),
+        legend.title = element_text(size = 14.5, face = "bold"),
+        legend.text = element_text(size = 14.0),
+        plot.title = element_text(size = 19, face = "bold"),
+        plot.subtitle = element_text(size = 12.8),
         panel.spacing = grid::unit(1.2, "lines")
       )
     save_plot_pair(
@@ -679,19 +680,23 @@ if ("lcr_total_length" %in% names(plot_data)) {
           "LCR length vs tAI z-score by PFAM-LCR overlap status; lowest 90% of lengths"
         }
       ) +
-      theme_minimal(base_size = 12) +
+      theme_minimal(base_size = 15) +
       theme(
         legend.position = "bottom",
         legend.direction = "horizontal",
-        axis.text = element_text(size = 10.5),
-        plot.title = element_text(size = 15, face = "bold")
+        axis.text = element_text(size = 13),
+        axis.title = element_text(size = 14.2),
+        legend.text = element_text(size = 13),
+        legend.key.width = grid::unit(0.9, "cm"),
+        legend.spacing.x = grid::unit(0.40, "cm"),
+        plot.title = element_text(size = 18, face = "bold")
       )
 
     p_lcr_full <- add_marginal_densities(
       p_lcr, df_lcr, lcr_total_length, tAI_z, overlap_label, point_colours,
       top_height = 1.4, right_width = 1.5
     )
-    save_plot_pair(p_lcr_full, stem, output_dir, 11.2, 8.0, formats)
+    save_plot_pair(p_lcr_full, stem, output_dir, 12.2, 8.4, formats)
   }
 
   plot_lcr_scatter(

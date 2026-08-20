@@ -67,6 +67,7 @@ unlink(file.path(args$output_dir, c(
 )), force = TRUE)
 
 save_plot_pair_local <- function(p, stem, width = 9, height = 7) {
+  p <- prepare_plot_for_export(p)
   for (fmt in formats) {
     ggplot2::ggsave(
       file.path(args$output_dir, paste0(stem, ".", fmt)),
@@ -589,8 +590,8 @@ if (
   save_plot_pair_local(
     p_combined,
     "chosen_go_terms_enrichment_support_mean_tai_z",
-    width = 17.5,
-    height = max(8.5, 0.42 * nrow(d) + 3.8)
+    width = 9.0,
+    height = max(14.0, 0.43 * nrow(d) + 3.8)
   )
 }
 
@@ -714,19 +715,19 @@ make_gene_membership_plots <- function() {
         y = NULL,
         title = if (value_col == "tAI_z") "Selected GO terms: tAI z-score distributions" else "Selected GO terms: tAI distributions"
       ) +
-      theme_minimal(base_size = 15) +
+      theme_minimal(base_size = 16) +
       theme(
         panel.spacing = grid::unit(0.7, "lines"),
-        axis.text.y = element_text(size = 14.2, lineheight = 1.12),
-        axis.text.x = element_text(size = 13.5),
-        axis.title.x = element_text(size = 14),
-        plot.title = element_text(size = 19, face = "bold"),
-        strip.text.y.left = element_text(angle = 90, face = "bold", size = 14.5, lineheight = 1.0),
+        axis.text.y = element_text(size = 15.2, lineheight = 1.12),
+        axis.text.x = element_text(size = 14.5),
+        axis.title.x = element_text(size = 15.5),
+        plot.title = element_text(size = 20, face = "bold"),
+        strip.text.y.left = element_text(angle = 90, face = "bold", size = 15.5, lineheight = 1.0),
         strip.background = element_rect(fill = "grey94", colour = "grey55", linewidth = 0.35),
         strip.placement = "outside",
-        plot.margin = margin(10, 14, 10, 14)
+        plot.margin = margin(10, 16, 10, 45)
       )
-    save_plot_pair_local(p, stem, width = 18.5, height = max(12.0, 1.02 * n_distinct(df$term_label_counts_plain) + 5.5))
+    save_plot_pair_local(p, stem, width = 22.0, height = max(12.0, 1.02 * n_distinct(df$term_label_counts_plain) + 5.5))
   }
 
   if ("tAI_z" %in% value_cols) {

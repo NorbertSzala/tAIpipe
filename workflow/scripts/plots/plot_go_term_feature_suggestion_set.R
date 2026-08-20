@@ -138,6 +138,7 @@ if (nrow(subset_genes) < 20L) {
 }
 
 save_plot_multi <- function(plot, stem, width = 8, height = 6) {
+  plot <- prepare_plot_for_export(plot)
   for (fmt in formats) {
     ggsave(file.path(output_dir, paste0(stem, ".", fmt)), plot = plot, width = width, height = height, dpi = 300, limitsize = FALSE)
   }
