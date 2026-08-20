@@ -20,6 +20,7 @@ safe_read <- function(path) {
 
 save_plot <- function(plot, path, width = 10, height = 6) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  plot <- prepare_plot_for_export(plot)
   ggplot2::ggsave(path, plot = plot, width = width, height = height, units = "in", dpi = 300, bg = "white", limitsize = FALSE)
 }
 
@@ -175,23 +176,28 @@ make_group_plot <- function(metrics, effects, group_name, title, output_dir, min
         yintercept = annotation$global_mean[[1]],
         linetype = "dashed", linewidth = 0.70, colour = "#1F4E79"
       ) +
-      scale_x_discrete(labels = function(x) stringr::str_wrap(x, 18)) +
+      scale_x_discrete(drop = FALSE) +
       scale_y_continuous(limits = c(limits$y_min_plot[[1]], limits$y_max_plot[[1]]), expand = expansion(mult = 0)) +
-      scale_fill_manual(values = colour_map, guide = "none") +
+      scale_fill_manual(
+        values = colour_map,
+        name = clean_label(group_name),
+        guide = guide_legend(nrow = 2, byrow = TRUE)
+      ) +
       labs(
         x = NULL, y = NULL,
         title = metric_plain_label(metric_name),
         tag = annotation$p_label[[1]]
       ) +
-      theme_minimal(base_size = 12.5) +
+      theme_minimal(base_size = 15.5) +
       theme(
-        axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1, size = 10.2),
-        axis.text.y = element_text(size = 10.5),
-        plot.title = element_text(size = 12.8, face = "bold", hjust = 0),
-        plot.tag = element_text(size = 10.5, hjust = 1, face = "plain"),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 13.5),
+        plot.title = element_text(size = 15.8, face = "bold", hjust = 0),
+        plot.tag = element_text(size = 13.2, hjust = 1, face = "plain"),
         plot.tag.position = c(0.98, 0.99),
         panel.grid.major.x = element_blank(),
-        plot.margin = margin(9, 12, 12, 12)
+        plot.margin = margin(9, 12, 9, 12)
       )
   }
 
@@ -200,15 +206,24 @@ make_group_plot <- function(metrics, effects, group_name, title, output_dir, min
     stop("Package 'patchwork' is required for the paired genome-metric layout.")
   }
   patchwork::wrap_plots(panels, ncol = 2) +
+    patchwork::plot_layout(guides = "collect") +
     patchwork::plot_annotation(
       title = title,
       subtitle = if (is.null(subtitle)) NULL else wrap_text(subtitle, 105),
       caption = "Bars show group means; error bars show the IQR of genome-level values; the dashed line is the weighted mean across displayed groups."
     ) &
     theme(
-      plot.title = element_text(size = 17, face = "bold"),
-      plot.subtitle = element_text(size = 11, lineheight = 1.15),
-      plot.caption = element_text(size = 10.2),
+      plot.title = element_text(size = 20, face = "bold"),
+      plot.subtitle = element_text(size = 13, lineheight = 1.15),
+      plot.caption = element_text(size = 12.5),
+      legend.position = "bottom",
+      legend.direction = "horizontal",
+      legend.box = "horizontal",
+      legend.title = element_text(size = 13.5, face = "bold"),
+      legend.text = element_text(size = 13.2),
+      legend.key.width = grid::unit(0.72, "cm"),
+      legend.key.height = grid::unit(0.58, "cm"),
+      legend.spacing.x = grid::unit(0.35, "cm"),
       plot.margin = margin(14, 16, 14, 16)
     )
 }
@@ -224,11 +239,11 @@ if (exists("snakemake")) {
   lifestyle_plot <- make_group_plot(metrics, effects, "lifestyle", "Genome metrics by lifestyle", outdir, min_n = 5L)
 
   message("Saving genome-metric plots by phylum")
-  save_plot(phylum_plot, snakemake@output[["phylum_png"]], width = 12.2, height = 15.0)
-  save_plot(phylum_plot, snakemake@output[["phylum_pdf"]], width = 12.2, height = 15.0)
+  save_plot(phylum_plot, snakemake@output[["phylum_png"]], width = 12.2, height = 16.2)
+  save_plot(phylum_plot, snakemake@output[["phylum_pdf"]], width = 12.2, height = 16.2)
   message("Saving genome-metric plots by lifestyle")
-  save_plot(lifestyle_plot, snakemake@output[["lifestyle_png"]], width = 12.4, height = 15.2)
-  save_plot(lifestyle_plot, snakemake@output[["lifestyle_pdf"]], width = 12.4, height = 15.2)
+  save_plot(lifestyle_plot, snakemake@output[["lifestyle_png"]], width = 12.4, height = 16.4)
+  save_plot(lifestyle_plot, snakemake@output[["lifestyle_pdf"]], width = 12.4, height = 16.4)
 } else {
   stop("This script is intended to be run by Snakemake.")
 }

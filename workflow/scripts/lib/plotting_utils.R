@@ -147,6 +147,85 @@ get_size_profile <- function(cfg, size = "wide") {
   profile
 }
 
+remove_generated_plot_annotations <- function(plot) {
+  if (inherits(plot, "patchwork")) {
+    plot <- plot + patchwork::plot_annotation(
+      title = NULL,
+      subtitle = NULL,
+      caption = NULL,
+      theme = ggplot2::theme(
+        plot.title = ggplot2::element_blank(),
+        plot.subtitle = ggplot2::element_blank(),
+        plot.caption = ggplot2::element_blank(),
+        plot.tag = ggplot2::element_blank()
+      )
+    )
+    return(
+      plot & ggplot2::theme(
+        plot.title = ggplot2::element_blank(),
+        plot.subtitle = ggplot2::element_blank(),
+        plot.caption = ggplot2::element_blank(),
+        plot.tag = ggplot2::element_blank()
+      )
+    )
+  }
+  if (inherits(plot, "ggplot")) {
+    return(
+      plot +
+        ggplot2::labs(
+          title = NULL,
+          subtitle = NULL,
+          caption = NULL,
+          tag = NULL,
+          alt = NULL,
+          alt_insight = NULL
+        ) +
+        ggplot2::theme(
+          plot.title = ggplot2::element_blank(),
+          plot.subtitle = ggplot2::element_blank(),
+          plot.caption = ggplot2::element_blank(),
+          plot.tag = ggplot2::element_blank()
+        )
+    )
+  }
+  plot
+}
+
+# Apply the requested two-point increase after layout so that every visible
+# text grob grows equally, regardless of the base theme used by a script.
+increase_grob_font_size <- function(grob, points = 2) {
+  if (inherits(grob, "text")) {
+    font_size <- grob$gp$fontsize
+    if (!is.null(font_size) && all(is.finite(font_size))) {
+      grob$gp$fontsize <- font_size + points
+    }
+  }
+
+  if (!is.null(grob$children)) {
+    for (i in seq_along(grob$children)) {
+      grob$children[[i]] <- increase_grob_font_size(grob$children[[i]], points)
+    }
+  }
+  if (!is.null(grob$grobs)) {
+    for (i in seq_along(grob$grobs)) {
+      grob$grobs[[i]] <- increase_grob_font_size(grob$grobs[[i]], points)
+    }
+  }
+  grob
+}
+
+prepare_plot_for_export <- function(plot, font_increase = 2) {
+  plot <- remove_generated_plot_annotations(plot)
+  grob <- if (inherits(plot, "patchwork")) {
+    patchwork::patchworkGrob(plot)
+  } else if (inherits(plot, "ggplot")) {
+    ggplot2::ggplotGrob(plot)
+  } else {
+    plot
+  }
+  increase_grob_font_size(grob, font_increase)
+}
+
 save_plot <- function(plot, filename, cfg, size = "wide", dpi = NULL, device = NULL) {
   profile <- get_size_profile(cfg, size)
 
@@ -173,7 +252,7 @@ save_plot <- function(plot, filename, cfg, size = "wide", dpi = NULL, device = N
 
   ggplot2::ggsave(
     filename = filename,
-    plot = plot,
+    plot = prepare_plot_for_export(plot),
     width = width,
     height = height,
     units = units,
@@ -236,4 +315,3 @@ format_p_value <- function(x) {
         TRUE ~ paste0("p = ", formatC(x, format = "f", digits = 3))
     )
 }
-

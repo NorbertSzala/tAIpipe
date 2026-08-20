@@ -6,8 +6,8 @@
 # individual gene, which avoids extremely slow lme4 fits on millions of genes and
 # reduces pseudo-replication in gene-level feature tests.
 #
-# Outputs keep the old column names used by downstream plotting scripts where
-# possible. The analysis label is changed to describe the new method.
+# Outputs use explicit IQR column names so descriptive dispersion is not
+# confused with a confidence interval for the central effect.
 
 suppressPackageStartupMessages({
   library(argparse)
@@ -72,8 +72,8 @@ empty_gene_result <- function(feature, status, n_genes = 0L, n_genomes = 0L) {
     std_error = NA_real_,
     statistic = NA_real_,
     p_value = NA_real_,
-    conf_low = NA_real_,
-    conf_high = NA_real_,
+    iqr_low = NA_real_,
+    iqr_high = NA_real_,
     n_genes = as.integer(n_genes),
     n_genomes = as.integer(n_genomes),
     covariates = "not_used_in_fast_per_genome_summary",
@@ -129,9 +129,9 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     return(empty_gene_result(feature_name, "insufficient_informative_genomes", nrow(d), n_genomes))
   }
 
-  # Compute the signed-rank p-value independently of the CI. Requesting a
-  # confidence interval can fail for degenerate/tie-heavy data even when the
-  # signed-rank statistic itself is still available.
+  # The signed-rank test evaluates whether the distribution of per-genome
+  # differences is shifted relative to zero. The median and IQR below are
+  # descriptive summaries of that distribution.
   test <- tryCatch(
     stats::wilcox.test(per_genome$effect, mu = 0, exact = FALSE),
     error = function(e) e
@@ -140,29 +140,15 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     return(empty_gene_result(feature_name, paste0("wilcox_error: ", conditionMessage(test)), nrow(d), n_genomes))
   }
 
-  ci_test <- tryCatch(
-    suppressWarnings(stats::wilcox.test(
-      per_genome$effect, mu = 0, exact = FALSE,
-      conf.int = TRUE, conf.level = 0.95
-    )),
-    error = function(e) NULL
+  est <- stats::median(per_genome$effect, na.rm = TRUE)
+  iqr <- stats::quantile(
+    per_genome$effect,
+    probs = c(0.25, 0.75),
+    na.rm = TRUE,
+    names = FALSE,
+    type = 7
   )
-
-  # Wilcoxon with conf.int=TRUE returns the Hodges-Lehmann pseudomedian and its
-  # 95% CI. The previous implementation stored the 2.5th/97.5th percentiles of
-  # genome effects in conf_low/conf_high; those described the spread of genome
-  # effects and were not confidence limits for the central effect.
-  est <- if (!is.null(ci_test$estimate) && is.finite(unname(ci_test$estimate))) {
-    unname(ci_test$estimate)
-  } else {
-    stats::median(per_genome$effect, na.rm = TRUE)
-  }
-  ci <- if (!is.null(ci_test$conf.int) && length(ci_test$conf.int) == 2L) {
-    unname(ci_test$conf.int)
-  } else {
-    c(NA_real_, NA_real_)
-  }
-  se <- NA_real_  # no conventional standard error is reported for this non-parametric pseudomedian
+  se <- NA_real_  # dispersion is reported with the IQR rather than a standard error
 
   tibble(
     analysis = "gene_feature_per_genome_median_difference",
@@ -172,12 +158,12 @@ fit_binary_feature_per_genome <- function(gene_data, feature_name) {
     std_error = se,
     statistic = unname(test$statistic),
     p_value = test$p.value,
-    conf_low = ci[[1]],
-    conf_high = ci[[2]],
+    iqr_low = iqr[[1]],
+    iqr_high = iqr[[2]],
     n_genes = as.integer(nrow(d)),
     n_genomes = as.integer(n_genomes),
     covariates = "not_used_in_fast_per_genome_summary",
-    model_formula = "per-genome median(tAI_z | present) - median(tAI_z | absent); Hodges-Lehmann pseudomedian with 95% Wilcoxon CI; signed-rank test against 0",
+    model_formula = "per-genome median(tAI_z | present) - median(tAI_z | absent); median and IQR across genomes; signed-rank test against 0",
     status = "ok"
   )
 }

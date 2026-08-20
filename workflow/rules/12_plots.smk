@@ -374,4 +374,3 @@ rule plot_qc_overview:
 
     script:
         "../scripts/plots/plot_qc_overview.R"
-

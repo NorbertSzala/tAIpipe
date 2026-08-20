@@ -398,8 +398,8 @@ codon_profile_plots:
   heatmap_value: auto
   top_n_variable_codons: 30
 
-  # Expanded dimensions keep codon labels and amino-acid family gaps legible.
-  heatmap_large_width: 24.0
+  # The tall source is divided vertically into two A4 pages in LaTeX.
+  heatmap_large_width: 30.0
   heatmap_large_height: 28.0
 
   # Minimum number of genomes per group for collapsed heatmap group labels.

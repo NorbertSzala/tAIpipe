@@ -201,6 +201,9 @@ def main() -> int:
     n_unique_aa_anticodon = int(elongator["trna_id"].nunique())
     n_unique_anticodons = int(elongator["anticodon"].nunique())
     n_amino_acids = int(elongator["amino_acid"].nunique())
+    missing_amino_acids = sorted(
+        STANDARD_AMINO_ACIDS - set(elongator["amino_acid"].unique())
+    )
 
     if n_elongator_trnas == 0:
         fail_reasons.append("no_elongator_trnas")
@@ -235,6 +238,7 @@ def main() -> int:
         "n_unique_aa_anticodon": n_unique_aa_anticodon,
         "n_unique_anticodons": n_unique_anticodons,
         "n_amino_acids": n_amino_acids,
+        "missing_amino_acids": ";".join(missing_amino_acids),
         "n_missing_ids": n_missing_ids,
         "n_invalid_identifiers": n_invalid_identifiers,
         "n_non_numeric_counts": n_non_numeric_counts,
